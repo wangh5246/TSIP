@@ -1,0 +1,141 @@
+services:
+  shuffler:
+    build:
+      context: .
+      dockerfile: services/shuffler/Dockerfile
+    environment:
+      AGG_A_URL: "http://aggregator_a:8002/forward"
+      AGG_R_URL: "http://aggregator_r:8003/forward"
+      FLUSH_SECONDS: "2"
+      K: "50"
+      KD: "50"
+      DOMAIN: "10000"
+      MASK_BITS: "32"
+      RISERFL_SEED_SECRET: "rise_fed"
+      CITY_SIZE_M: "10000"
+      DT_SEC: "10"
+      TRAJ_POINTS: "300"
+      MAX_STEP_M: "80.0"
+      PROOF_ENABLE: "1"
+      PROOF_M: "8"
+      PROOF_ALPHA: "0.05"
+      PROOF_DIM: "299"
+      PROOF_B_SCALE: "0.93"
+      PROOF_CALIBRATE: "1"
+      PROOF_CALIBRATION_SAMPLES: "800"
+      ZK_STEP_ENABLE: "${SHUFFLER_ZK_STEP_ENABLE:-0}"
+      ZK_STEP_SNARKJS: "snarkjs"
+      ZK_STEP_VKEY: "/app/zk/tsip_step/verification_key.json"
+      ZK_STEP_VERIFY_TIMEOUT_SEC: "10"
+    ports:
+      - "8001:8001"
+
+  aggregator_a:
+    build:
+      context: .
+      dockerfile: services/aggregator_a/Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      AGG_R_BASE: "http://aggregator_r:8003/dump_share"
+      DECODE_ENABLE: "1"
+      DECODE_AUDIT_URL: "http://decoder:8010/authorize_decode"
+      DECODE_VERIFY_URL: "http://decoder:8010/verify_decode"
+      DECODE_URL: "http://decoder:8010/decode_tokens"
+      DECODE_MAX: "50"
+      PRP_ROUNDS: "8"
+      DECODE_ROUTER_TOKEN: "decode_router_v1"
+      DECODE_ROUTER_SECRET: "decode_router_secret_v1"
+      DECODE_SHARE_MAX_PER_ROUND: "50"
+      AUDIT_CALLER_TOKEN: "audit_caller_v1"
+      CLOVER_KEY_SHARE: "6f0f9a3b4e2d1c0f7e6d5c4b3a291807f0e1d2c3b4a5968778695a4b3c2d1e0f"
+      CLOVER_CLIENT_TOKEN: "client_token_a_v1"
+      K: "50"
+      KD: "50"
+      DOMAIN: "10000"
+      MASK_BITS: "32"
+
+  aggregator_r:
+    build:
+      context: .
+      dockerfile: services/aggregator_r/Dockerfile
+    environment:
+        K: "50"
+        KD: "50"
+        DOMAIN: "10000"
+        MASK_BITS: "32"
+        RISERFL_SEED_SECRET: "rise_fed"
+        CLOVER_KEY_SHARE: "a1b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00"
+        CLOVER_CLIENT_TOKEN: "client_token_r_v1"
+        PRP_ROUNDS: "8"
+        DECODE_ROUTER_TOKEN: "decode_router_v1"
+        DECODE_ROUTER_SECRET: "decode_router_secret_v1"
+        DECODE_SHARE_MAX_PER_ROUND: "50"
+        MAX_DECODE_TOKENS: "50"
+        DECODE_VERIFY_URL: "http://decoder:8010/verify_decode"
+    ports:
+      - "8003:8003"
+
+  decoder:
+    build:
+      context: .
+      dockerfile: services/decoder/Dockerfile
+    environment:
+      DOMAIN: "10000"
+      MAX_DECODE_TOKENS: "50"
+      DECODE_SECRET: "decode_secret_v1"
+      DECODE_SHARE_URL_A: "http://aggregator_a:8002/clover/decode_share"
+      DECODE_SHARE_URL_R: "http://aggregator_r:8003/clover/decode_share"
+      DECODE_ROUTER_TOKEN: "decode_router_v1"
+      DECODE_ROUTER_SECRET: "decode_router_secret_v1"
+      AUDIT_CALLER_TOKEN: "audit_caller_v1"
+      AUDIT_TTL_SECONDS: "300"
+    ports:
+      - "8010:8010"
+
+  client_sim:
+    environment:
+      SHUFFLER_URL_A: "http://shuffler:8001/ingestA"
+      SHUFFLER_URL_R: "http://shuffler:8001/ingestR"
+      SHUFFLER_HEALTH: "http://shuffler:8001/health"
+      SHUFFLER_ROUND_NEW: "http://shuffler:8001/round/new"
+      K: "50"
+      KD: "50"
+      DOMAIN: "10000"
+      MASK_BITS: "32"
+      CITY_SIZE_M: "10000"     # 城市边界：0..10000m (10km)
+      CELL_SIZE_M: "100"       # 网格边长：100m
+      GRID_W: "100"            # 每行网格数；100*100=10000 必须等于 DOMAIN
+      DT_SEC: "10"             # 采样间隔 10 秒
+      TRAJ_POINTS: "300"       # 一条轨迹 300 个点（50分钟）
+      T_MAX_SEC: "600"         # 停留时间 clip 上限 600 秒
+      QUANT_BITS: "4"          # INT4
+      DUMMY_Q: "1"             # dummy 的量化值先固定为 1（便于你现有 dummy correction）
+      DEBUG_CLIENT: "0"
+      RANDOMNESS_SEED_URL: "http://aggregator_r:8003/risefl/seed"
+      RANDOMNESS_PREVIEW_URL: "http://aggregator_r:8003/risefl/gaussian_preview"
+      RAND_M: "8"
+      RAND_DIM: "4"
+      RAND_PREVIEW_N: "3"
+      PROOF_ENABLE: "1"
+      PROOF_M: "8"
+      MALICIOUS_RATE: "0.1"
+      ZK_STEP_ENABLE: "${CLIENT_ZK_STEP_ENABLE:-0}"
+      ZK_STEP_INDEX: "10"
+      ZK_STEP_SNARKJS: "snarkjs"
+      ZK_STEP_WASM: "/app/zk/tsip_step/tsip_step_js/tsip_step.wasm"
+      ZK_STEP_ZKEY: "/app/zk/tsip_step/tsip_step_final.zkey"
+      ZK_STEP_TIMEOUT_SEC: "20"
+      PRP_ENABLE: "1"
+      PRP_ROUNDS: "8"
+      PRP_MIN_DOMAIN: "1000000"
+      CLOVER_SHARE_URL_A: "http://aggregator_a:8002/clover/key_share"
+      CLOVER_SHARE_URL_R: "http://aggregator_r:8003/clover/key_share"
+      CLOVER_CLIENT_TOKEN_A: "client_token_a_v1"
+      CLOVER_CLIENT_TOKEN_R: "client_token_r_v1"
+    build:
+      context: .
+      dockerfile: client/sim/Dockerfile
+    depends_on:
+      - shuffler
+    command: ["sleep", "infinity"]
