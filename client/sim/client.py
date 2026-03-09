@@ -78,6 +78,8 @@ ZK_STEP_ZKEY = os.getenv(
     ),
 )
 ZK_STEP_TIMEOUT_SEC = int(os.getenv("ZK_STEP_TIMEOUT_SEC", "20"))
+REPORT_TIMEOUT_SEC = float(os.getenv("REPORT_TIMEOUT_SEC", "20"))
+SEND_INTERVAL_SEC = float(os.getenv("SEND_INTERVAL_SEC", "0.03"))
 PRP_ENABLE = os.getenv("PRP_ENABLE", "1") == "1"
 PRP_ROUNDS = int(os.getenv("PRP_ROUNDS", "8"))
 PRP_MIN_DOMAIN = int(os.getenv("PRP_MIN_DOMAIN", "1000000"))
@@ -533,7 +535,7 @@ def secret_share_vals(val):
 
 def post_report(url: str, report: dict):
     try:
-        resp = requests.post(url, json=report, timeout=5)
+        resp = requests.post(url, json=report, timeout=REPORT_TIMEOUT_SEC)
         status = resp.status_code
         try:
             data = resp.json()
@@ -627,7 +629,7 @@ def main():
             if not accepted:
                 false_rejects += 1
 
-        time.sleep(0.01)
+        time.sleep(SEND_INTERVAL_SEC)
     honest_total = total - malicious_total
     false_rate = (false_rejects / honest_total) if honest_total > 0 else 0.0
     malicious_reject_rate = (malicious_rejected / malicious_total) if malicious_total > 0 else 0.0

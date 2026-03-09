@@ -43,7 +43,7 @@ ZK_STEP_VKEY = os.getenv(
         ]
     ),
 )
-ZK_STEP_VERIFY_TIMEOUT_SEC = int(os.getenv("ZK_STEP_VERIFY_TIMEOUT_SEC", "10"))
+ZK_STEP_VERIFY_TIMEOUT_SEC = int(os.getenv("ZK_STEP_VERIFY_TIMEOUT_SEC", "30"))
 SEED_SECRET = os.getenv("RISERFL_SEED_SECRET", "rise_fed")
 CITY_SIZE_M = float(os.getenv("CITY_SIZE_M", "10000"))
 DT_SEC = int(os.getenv("DT_SEC", "10"))
