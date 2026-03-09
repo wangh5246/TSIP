@@ -6,7 +6,7 @@ services:
     environment:
       AGG_A_URL: "http://aggregator_a:8002/forward"
       AGG_R_URL: "http://aggregator_r:8003/forward"
-      FLUSH_SECONDS: "2"
+      FLUSH_SECONDS: "${FLUSH_SECONDS:-2}"
       K: "50"
       KD: "50"
       DOMAIN: "10000"
@@ -17,16 +17,16 @@ services:
       TRAJ_POINTS: "300"
       MAX_STEP_M: "${SHUFFLER_MAX_STEP_M:-110.0}"
       PROOF_ENABLE: "${SHUFFLER_PROOF_ENABLE:-0}"
-      PROOF_M: "8"
-      PROOF_ALPHA: "0.05"
-      PROOF_DIM: "299"
-      PROOF_B_SCALE: "0.93"
-      PROOF_CALIBRATE: "1"
-      PROOF_CALIBRATION_SAMPLES: "800"
+      PROOF_M: "${PROOF_M:-8}"
+      PROOF_ALPHA: "${PROOF_ALPHA:-0.05}"
+      PROOF_DIM: "${PROOF_DIM:-299}"
+      PROOF_B_SCALE: "${PROOF_B_SCALE:-0.93}"
+      PROOF_CALIBRATE: "${PROOF_CALIBRATE:-1}"
+      PROOF_CALIBRATION_SAMPLES: "${PROOF_CALIBRATION_SAMPLES:-800}"
       ZK_STEP_ENABLE: "${SHUFFLER_ZK_STEP_ENABLE:-1}"
       ZK_STEP_SNARKJS: "snarkjs"
       ZK_STEP_VKEY: "/app/zk/tsip_step/verification_key.json"
-      ZK_STEP_VERIFY_TIMEOUT_SEC: "30"
+      ZK_STEP_VERIFY_TIMEOUT_SEC: "${ZK_STEP_VERIFY_TIMEOUT_SEC:-30}"
     ports:
       - "8001:8001"
 
@@ -54,6 +54,13 @@ services:
       KD: "50"
       DOMAIN: "10000"
       MASK_BITS: "32"
+      DP_EPSILON_TOTAL: "${DP_EPSILON_TOTAL:-1.0}"
+      DP_EPSILON_SVT: "${DP_EPSILON_SVT:-0.3}"
+      DP_EPSILON_VAL: "${DP_EPSILON_VAL:-0.7}"
+      DP_TAU: "${DP_TAU:-3.0}"
+      DP_TAU2: "${DP_TAU2:-3.0}"
+      DP_SENSITIVITY: "${DP_SENSITIVITY:-1.0}"
+      DP_DECODE_ENABLE: "${DP_DECODE_ENABLE:-0}"
 
   aggregator_r:
     build:
@@ -109,6 +116,7 @@ services:
       DT_SEC: "10"             # 采样间隔 10 秒
       TRAJ_POINTS: "300"       # 一条轨迹 300 个点（50分钟）
       T_MAX_SEC: "600"         # 停留时间 clip 上限 600 秒
+      MAX_STEP_M: "${CLIENT_MAX_STEP_M:-110.0}"
       QUANT_BITS: "4"          # INT4
       DUMMY_Q: "1"             # dummy 的量化值先固定为 1（便于你现有 dummy correction）
       DEBUG_CLIENT: "0"
@@ -118,16 +126,16 @@ services:
       RAND_DIM: "4"
       RAND_PREVIEW_N: "3"
       PROOF_ENABLE: "${CLIENT_PROOF_ENABLE:-0}"
-      PROOF_M: "8"
-      MALICIOUS_RATE: "0.1"
+      PROOF_M: "${PROOF_M:-8}"
+      MALICIOUS_RATE: "${MALICIOUS_RATE:-0.1}"
       ZK_STEP_ENABLE: "${CLIENT_ZK_STEP_ENABLE:-1}"
-      ZK_STEP_INDEX: "10"
+      ZK_STEP_INDEX: "${ZK_STEP_INDEX:-10}"
       ZK_STEP_SNARKJS: "snarkjs"
       ZK_STEP_WASM: "/app/zk/tsip_step/tsip_step_js/tsip_step.wasm"
       ZK_STEP_ZKEY: "/app/zk/tsip_step/tsip_step_final.zkey"
-      ZK_STEP_TIMEOUT_SEC: "20"
-      REPORT_TIMEOUT_SEC: "20"
-      SEND_INTERVAL_SEC: "0.03"
+      ZK_STEP_TIMEOUT_SEC: "${ZK_STEP_TIMEOUT_SEC:-20}"
+      REPORT_TIMEOUT_SEC: "${REPORT_TIMEOUT_SEC:-20}"
+      SEND_INTERVAL_SEC: "${SEND_INTERVAL_SEC:-0.03}"
       PRP_ENABLE: "1"
       PRP_ROUNDS: "8"
       PRP_MIN_DOMAIN: "1000000"
