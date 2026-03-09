@@ -49,6 +49,7 @@ DP_TAU = float(os.getenv("DP_TAU", "3.0"))
 DP_TAU2 = float(os.getenv("DP_TAU2", "3.0"))
 DP_SENSITIVITY = float(os.getenv("DP_SENSITIVITY", "1.0"))
 DP_DECODE_ENABLE = os.getenv("DP_DECODE_ENABLE", "0") == "1"
+ALLOW_INSECURE_RECONSTRUCT = os.getenv("ALLOW_INSECURE_RECONSTRUCT", "0") == "1"
 
 def _decode_signature_payload(round_id: int, tokens: List[int]) -> str:
     joined = ",".join(str(int(t)) for t in tokens)
@@ -318,32 +319,126 @@ def dump_share_a(round_id: int):
         "aggA": {str(k): int(v) for k, v in agg.items()},
     }
 
-@app.post("/reconstruct")
-def reconstruct(round_id: int):
-    rid = int(round_id)
-
+def _reconstruct_round(rid: int, expected: int = 0, min_cells: int = 1):
+    received_A = received_by_round.get(rid, 0)
     aggA = aggA_by_round.get(rid, {})
-    # 从 R 拉这一轮的 share
-    resp = requests.get(f"{AGG_R_BASE}?round_id={rid}", timeout=5)
-    data = resp.json()
+    if len(aggA) < min_cells:
+        return {
+            "ok": False,
+            "error": "A map too small",
+            "round_id": rid,
+            "received_A": received_A,
+            "cells_in_A_map": len(aggA),
+            "min_cells": min_cells,
+        }
+
+    r_url = f"{AGG_R_BASE}?round_id={rid}"
+    try:
+        resp = requests.get(r_url, timeout=5)
+        http_status = resp.status_code
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as e:
+        return {
+            "ok": False,
+            "error": "failed to fetch R",
+            "round_id": rid,
+            "r_url": r_url,
+            "http_status": locals().get("http_status", None),
+            "detail": str(e),
+        }
+
+    received_R = data.get("received_total", None)
     aggR = data.get("aggR", {})
+    if received_R is None:
+        return {
+            "ok": False,
+            "error": "R response missing received_total",
+            "round_id": rid,
+            "r_url": r_url,
+            "http_status": http_status,
+            "keys": list(data.keys())[:10],
+        }
+
+    expected_used = int(expected)
+    if expected_used <= 0:
+        expected_used = min(received_A, received_R)
+    if received_A < expected_used:
+        return {
+            "ok": False,
+            "error": "A not complete yet",
+            "round_id": rid,
+            "received_A": received_A,
+            "received_R": received_R,
+            "expected": expected_used,
+            "cells_in_A_map": len(aggA),
+            "cells_in_R_map": (len(aggR) if isinstance(aggR, dict) else None),
+        }
+    if received_R < expected_used:
+        return {
+            "ok": False,
+            "error": "R not complete yet",
+            "round_id": rid,
+            "received_A": received_A,
+            "received_R": received_R,
+            "expected": expected_used,
+            "cells_in_A_map": len(aggA),
+            "cells_in_R_map": (len(aggR) if isinstance(aggR, dict) else None),
+        }
+    if not isinstance(aggR, dict):
+        return {
+            "ok": False,
+            "error": "R aggR is not a dict",
+            "round_id": rid,
+            "type_aggR": str(type(aggR)),
+        }
+    if len(aggR) < min_cells:
+        return {
+            "ok": False,
+            "error": "R map too small",
+            "round_id": rid,
+            "received_R": received_R,
+            "cells_in_R_map": len(aggR),
+            "min_cells": min_cells,
+        }
 
     out: Dict[int, int] = {}
-
     keys = set(aggA.keys())
-    keys.update(int(k) for k in aggR.keys())
-
-    for k in keys:
-        a = aggA.get(k, 0)
+    keysR = set()
+    for k in aggR.keys():
         try:
-            r = int(aggR.get(str(k), 0))
+            keysR.add(int(k))
         except Exception:
-            r = 0
-        # JSON key 是字符串
+            pass
+    keys.update(keysR)
+    for k in keys:
+        a = int(aggA.get(k, 0))
+        r = int(aggR.get(str(k), 0))
         out[k] = (a + r) & MASK
 
     final_by_round[rid] = out
-    return {"ok": True, "round_id": rid, "cells": len(out)}
+    dp_usage_by_round[rid] = {"calls": 0, "spent": 0.0}
+    return {
+        "ok": True,
+        "round_id": rid,
+        "expected": expected_used,
+        "received_A": received_A,
+        "received_R": received_R,
+        "cells_in_A_map": len(aggA),
+        "cells_in_R_map": len(aggR),
+        "cells_in_final_map": len(out),
+    }
+
+
+@app.post("/reconstruct")
+def reconstruct(round_id: int):
+    if not ALLOW_INSECURE_RECONSTRUCT:
+        return {"ok": False, "error": "insecure reconstruct disabled; use decoder /secure/reconstruct_latest"}
+    rid = int(round_id)
+    result = _reconstruct_round(rid=rid, expected=0, min_cells=1)
+    if result.get("ok"):
+        return {"ok": True, "round_id": rid, "cells": int(result.get("cells_in_final_map", 0))}
+    return result
 
 @app.get("/dump")
 def dump(round_id: int):
@@ -378,129 +473,14 @@ def reset_all():
 
 @app.post("/reconstruct_latest")
 def reconstruct_latest(expected: int = 0, min_cells: int = 1):
+    if not ALLOW_INSECURE_RECONSTRUCT:
+        return {"ok": False, "error": "insecure reconstruct disabled; use decoder /secure/reconstruct_latest"}
     # 1) latest rid
     if not aggA_by_round:
         return {"ok": False, "error": "no rounds in A yet"}
 
     rid = max(aggA_by_round.keys())
-
-    # 2) A 侧数据
-    received_A = received_by_round.get(rid, 0)
-    aggA = aggA_by_round.get(rid, {})
-    if len(aggA) < min_cells:
-        return {
-            "ok": False,
-            "error": "A map too small",
-            "round_id": rid,
-            "received_A": received_A,
-            "cells_in_A_map": len(aggA),
-            "min_cells": min_cells,
-        }
-
-    # 3) R 侧拉取 + 检查
-    r_url = f"{AGG_R_BASE}?round_id={rid}"
-    try:
-        resp = requests.get(r_url, timeout=5)
-        http_status = resp.status_code
-        resp.raise_for_status()
-        data = resp.json()
-    except Exception as e:
-        return {
-            "ok": False,
-            "error": "failed to fetch R",
-            "round_id": rid,
-            "r_url": r_url,
-            "http_status": locals().get("http_status", None),
-            "detail": str(e),
-        }
-
-    received_R = data.get("received_total", None)
-    aggR = data.get("aggR", {})
-
-    if received_R is None:
-        return {
-            "ok": False,
-            "error": "R response missing received_total",
-            "round_id": rid,
-            "r_url": r_url,
-            "http_status": http_status,
-            "keys": list(data.keys())[:10],
-        }
-
-    expected_used = int(expected)
-    if expected_used <= 0:
-        expected_used = min(received_A, received_R)
-    if received_A < expected_used:
-        return {
-            "ok": False,
-            "error": "A not complete yet",
-            "round_id": rid,
-            "received_A": received_A,
-            "received_R": received_R,
-            "expected": expected_used,
-            "cells_in_A_map": len(aggA),
-            "cells_in_R_map": (len(aggR) if isinstance(aggR, dict) else None),
-        }
-
-    if received_R < expected_used:
-        return {
-            "ok": False,
-            "error": "R not complete yet",
-            "round_id": rid,
-            "received_A": received_A,
-            "received_R": received_R,
-            "expected": expected_used,
-            "cells_in_A_map": len(aggA),
-            "cells_in_R_map": (len(aggR) if isinstance(aggR, dict) else None),
-        }
-
-    if not isinstance(aggR, dict):
-        return {
-            "ok": False,
-            "error": "R aggR is not a dict",
-            "round_id": rid,
-            "type_aggR": str(type(aggR)),
-        }
-
-    if len(aggR) < min_cells:
-        return {
-            "ok": False,
-            "error": "R map too small",
-            "round_id": rid,
-            "received_R": received_R,
-            "cells_in_R_map": len(aggR),
-            "min_cells": min_cells,
-        }
-
-    # 4) 合并（A keys 是 int，R keys 是 str）
-    out: Dict[int, int] = {}
-    keys = set(aggA.keys())
-    keysR = set()
-    for k in aggR.keys():
-        try:
-            keysR.add(int(k))
-        except Exception:
-            pass
-    keys.update(keysR)
-
-    for k in keys:
-        a = int(aggA.get(k, 0))
-        r = int(aggR.get(str(k), 0))
-        out[k] = (a + r) & MASK
-
-    final_by_round[rid] = out
-    dp_usage_by_round[rid] = {"calls": 0, "spent": 0.0}
-
-    return {
-        "ok": True,
-        "round_id": rid,
-        "expected": expected_used,
-        "received_A": received_A,
-        "received_R": received_R,
-        "cells_in_A_map": len(aggA),
-        "cells_in_R_map": len(aggR),
-        "cells_in_final_map": len(out),
-    }
+    return _reconstruct_round(rid=rid, expected=expected, min_cells=min_cells)
 
 @app.get("/dump_latest")
 def dump_latest():
@@ -650,7 +630,14 @@ def dp_latest(
 
     rid = max(aggA_by_round.keys())
     if rid not in final_by_round:
-        return {"ok": False, "error": "latest round not reconstructed yet", "round_id": rid}
+        recon = _reconstruct_round(rid=rid, expected=0, min_cells=1)
+        if not recon.get("ok"):
+            return {
+                "ok": False,
+                "error": "latest round not reconstructed yet",
+                "round_id": rid,
+                "reconstruct_error": recon,
+            }
 
     final_map = final_by_round[rid]
     mx = max(final_map.values()) if final_map else 0
@@ -707,6 +694,7 @@ def dp_latest(
     usage["spent"] = spent + budget_need
 
     return {
+        "ok": True,
         "mode": "dp_nebula_like",
         "round_id": rid,
         "received_total": n_acc,

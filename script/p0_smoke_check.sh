@@ -29,11 +29,11 @@ else
   EXPECTED="$RR"
 fi
 
-echo "4) reconstruct_latest expected=$EXPECTED"
-RECON_JSON="$(curl -s -X POST "http://localhost:8002/reconstruct_latest?expected=${EXPECTED}")"
+echo "4) secure reconstruct_latest expected=$EXPECTED"
+RECON_JSON="$(curl -s -X POST "http://localhost:8010/secure/reconstruct_latest?expected=${EXPECTED}")"
 echo "$RECON_JSON" | jq .
 if [[ "$(echo "$RECON_JSON" | jq -r '.ok // false')" != "true" ]]; then
-  echo "error: reconstruct_latest failed" >&2
+  echo "error: secure/reconstruct_latest failed" >&2
   exit 1
 fi
 
@@ -67,15 +67,7 @@ if [[ "$EXH" != "true" ]]; then
   exit 1
 fi
 
-echo "9) secure reconstruct via decoder"
-SREC="$(curl -s -X POST "http://localhost:8010/secure/reconstruct_latest?expected=${EXPECTED}")"
-echo "$SREC" | jq '{ok, round_id, cells_in_final_map}'
-if [[ "$(echo "$SREC" | jq -r '.ok // false')" != "true" ]]; then
-  echo "error: secure/reconstruct_latest failed" >&2
-  exit 1
-fi
-
-echo "10) secure status latest"
+echo "9) secure status latest"
 SSTAT="$(curl -s "http://localhost:8010/secure/status_latest")"
 echo "$SSTAT" | jq '{ok, round_id, cells_in_final_map}'
 if [[ "$(echo "$SSTAT" | jq -r '.ok // false')" != "true" ]]; then
