@@ -1,0 +1,15 @@
+.DS_Store
+
+# IDE
+.idea/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Build artifacts
+build/
+zk/hello/
+
+# Local experiment logs
+*.log

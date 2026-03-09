@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="com.obiscr.chatgpt.settings.EasyCodeState">
-    <option name="projectFiles" value="$PROJECT_DIR$/client/sim/client.py;/Users/wanghao/Desktop/risefl_mvp/common/config.py;/Users/wanghao/Desktop/risefl_mvp/common/math_nosie.py;/Users/wanghao/Desktop/risefl_mvp/common/schemas.py;/Users/wanghao/Desktop/risefl_mvp/common/sharing.py;/Users/wanghao/Desktop/risefl_mvp/common/utils.py;/Users/wanghao/Desktop/risefl_mvp/services/aggregator_a/app.py;/Users/wanghao/Desktop/risefl_mvp/services/aggregator_r/app.py;/Users/wanghao/Desktop/risefl_mvp/services/shuffler/app.py;/Users/wanghao/Desktop/risefl_mvp/README.md" />
-  </component>
-</project>
