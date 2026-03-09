@@ -198,7 +198,7 @@ def decode_tokens(req: DecodeRequest):
 
 
 @app.post("/secure/reconstruct_latest")
-def secure_reconstruct_latest(expected: int = 200, min_cells: int = 1):
+def secure_reconstruct_latest(expected: int = 0, min_cells: int = 1):
     try:
         s_resp = requests.get(AGG_A_STATUS_URL, timeout=5)
         s_data = s_resp.json()
@@ -220,12 +220,15 @@ def secure_reconstruct_latest(expected: int = 200, min_cells: int = 1):
 
     recv_a = int(a_data.get("received_total", 0))
     recv_r = int(r_data.get("received_total", 0))
-    if recv_a < expected or recv_r < expected:
+    expected_used = int(expected)
+    if expected_used <= 0:
+        expected_used = min(recv_a, recv_r)
+    if recv_a < expected_used or recv_r < expected_used:
         return {
             "ok": False,
             "error": "not enough reports yet",
             "round_id": rid,
-            "expected": expected,
+            "expected": expected_used,
             "received_A": recv_a,
             "received_R": recv_r,
         }
@@ -265,6 +268,7 @@ def secure_reconstruct_latest(expected: int = 200, min_cells: int = 1):
     return {
         "ok": True,
         "round_id": rid,
+        "expected": expected_used,
         "received_A": recv_a,
         "received_R": recv_r,
         "cells_in_A_map": len(agg_a),

@@ -377,25 +377,16 @@ def reset_all():
     return {"ok": True}
 
 @app.post("/reconstruct_latest")
-def reconstruct_latest(expected: int = 200, min_cells: int = 1):
+def reconstruct_latest(expected: int = 0, min_cells: int = 1):
     # 1) latest rid
     if not aggA_by_round:
         return {"ok": False, "error": "no rounds in A yet"}
 
     rid = max(aggA_by_round.keys())
 
-    # 2) A 侧检查
+    # 2) A 侧数据
     received_A = received_by_round.get(rid, 0)
     aggA = aggA_by_round.get(rid, {})
-    if received_A < expected:
-        return {
-            "ok": False,
-            "error": "A not complete yet",
-            "round_id": rid,
-            "received_A": received_A,
-            "expected": expected,
-            "cells_in_A_map": len(aggA),
-        }
     if len(aggA) < min_cells:
         return {
             "ok": False,
@@ -436,14 +427,29 @@ def reconstruct_latest(expected: int = 200, min_cells: int = 1):
             "keys": list(data.keys())[:10],
         }
 
-    if received_R < expected:
+    expected_used = int(expected)
+    if expected_used <= 0:
+        expected_used = min(received_A, received_R)
+    if received_A < expected_used:
+        return {
+            "ok": False,
+            "error": "A not complete yet",
+            "round_id": rid,
+            "received_A": received_A,
+            "received_R": received_R,
+            "expected": expected_used,
+            "cells_in_A_map": len(aggA),
+            "cells_in_R_map": (len(aggR) if isinstance(aggR, dict) else None),
+        }
+
+    if received_R < expected_used:
         return {
             "ok": False,
             "error": "R not complete yet",
             "round_id": rid,
             "received_A": received_A,
             "received_R": received_R,
-            "expected": expected,
+            "expected": expected_used,
             "cells_in_A_map": len(aggA),
             "cells_in_R_map": (len(aggR) if isinstance(aggR, dict) else None),
         }
@@ -488,6 +494,7 @@ def reconstruct_latest(expected: int = 200, min_cells: int = 1):
     return {
         "ok": True,
         "round_id": rid,
+        "expected": expected_used,
         "received_A": received_A,
         "received_R": received_R,
         "cells_in_A_map": len(aggA),
