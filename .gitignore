@@ -13,3 +13,4 @@ zk/hello/
 
 # Local experiment logs
 *.log
+.env
