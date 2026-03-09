@@ -42,6 +42,13 @@ DECODE_ROUTER_SECRET = os.getenv("DECODE_ROUTER_SECRET", "")
 DECODE_SHARE_MAX_PER_ROUND = int(os.getenv("DECODE_SHARE_MAX_PER_ROUND", "200"))
 AUDIT_CALLER_TOKEN = os.getenv("AUDIT_CALLER_TOKEN", "")
 SHARE_SIGN_SECRET = DECODE_ROUTER_SECRET or DECODE_ROUTER_TOKEN
+DP_EPSILON_TOTAL = float(os.getenv("DP_EPSILON_TOTAL", "1.0"))
+DP_EPSILON_SVT = float(os.getenv("DP_EPSILON_SVT", "0.3"))
+DP_EPSILON_VAL = float(os.getenv("DP_EPSILON_VAL", "0.7"))
+DP_TAU = float(os.getenv("DP_TAU", "3.0"))
+DP_TAU2 = float(os.getenv("DP_TAU2", "3.0"))
+DP_SENSITIVITY = float(os.getenv("DP_SENSITIVITY", "1.0"))
+DP_DECODE_ENABLE = os.getenv("DP_DECODE_ENABLE", "0") == "1"
 
 def _decode_signature_payload(round_id: int, tokens: List[int]) -> str:
     joined = ",".join(str(int(t)) for t in tokens)
@@ -142,6 +149,7 @@ decode_count_by_round: Dict[int, int] = {}
 decode_seen_tokens_by_round: Dict[int, set[int]] = {}
 decode_cache_by_round: Dict[int, Dict[int, Dict[str, int | str]]] = {}
 decode_request_cache_by_round: Dict[int, Dict[str, Dict[str, List[int] | str]]] = {}
+dp_usage_by_round: Dict[int, Dict[str, float | int]] = {}
 
 @app.post("/forward")
 def forward(batch: ForwardBatch):
@@ -300,6 +308,16 @@ def dumpA(round_id: int):
     items = sorted(m.items(), key=lambda x: -x[1])[:50]
     return {"round_id": rid, "received_total": received_by_round.get(rid, 0), "top_cells_A_share": items}
 
+@app.get("/dump_shareA")
+def dump_share_a(round_id: int):
+    rid = int(round_id)
+    agg = aggA_by_round.get(rid, {})
+    return {
+        "round_id": rid,
+        "received_total": received_by_round.get(rid, 0),
+        "aggA": {str(k): int(v) for k, v in agg.items()},
+    }
+
 @app.post("/reconstruct")
 def reconstruct(round_id: int):
     rid = int(round_id)
@@ -346,6 +364,7 @@ def reset_round(round_id: int):
     aggA_by_round.pop(rid, None)
     received_by_round.pop(rid, None)
     final_by_round.pop(rid, None)
+    dp_usage_by_round.pop(rid, None)
     return {"ok": True, "round_id": rid}
 
 @app.post("/reset_all")
@@ -354,6 +373,7 @@ def reset_all():
     received_by_round.clear()
     final_by_round.clear()
     seen.clear()   # ✅ 清掉去重记录
+    dp_usage_by_round.clear()
     return {"ok": True}
 
 @app.post("/reconstruct_latest")
@@ -463,6 +483,7 @@ def reconstruct_latest(expected: int = 200, min_cells: int = 1):
         out[k] = (a + r) & MASK
 
     final_by_round[rid] = out
+    dp_usage_by_round[rid] = {"calls": 0, "spent": 0.0}
 
     return {
         "ok": True,
@@ -556,6 +577,183 @@ def laplace_noise(scale: float) -> float:
     # 用 inverse CDF：u ~ Uniform(-0.5, 0.5) => n = -scale * sgn(u) * ln(1 - 2|u|)
     u = random.random() - 0.5
     return -scale * (1 if u >= 0 else -1) * math.log(1 - 2 * abs(u))
+
+def compute_epsilon_breakdown():
+    eps_total = DP_EPSILON_TOTAL
+    eps_svt = DP_EPSILON_SVT
+    eps_val = DP_EPSILON_VAL
+    if eps_total <= 0 or eps_svt <= 0 or eps_val <= 0:
+        raise HTTPException(status_code=400, detail="invalid DP epsilon config")
+    if eps_svt + eps_val > eps_total + 1e-12:
+        raise HTTPException(status_code=400, detail="DP epsilon split exceeds total budget")
+    return eps_total, eps_svt, eps_val
+
+def _decode_top_items(rid: int, items: List[tuple[int, float]]) -> tuple[List[List[float]], int, str | None]:
+    decode_error = None
+    decoded_cells = []
+    decoded_count = 0
+    if DECODE_ENABLE and items:
+        tokens = [c for c, _v in items][:DECODE_MAX]
+        try:
+            headers = {}
+            if AUDIT_CALLER_TOKEN:
+                headers["X-Audit-Caller"] = AUDIT_CALLER_TOKEN
+            audit_resp = requests.post(
+                DECODE_AUDIT_URL,
+                json={"round_id": rid, "tokens": tokens},
+                headers=headers,
+                timeout=5,
+            )
+            audit_data = audit_resp.json()
+            if not audit_data.get("ok"):
+                decode_error = audit_data.get("error", "audit failed")
+            else:
+                payload = {
+                    "round_id": rid,
+                    "tokens": tokens,
+                    "signature": audit_data.get("signature"),
+                    "issued_at": audit_data.get("issued_at"),
+                    "ttl_seconds": audit_data.get("ttl_seconds"),
+                }
+                resp = requests.post(DECODE_URL, json=payload, timeout=5)
+                data = resp.json()
+                if not data.get("ok"):
+                    decode_error = data.get("error", "decode failed")
+                else:
+                    decoded = {int(t): int(c) for t, c in data.get("decoded", [])}
+                    decoded_cells = [[decoded[t], v] for t, v in items if t in decoded]
+                    decoded_count = len(decoded_cells)
+        except Exception as e:
+            decode_error = str(e)
+    return decoded_cells, decoded_count, decode_error
+
+@app.get("/dp/latest")
+def dp_latest(
+    tau: float = DP_TAU,
+    tau2: float = DP_TAU2,
+    sensitivity: float = DP_SENSITIVITY,
+):
+    eps_total, eps_svt, eps_val = compute_epsilon_breakdown()
+    if tau2 < 0:
+        return {"ok": False, "error": "tau2 must be >= 0"}
+    if sensitivity <= 0:
+        return {"ok": False, "error": "sensitivity must be > 0"}
+    if not aggA_by_round:
+        return {"ok": False, "error": "no rounds in A yet"}
+
+    rid = max(aggA_by_round.keys())
+    if rid not in final_by_round:
+        return {"ok": False, "error": "latest round not reconstructed yet", "round_id": rid}
+
+    final_map = final_by_round[rid]
+    mx = max(final_map.values()) if final_map else 0
+    if mx > DOMAIN:
+        return {
+            "ok": False,
+            "error": "final_map looks like uint32 shares, not counts. Did you hit the wrong route or forget reconstruct?",
+            "round_id": rid,
+            "max_value": mx,
+        }
+
+    n_acc = received_by_round.get(rid, 0)
+    e_dummy = (n_acc * KD) / DOMAIN
+    usage = dp_usage_by_round.setdefault(rid, {"calls": 0, "spent": 0.0})
+    budget_need = eps_svt + eps_val
+    spent = float(usage["spent"])
+    remaining = eps_total - spent
+    if remaining + 1e-12 < budget_need:
+        return {
+            "ok": False,
+            "error": "privacy budget exhausted",
+            "round_id": rid,
+            "epsilon_total": eps_total,
+            "spent": spent,
+            "remaining": remaining,
+            "budget_need": budget_need,
+        }
+
+    threshold_noisy = tau + laplace_noise(2.0 / eps_svt)
+    scale_val = sensitivity / eps_val
+
+    dp_map: Dict[int, float] = {}
+    kept_svt = 0
+    kept_post = 0
+    for c, v in final_map.items():
+        corrected = v - e_dummy
+        noisy_for_svt = corrected + laplace_noise(1.0 / eps_svt)
+        if noisy_for_svt < threshold_noisy:
+            continue
+        kept_svt += 1
+        noisy_value = corrected + laplace_noise(scale_val)
+        if noisy_value < 0:
+            noisy_value = 0.0
+        if noisy_value >= tau2:
+            dp_map[c] = noisy_value
+            kept_post += 1
+
+    items = sorted(dp_map.items(), key=lambda x: -x[1])[:50]
+    decoded_cells, decoded_count, decode_error = [], 0, None
+    if DP_DECODE_ENABLE:
+        decoded_cells, decoded_count, decode_error = _decode_top_items(rid, items)
+
+    usage["calls"] = int(usage["calls"]) + 1
+    usage["spent"] = spent + budget_need
+
+    return {
+        "mode": "dp_nebula_like",
+        "round_id": rid,
+        "received_total": n_acc,
+        "E_dummy_per_cell": e_dummy,
+        "tau": tau,
+        "tau2": tau2,
+        "tau_noisy": threshold_noisy,
+        "epsilon_total": eps_total,
+        "epsilon_svt": eps_svt,
+        "epsilon_value": eps_val,
+        "sensitivity": sensitivity,
+        "cells_kept_svt": kept_svt,
+        "cells_kept_post": kept_post,
+        "top_cells": decoded_cells if decoded_cells else items,
+        "top_tokens": items,
+        "decoded_count": decoded_count,
+        "decoded_limit": (DECODE_MAX if DP_DECODE_ENABLE else 0),
+        "dp_decode_enabled": DP_DECODE_ENABLE,
+        "decode_error": decode_error,
+    }
+
+@app.get("/privacy_budget_status")
+def privacy_budget_status(round_id: int | None = None):
+    eps_total, eps_svt, eps_val = compute_epsilon_breakdown()
+    if round_id is None:
+        rid = max(aggA_by_round.keys()) if aggA_by_round else 0
+    else:
+        rid = int(round_id)
+    usage = dp_usage_by_round.get(rid, {"calls": 0, "spent": 0.0})
+    spent = float(usage["spent"])
+    remaining = eps_total - spent
+    return {
+        "ok": True,
+        "round_id": rid,
+        "epsilon_total": eps_total,
+        "epsilon_svt": eps_svt,
+        "epsilon_value": eps_val,
+        "calls": int(usage["calls"]),
+        "spent": spent,
+        "remaining": remaining,
+        "exhausted": (remaining <= 0),
+    }
+
+@app.post("/privacy_budget_reset")
+def privacy_budget_reset(round_id: int | None = None):
+    if round_id is None:
+        if not aggA_by_round:
+            rid = 0
+        else:
+            rid = max(aggA_by_round.keys())
+    else:
+        rid = int(round_id)
+    dp_usage_by_round[rid] = {"calls": 0, "spent": 0.0}
+    return {"ok": True, "round_id": rid, "calls": 0, "spent": 0.0}
 
 @app.get("/dump_latest_dp")
 def dump_latest_dp(epsilon: float = 1.0, tau: float = 3.0, tau2: float = 3.0):

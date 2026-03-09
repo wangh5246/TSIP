@@ -6,6 +6,7 @@ import hmac
 import hashlib
 import requests
 import time
+from typing import Dict
 
 app = FastAPI()
 
@@ -17,6 +18,13 @@ DECODE_ROUTER_SECRET = os.getenv("DECODE_ROUTER_SECRET", "")
 DECODE_ROUTER_TOKEN = os.getenv("DECODE_ROUTER_TOKEN", "")
 AUDIT_CALLER_TOKEN = os.getenv("AUDIT_CALLER_TOKEN", "")
 AUDIT_TTL_SECONDS = int(os.getenv("AUDIT_TTL_SECONDS", "300"))
+MASK_BITS = int(os.getenv("MASK_BITS", "32"))
+MASK = (1 << MASK_BITS) - 1
+AGG_A_STATUS_URL = os.getenv("AGG_A_STATUS_URL", "http://aggregator_a:8002/status_latest")
+AGG_A_SHARE_URL = os.getenv("AGG_A_SHARE_URL", "http://aggregator_a:8002/dump_shareA")
+AGG_R_SHARE_URL = os.getenv("AGG_R_SHARE_URL", "http://aggregator_r:8003/dump_share")
+
+secure_final_by_round: Dict[int, Dict[int, int]] = {}
 
 
 class DecodeRequest(BaseModel):
@@ -187,3 +195,94 @@ def decode_tokens(req: DecodeRequest):
 
     decoded = [[int(t), int(c)] for t, c in zip(req.tokens, cells)]
     return {"ok": True, "round_id": req.round_id, "count": len(decoded), "decoded": decoded}
+
+
+@app.post("/secure/reconstruct_latest")
+def secure_reconstruct_latest(expected: int = 200, min_cells: int = 1):
+    try:
+        s_resp = requests.get(AGG_A_STATUS_URL, timeout=5)
+        s_data = s_resp.json()
+    except Exception as e:
+        return {"ok": False, "error": f"failed to fetch status from A: {e}"}
+    if not s_data.get("ok"):
+        return {"ok": False, "error": s_data.get("error", "A status not ready")}
+    rid = int(s_data.get("round_id", 0))
+    if rid <= 0:
+        return {"ok": False, "error": "invalid latest round id"}
+
+    try:
+        a_resp = requests.get(AGG_A_SHARE_URL, params={"round_id": rid}, timeout=5)
+        a_data = a_resp.json()
+        r_resp = requests.get(AGG_R_SHARE_URL, params={"round_id": rid}, timeout=5)
+        r_data = r_resp.json()
+    except Exception as e:
+        return {"ok": False, "error": f"failed to fetch shares: {e}", "round_id": rid}
+
+    recv_a = int(a_data.get("received_total", 0))
+    recv_r = int(r_data.get("received_total", 0))
+    if recv_a < expected or recv_r < expected:
+        return {
+            "ok": False,
+            "error": "not enough reports yet",
+            "round_id": rid,
+            "expected": expected,
+            "received_A": recv_a,
+            "received_R": recv_r,
+        }
+
+    agg_a = a_data.get("aggA", {})
+    agg_r = r_data.get("aggR", {})
+    if not isinstance(agg_a, dict) or not isinstance(agg_r, dict):
+        return {"ok": False, "error": "invalid share payload", "round_id": rid}
+    if len(agg_a) < min_cells or len(agg_r) < min_cells:
+        return {
+            "ok": False,
+            "error": "share map too small",
+            "round_id": rid,
+            "cells_in_A_map": len(agg_a),
+            "cells_in_R_map": len(agg_r),
+        }
+
+    out: Dict[int, int] = {}
+    keys = set()
+    for k in agg_a.keys():
+        try:
+            keys.add(int(k))
+        except Exception:
+            pass
+    for k in agg_r.keys():
+        try:
+            keys.add(int(k))
+        except Exception:
+            pass
+    for k in keys:
+        a = int(agg_a.get(str(k), 0))
+        r = int(agg_r.get(str(k), 0))
+        out[k] = (a + r) & MASK
+
+    secure_final_by_round[rid] = out
+    top = sorted(out.items(), key=lambda x: -x[1])[:50]
+    return {
+        "ok": True,
+        "round_id": rid,
+        "received_A": recv_a,
+        "received_R": recv_r,
+        "cells_in_A_map": len(agg_a),
+        "cells_in_R_map": len(agg_r),
+        "cells_in_final_map": len(out),
+        "top_cells": top,
+    }
+
+
+@app.get("/secure/status_latest")
+def secure_status_latest():
+    if not secure_final_by_round:
+        return {"ok": False, "error": "no secure reconstructed rounds yet"}
+    rid = max(secure_final_by_round.keys())
+    m = secure_final_by_round.get(rid, {})
+    return {
+        "ok": True,
+        "round_id": rid,
+        "cells_in_final_map": len(m),
+        "top_cells": sorted(m.items(), key=lambda x: -x[1])[:50],
+    }
