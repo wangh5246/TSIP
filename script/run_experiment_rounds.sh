@@ -46,12 +46,31 @@ for i in $(seq 1 "$ROUNDS"); do
   fi
   echo "$SUMMARY_LINE"
 
-  total="$(echo "$SUMMARY_LINE" | sed -E 's/.*total= *([0-9]+).*/\1/')"
-  valid_clients="$(echo "$SUMMARY_LINE" | sed -E 's/.*valid_clients= *([0-9]+).*/\1/')"
-  rejected="$(echo "$SUMMARY_LINE" | sed -E 's/.*rejected= *([0-9]+).*/\1/')"
-  malicious_total="$(echo "$SUMMARY_LINE" | sed -E 's/.*malicious_total= *([0-9]+).*/\1/')"
-  malicious_reject_rate="$(echo "$SUMMARY_LINE" | sed -E 's/.*malicious_reject_rate= *([0-9.]+).*/\1/')"
-  false_reject_rate="$(echo "$SUMMARY_LINE" | sed -E 's/.*false_reject_rate= *([0-9.]+).*/\1/')"
+  extract_metric() {
+    local key="$1"
+    local line="$2"
+    echo "$line" | awk -v k="${key}" '{
+      for (i=1; i<=NF; i++) {
+        if ($i == k "=") {
+          print $(i+1)
+          exit
+        }
+        if (index($i, k "=") == 1 && length($i) > length(k) + 1) {
+          v = $i
+          sub(k "=", "", v)
+          print v
+          exit
+        }
+      }
+    }'
+  }
+
+  total="$(extract_metric "total" "$SUMMARY_LINE")"
+  valid_clients="$(extract_metric "valid_clients" "$SUMMARY_LINE")"
+  rejected="$(extract_metric "rejected" "$SUMMARY_LINE")"
+  malicious_total="$(extract_metric "malicious_total" "$SUMMARY_LINE")"
+  malicious_reject_rate="$(extract_metric "malicious_reject_rate" "$SUMMARY_LINE")"
+  false_reject_rate="$(extract_metric "false_reject_rate" "$SUMMARY_LINE")"
 
   STATUS_JSON="$(curl -s "http://localhost:8002/status_latest")"
   round_id="$(echo "$STATUS_JSON" | jq -r '.round_id // 0')"
