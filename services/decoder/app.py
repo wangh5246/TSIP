@@ -36,6 +36,18 @@ class DecodeRequest(BaseModel):
     request_id: str | None = None
 
 
+@app.get("/health")
+def health():
+    latest_round = max(secure_final_by_round.keys()) if secure_final_by_round else 0
+    return {
+        "ok": True,
+        "service": "decoder",
+        "latest_round": latest_round,
+        "decode_secret_configured": bool(DECODE_SECRET),
+        "max_decode_tokens": MAX_DECODE_TOKENS,
+    }
+
+
 def _signature_payload(round_id: int, tokens: List[int], issued_at: int, ttl_seconds: int) -> str:
     joined = ",".join(str(int(t)) for t in tokens)
     return f"{int(round_id)}:{int(issued_at)}:{int(ttl_seconds)}:{joined}"

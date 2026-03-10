@@ -71,6 +71,19 @@ decode_seen_tokens_by_round: Dict[int, set[int]] = {}
 decode_cache_by_round: Dict[int, Dict[int, int]] = {}
 decode_request_cache_by_round: Dict[int, Dict[str, Dict[str, List[int] | str]]] = {}
 
+
+@app.get("/health")
+def health():
+    latest_round = max(received_by_round.keys()) if received_by_round else 0
+    return {
+        "ok": True,
+        "service": "aggregator_r",
+        "latest_round": latest_round,
+        "rounds_in_r": len(aggR_by_round),
+        "seed_configured": bool(SEED_SECRET),
+        "decode_verify_url": DECODE_VERIFY_URL,
+    }
+
 @app.post("/forward")
 def forward(batch: ForwardBatch):
     accepted = 0

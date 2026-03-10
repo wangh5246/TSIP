@@ -152,6 +152,20 @@ decode_cache_by_round: Dict[int, Dict[int, Dict[str, int | str]]] = {}
 decode_request_cache_by_round: Dict[int, Dict[str, Dict[str, List[int] | str]]] = {}
 dp_usage_by_round: Dict[int, Dict[str, float | int]] = {}
 
+
+@app.get("/health")
+def health():
+    latest_round = max(received_by_round.keys()) if received_by_round else 0
+    return {
+        "ok": True,
+        "service": "aggregator_a",
+        "latest_round": latest_round,
+        "rounds_in_a": len(aggA_by_round),
+        "decode_enabled": DECODE_ENABLE,
+        "dp_decode_enabled": DP_DECODE_ENABLE,
+        "allow_insecure_reconstruct": ALLOW_INSECURE_RECONSTRUCT,
+    }
+
 @app.post("/forward")
 def forward(batch: ForwardBatch):
     accepted = 0

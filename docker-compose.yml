@@ -29,6 +29,12 @@ services:
       ZK_STEP_VERIFY_TIMEOUT_SEC: "${ZK_STEP_VERIFY_TIMEOUT_SEC:-30}"
     ports:
       - "8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   aggregator_a:
     build:
@@ -61,6 +67,12 @@ services:
       DP_TAU2: "${DP_TAU2:-3.0}"
       DP_SENSITIVITY: "${DP_SENSITIVITY:-1.0}"
       DP_DECODE_ENABLE: "${DP_DECODE_ENABLE:-0}"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8002/health', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   aggregator_r:
     build:
@@ -82,6 +94,12 @@ services:
         DECODE_VERIFY_URL: "http://decoder:8010/verify_decode"
     ports:
       - "8003:8003"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8003/health', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   decoder:
     build:
@@ -99,6 +117,12 @@ services:
       AUDIT_TTL_SECONDS: "300"
     ports:
       - "8010:8010"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8010/health', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   client_sim:
     environment:
@@ -147,5 +171,12 @@ services:
       context: .
       dockerfile: client/sim/Dockerfile
     depends_on:
-      - shuffler
+      shuffler:
+        condition: service_healthy
+      aggregator_a:
+        condition: service_healthy
+      aggregator_r:
+        condition: service_healthy
+      decoder:
+        condition: service_healthy
     command: ["sleep", "infinity"]
