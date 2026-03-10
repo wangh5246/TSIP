@@ -4,9 +4,15 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
+BUILD_SERVICES="${BUILD_SERVICES:-1}"
+
 echo "== P0 smoke check =="
 echo "1) ensure services are up"
-docker compose up -d --build shuffler aggregator_a aggregator_r decoder client_sim >/dev/null
+if [[ "$BUILD_SERVICES" == "1" ]]; then
+  docker compose up -d --build shuffler aggregator_a aggregator_r decoder client_sim >/dev/null
+else
+  docker compose up -d shuffler aggregator_a aggregator_r decoder client_sim >/dev/null
+fi
 
 echo "2) generate one round reports"
 docker compose exec -T client_sim python client.py >/tmp/p0_client_run.log
