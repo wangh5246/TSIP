@@ -1,6 +1,13 @@
+import math
 import os, time, uuid, random, json, subprocess, tempfile, shutil
 import requests
 from common.utils import gaussian_preview, gaussian_vectors, prp, derive_prp_seed_from_share
+from common.tsip import (
+    commitment_to_field,
+    compute_location_commitment,
+    compute_max_dist_sq,
+    tsip_window_id,
+)
 
 def _first_existing_path(candidates: list[str]) -> str:
     for p in candidates:
@@ -78,6 +85,31 @@ ZK_STEP_ZKEY = os.getenv(
     ),
 )
 ZK_STEP_TIMEOUT_SEC = int(os.getenv("ZK_STEP_TIMEOUT_SEC", "20"))
+TSIP_ENABLE = os.getenv("TSIP_ENABLE", "0") == "1"
+TSIP_WINDOW_SEC = int(os.getenv("TSIP_WINDOW_SEC", "60"))
+TSIP_STATE_PATH = os.getenv("TSIP_STATE_PATH", "/tmp/tsip_client_state.json")
+TSIP_SNARKJS = os.getenv("TSIP_SNARKJS", ZK_STEP_SNARKJS)
+TSIP_WASM = os.getenv(
+    "TSIP_WASM",
+    _first_existing_path(
+        [
+            "/app/zk/tsip_main/tsip_main_js/tsip_main.wasm",
+            "/Users/wanghao/Desktop/risefl_mvp/zk/tsip_main/tsip_main_js/tsip_main.wasm",
+            "zk/tsip_main/tsip_main_js/tsip_main.wasm",
+        ]
+    ),
+)
+TSIP_ZKEY = os.getenv(
+    "TSIP_ZKEY",
+    _first_existing_path(
+        [
+            "/app/zk/tsip_main/tsip_main_final.zkey",
+            "/Users/wanghao/Desktop/risefl_mvp/zk/tsip_main/tsip_main_final.zkey",
+            "zk/tsip_main/tsip_main_final.zkey",
+        ]
+    ),
+)
+TSIP_TIMEOUT_SEC = int(os.getenv("TSIP_TIMEOUT_SEC", "20"))
 REPORT_TIMEOUT_SEC = float(os.getenv("REPORT_TIMEOUT_SEC", "20"))
 SEND_INTERVAL_SEC = float(os.getenv("SEND_INTERVAL_SEC", "0.03"))
 PRP_ENABLE = os.getenv("PRP_ENABLE", "1") == "1"
@@ -288,6 +320,35 @@ def ensure_zk_step_ready():
     if not os.path.exists(ZK_STEP_ZKEY):
         raise RuntimeError(f"missing ZK_STEP_ZKEY: {ZK_STEP_ZKEY}")
 
+
+def ensure_tsip_ready():
+    if not TSIP_ENABLE:
+        return
+    if shutil.which(TSIP_SNARKJS) is None:
+        raise RuntimeError(f"snarkjs not found: {TSIP_SNARKJS}")
+    if not os.path.exists(TSIP_WASM):
+        raise RuntimeError(f"missing TSIP_WASM: {TSIP_WASM}")
+    if not os.path.exists(TSIP_ZKEY):
+        raise RuntimeError(f"missing TSIP_ZKEY: {TSIP_ZKEY}")
+
+
+def load_tsip_state() -> dict:
+    if not TSIP_ENABLE:
+        return {}
+    if not os.path.exists(TSIP_STATE_PATH):
+        return {}
+    with open(TSIP_STATE_PATH, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data if isinstance(data, dict) else {}
+
+
+def save_tsip_state(state: dict):
+    if not TSIP_ENABLE:
+        return
+    os.makedirs(os.path.dirname(TSIP_STATE_PATH), exist_ok=True)
+    with open(TSIP_STATE_PATH, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=True, sort_keys=True)
+
 def build_zk_step_inputs(trajectory):
     if len(trajectory) < 2:
         return {"dx": 0, "dy": 0, "dt": 1, "vmax": int(round(MAX_STEP_M))}
@@ -335,6 +396,136 @@ def generate_zk_step_proof(inputs: dict):
         with open(public_path, "r", encoding="utf-8") as f:
             public_signals = json.load(f)
     return {"proof": proof, "public_signals": public_signals, "inputs": inputs}
+
+
+def generate_tsip_proof(inputs: dict):
+    with tempfile.TemporaryDirectory(prefix="tsip_main_client_") as td:
+        input_path = os.path.join(td, "input.json")
+        proof_path = os.path.join(td, "proof.json")
+        public_path = os.path.join(td, "public.json")
+        with open(input_path, "w", encoding="utf-8") as f:
+            json.dump(inputs, f, ensure_ascii=True)
+        cmd = [
+            TSIP_SNARKJS,
+            "groth16",
+            "fullprove",
+            input_path,
+            TSIP_WASM,
+            TSIP_ZKEY,
+            proof_path,
+            public_path,
+        ]
+        proc = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=TSIP_TIMEOUT_SEC,
+            check=False,
+        )
+        if proc.returncode != 0:
+            msg = (proc.stderr or proc.stdout or "").strip()
+            raise RuntimeError(msg or "snarkjs tsip fullprove failed")
+        with open(proof_path, "r", encoding="utf-8") as f:
+            proof = json.load(f)
+        with open(public_path, "r", encoding="utf-8") as f:
+            public_signals = json.load(f)
+    return {"proof": proof, "public_signals": public_signals}
+
+
+def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random, malicious: bool):
+    if not TSIP_ENABLE:
+        return None, None
+
+    if prev_state is None:
+        curr_x = int(round(rng.uniform(0, CITY_SIZE_M - 1)))
+        curr_y = int(round(rng.uniform(0, CITY_SIZE_M - 1)))
+        curr_t = int(time.time())
+        curr_window = tsip_window_id(curr_t, TSIP_WINDOW_SEC)
+        curr_commitment = compute_location_commitment(
+            user_id=user_id,
+            x=curr_x,
+            y=curr_y,
+            timestamp=curr_t,
+            window_id=curr_window,
+            prev_commitment="",
+        )
+        payload = {
+            "user_id": user_id,
+            "timestamp": curr_t,
+            "window_id": curr_window,
+            "prev_commitment": "",
+            "curr_commitment": curr_commitment,
+            "time_diff": 0,
+            "max_dist_sq": 0,
+            "proof": None,
+            "public_signals": [],
+        }
+        next_state = {
+            "x": curr_x,
+            "y": curr_y,
+            "timestamp": curr_t,
+            "window_id": curr_window,
+            "commitment": curr_commitment,
+        }
+        return payload, next_state
+
+    prev_x = int(prev_state["x"])
+    prev_y = int(prev_state["y"])
+    prev_t = int(prev_state["timestamp"])
+    prev_commitment = str(prev_state["commitment"])
+    time_diff = max(1, TSIP_WINDOW_SEC)
+    curr_t = prev_t + time_diff
+
+    honest_radius = max(1.0, MAX_STEP_M * time_diff * 0.8)
+    malicious_radius = max(MAX_STEP_M * time_diff * 2.0, honest_radius + 1000.0)
+    radius = malicious_radius if malicious else rng.uniform(0.0, honest_radius)
+    angle = rng.uniform(0.0, 2.0 * math.pi)
+    curr_x = int(round(clamp(prev_x + math.cos(angle) * radius, 0, CITY_SIZE_M - 1)))
+    curr_y = int(round(clamp(prev_y + math.sin(angle) * radius, 0, CITY_SIZE_M - 1)))
+    curr_window = tsip_window_id(curr_t, TSIP_WINDOW_SEC)
+    curr_commitment = compute_location_commitment(
+        user_id=user_id,
+        x=curr_x,
+        y=curr_y,
+        timestamp=curr_t,
+        window_id=curr_window,
+        prev_commitment=prev_commitment,
+    )
+    max_dist_sq = compute_max_dist_sq(MAX_STEP_M, time_diff)
+    inputs = {
+        "x1": prev_x,
+        "y1": prev_y,
+        "x2": curr_x,
+        "y2": curr_y,
+        "hash_prev": commitment_to_field(prev_commitment),
+        "hash_curr": commitment_to_field(curr_commitment),
+        "max_dist_sq": max_dist_sq,
+    }
+    try:
+        proof_data = generate_tsip_proof(inputs)
+    except Exception as e:
+        if not malicious:
+            raise
+        proof_data = {"proof": None, "public_signals": [], "error": str(e)}
+    payload = {
+        "user_id": user_id,
+        "timestamp": curr_t,
+        "window_id": curr_window,
+        "prev_commitment": prev_commitment,
+        "curr_commitment": curr_commitment,
+        "time_diff": time_diff,
+        "max_dist_sq": max_dist_sq,
+        "proof": proof_data["proof"],
+        "public_signals": proof_data["public_signals"],
+    }
+    next_state = {
+        "x": curr_x,
+        "y": curr_y,
+        "timestamp": curr_t,
+        "window_id": curr_window,
+        "commitment": curr_commitment,
+    }
+    return payload, next_state
 
 def proof_statistic_S(seed: int, trajectory, label: str, debug: bool = False):
     u = compute_displacement_vector(trajectory)
@@ -555,6 +746,7 @@ def main():
     if DEBUG_RANDOMNESS:
         randomness_self_test(rid)
     ensure_zk_step_ready()
+    ensure_tsip_ready()
     if PRP_ENABLE and DOMAIN < PRP_MIN_DOMAIN:
         print("[WARN] PRP domain is small:", DOMAIN, "recommended >=", PRP_MIN_DOMAIN)
     prp_seed_a = 0
@@ -565,6 +757,7 @@ def main():
         prp_seed_a = derive_prp_seed_from_share(rid, share_a, DOMAIN, "A")
         prp_seed_r = derive_prp_seed_from_share(rid, share_r, DOMAIN, "R")
     proof_seed = fetch_seed(rid) if PROOF_ENABLE else 0
+    tsip_state = load_tsip_state()
     total = 0
     valid_clients = 0
     rejected = 0
@@ -573,6 +766,7 @@ def main():
     false_rejects = 0
     for i in range(200):
         round_id = rid
+        user_id = f"user_{i:04d}"
         submission_id = f"U{i}_{uuid.uuid4().hex[:8]}"
 
         seed = random.getrandbits(64)
@@ -589,6 +783,15 @@ def main():
         if not validate_unique_idx(idx, val, seed, round_id, submission_id):
             raise RuntimeError("duplicate idx generated; aborting send")
         valA, valR = secret_share_vals(val)
+        tsip_payload = None
+        next_tsip_state = None
+        if TSIP_ENABLE:
+            tsip_payload, next_tsip_state = build_tsip_payload(
+                user_id=user_id,
+                prev_state=tsip_state.get(user_id),
+                rng=random.Random(seed ^ 0x5A5A5A5A),
+                malicious=is_malicious,
+            )
 
         reportA = {
             "round_id": round_id,
@@ -608,6 +811,9 @@ def main():
         if ZK_STEP_ENABLE:
             reportA["zk_step"] = zk_step
             reportR["zk_step"] = zk_step
+        if TSIP_ENABLE:
+            reportA["tsip"] = tsip_payload
+            reportR["tsip"] = tsip_payload
 
         ok_a, data_a, _ = post_report(SHUFFLER_URL_A, reportA)
         ok_r, data_r, _ = post_report(SHUFFLER_URL_R, reportR)
@@ -619,6 +825,8 @@ def main():
         total += 1
         if accepted:
             valid_clients += 1
+            if TSIP_ENABLE and next_tsip_state is not None:
+                tsip_state[user_id] = next_tsip_state
         else:
             rejected += 1
         if is_malicious:
@@ -630,6 +838,8 @@ def main():
                 false_rejects += 1
 
         time.sleep(SEND_INTERVAL_SEC)
+    if TSIP_ENABLE:
+        save_tsip_state(tsip_state)
     honest_total = total - malicious_total
     false_rate = (false_rejects / honest_total) if honest_total > 0 else 0.0
     malicious_reject_rate = (malicious_rejected / malicious_total) if malicious_total > 0 else 0.0

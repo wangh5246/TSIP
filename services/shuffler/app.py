@@ -5,6 +5,7 @@ import os, time, random, threading, math, subprocess, tempfile, shutil, json
 import requests
 from fastapi import HTTPException
 from common.utils import chi2_ppf, seed_from_round, gaussian_vectors
+from common.tsip import commitment_to_field
 app = FastAPI()
 
 def _first_existing_path(candidates: list[str]) -> str:
@@ -44,6 +45,22 @@ ZK_STEP_VKEY = os.getenv(
     ),
 )
 ZK_STEP_VERIFY_TIMEOUT_SEC = int(os.getenv("ZK_STEP_VERIFY_TIMEOUT_SEC", "30"))
+TSIP_ENABLE = os.getenv("TSIP_ENABLE", "0") == "1"
+TSIP_SNARKJS = os.getenv("TSIP_SNARKJS", "snarkjs")
+TSIP_VKEY = os.getenv(
+    "TSIP_VKEY",
+    _first_existing_path(
+        [
+            "/app/zk/tsip_main/verification_key.json",
+            "/Users/wanghao/Desktop/risefl_mvp/zk/tsip_main/verification_key.json",
+            "zk/tsip_main/verification_key.json",
+        ]
+    ),
+)
+TSIP_VERIFY_TIMEOUT_SEC = int(os.getenv("TSIP_VERIFY_TIMEOUT_SEC", "30"))
+TSIP_WINDOW_SEC = int(os.getenv("TSIP_WINDOW_SEC", "60"))
+TSIP_MAX_GAP_WINDOWS = int(os.getenv("TSIP_MAX_GAP_WINDOWS", "2"))
+TSIP_BLACKLIST_THRESHOLD = int(os.getenv("TSIP_BLACKLIST_THRESHOLD", "3"))
 SEED_SECRET = os.getenv("RISERFL_SEED_SECRET", "rise_fed")
 CITY_SIZE_M = float(os.getenv("CITY_SIZE_M", "10000"))
 DT_SEC = int(os.getenv("DT_SEC", "10"))
@@ -60,6 +77,8 @@ round_lock = threading.Lock()
 seenA_by_round: Dict[int, Set[str]] = {}
 seenR_by_round: Dict[int, Set[str]] = {}
 proof_threshold_by_round: Dict[int, float] = {}
+tsip_state_by_user: Dict[str, Dict[str, object]] = {}
+pending_tsip_by_submission: Dict[tuple[int, str], Dict[str, object]] = {}
 
 class Proof(BaseModel):
     s: float
@@ -73,6 +92,7 @@ class Report(BaseModel):
     val: List[int] = Field(..., min_length=KPRIME, max_length=KPRIME)
     proof: Optional[Proof] = None
     zk_step: Optional[Dict[str, object]] = None
+    tsip: Optional[Dict[str, object]] = None
 
 queueA: List[Report] = []
 queueR: List[Report] = []
@@ -226,6 +246,126 @@ def verify_zk_step_proof(proof: dict, public_signals: list) -> tuple[bool, str]:
             return False, out or "groth16 verify not OK"
     return True, ""
 
+
+def verify_tsip_proof(proof: dict, public_signals: list) -> tuple[bool, str]:
+    if shutil.which(TSIP_SNARKJS) is None:
+        return False, f"snarkjs not found: {TSIP_SNARKJS}"
+    if not os.path.exists(TSIP_VKEY):
+        return False, f"missing verification key: {TSIP_VKEY}"
+
+    with tempfile.TemporaryDirectory(prefix="tsip_verify_") as td:
+        proof_path = os.path.join(td, "proof.json")
+        public_path = os.path.join(td, "public.json")
+        with open(proof_path, "w", encoding="utf-8") as f:
+            json.dump(proof, f, ensure_ascii=True)
+        with open(public_path, "w", encoding="utf-8") as f:
+            json.dump(public_signals, f, ensure_ascii=True)
+        cmd = [
+            TSIP_SNARKJS,
+            "groth16",
+            "verify",
+            TSIP_VKEY,
+            public_path,
+            proof_path,
+        ]
+        proc = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=TSIP_VERIFY_TIMEOUT_SEC,
+            check=False,
+        )
+        out = ((proc.stdout or "") + "\n" + (proc.stderr or "")).strip()
+        if proc.returncode != 0:
+            return False, out or "groth16 verify failed"
+        if "OK!" not in out:
+            return False, out or "groth16 verify not OK"
+    return True, ""
+
+
+def validate_tsip_report(r: Report):
+    if r.tsip is None:
+        raise HTTPException(status_code=400, detail="missing tsip payload")
+    tsip = r.tsip
+    user_id = str(tsip.get("user_id", "")).strip()
+    curr_commitment = str(tsip.get("curr_commitment", "")).strip()
+    prev_commitment = str(tsip.get("prev_commitment", "")).strip()
+    timestamp = int(tsip.get("timestamp", 0) or 0)
+    window_id = int(tsip.get("window_id", 0) or 0)
+    if not user_id:
+        raise HTTPException(status_code=400, detail="invalid tsip user_id")
+    if not curr_commitment:
+        raise HTTPException(status_code=400, detail="missing curr_commitment")
+    if timestamp <= 0:
+        raise HTTPException(status_code=400, detail="invalid tsip timestamp")
+
+    prev_state = tsip_state_by_user.get(user_id)
+    if prev_state is None:
+        if prev_commitment:
+            raise HTTPException(status_code=400, detail="unexpected prev_commitment for first tsip submission")
+        return
+
+    expected_prev = str(prev_state["commitment"])
+    if prev_commitment != expected_prev:
+        raise HTTPException(status_code=400, detail="tsip prev_commitment mismatch")
+    prev_timestamp = int(prev_state["timestamp"])
+    if timestamp <= prev_timestamp:
+        raise HTTPException(status_code=400, detail="tsip timestamp not monotonic")
+    if window_id < int(prev_state.get("window_id", 0)):
+        raise HTTPException(status_code=400, detail="tsip window reversal")
+    max_gap = max(1, TSIP_WINDOW_SEC) * max(1, TSIP_MAX_GAP_WINDOWS)
+    if timestamp - prev_timestamp > max_gap:
+        raise HTTPException(status_code=400, detail="tsip time gap too large")
+
+    proof_obj = tsip.get("proof")
+    public_signals = tsip.get("public_signals")
+    if not isinstance(proof_obj, dict):
+        raise HTTPException(status_code=400, detail="missing tsip proof")
+    if not isinstance(public_signals, list) or len(public_signals) < 3:
+        raise HTTPException(status_code=400, detail="invalid tsip public_signals")
+
+    expected_prev_field = str(commitment_to_field(prev_commitment))
+    expected_curr_field = str(commitment_to_field(curr_commitment))
+    if str(public_signals[0]) != expected_prev_field:
+        raise HTTPException(status_code=400, detail="tsip public hash_prev mismatch")
+    if str(public_signals[1]) != expected_curr_field:
+        raise HTTPException(status_code=400, detail="tsip public hash_curr mismatch")
+    ok, err = verify_tsip_proof(proof_obj, public_signals)
+    if not ok:
+        raise HTTPException(status_code=400, detail=f"invalid tsip proof: {err[:180]}")
+
+
+def register_tsip_submission(r: Report, channel: str):
+    if not TSIP_ENABLE or r.tsip is None:
+        return
+    tsip = r.tsip
+    user_id = str(tsip.get("user_id", "")).strip()
+    curr_commitment = str(tsip.get("curr_commitment", "")).strip()
+    timestamp = int(tsip.get("timestamp", 0) or 0)
+    window_id = int(tsip.get("window_id", 0) or 0)
+    key = (int(r.round_id), str(r.submission_id))
+    pending = pending_tsip_by_submission.setdefault(
+        key,
+        {
+            "channels": set(),
+            "user_id": user_id,
+            "curr_commitment": curr_commitment,
+            "timestamp": timestamp,
+            "window_id": window_id,
+        },
+    )
+    if pending["user_id"] != user_id or pending["curr_commitment"] != curr_commitment:
+        raise HTTPException(status_code=400, detail="tsip payload mismatch across A/R")
+    channels = pending["channels"]
+    channels.add(channel)
+    if channels == {"A", "R"}:
+        tsip_state_by_user[user_id] = {
+            "commitment": curr_commitment,
+            "timestamp": timestamp,
+            "window_id": window_id,
+        }
+        pending_tsip_by_submission.pop(key, None)
+
 def validate_report(r: Report):
     if len(r.idx) != KPRIME or len(r.val) != KPRIME:
         raise HTTPException(status_code=400, detail="bad length")
@@ -274,6 +414,8 @@ def validate_report(r: Report):
         ok, err = verify_zk_step_proof(proof_obj, public_signals)
         if not ok:
             raise HTTPException(status_code=400, detail=f"invalid zk_step proof: {err[:180]}")
+    if TSIP_ENABLE:
+        validate_tsip_report(r)
 @app.post("/round/new")
 def round_new():
     global current_round_id
@@ -305,6 +447,7 @@ def ingestA(r: Report):
         if r.submission_id in seenA:
             raise HTTPException(status_code=400, detail="duplicate submission_id in A for this round")
         seenA.add(r.submission_id)
+        register_tsip_submission(r, "A")
         queueA.append(r)
         qlen = len(queueA)
     return {"ok": True, "queuedA": qlen, "round_id": current_round_id}
@@ -320,6 +463,7 @@ def ingestR(r: Report):
         if r.submission_id in seenR:
             raise HTTPException(status_code=400, detail="duplicate submission_id in R for this round")
         seenR.add(r.submission_id)
+        register_tsip_submission(r, "R")
         queueR.append(r)
         qlen = len(queueR)
     return {"ok": True, "queuedR": qlen, "round_id": current_round_id}
@@ -364,5 +508,7 @@ def health():
             "queuedA": len(queueA),
             "queuedR": len(queueR),
             "aggA_url": AGG_A_URL,
-            "aggR_url": AGG_R_URL
+            "aggR_url": AGG_R_URL,
+            "tsip_enable": TSIP_ENABLE,
+            "tsip_users": len(tsip_state_by_user),
         }

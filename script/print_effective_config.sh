@@ -17,6 +17,6 @@ print_service_cfg() {
   echo
 }
 
-print_service_cfg "shuffler" "^(PROOF_|ZK_STEP_|MAX_STEP_M|FLUSH_SECONDS)"
+print_service_cfg "shuffler" "^(PROOF_|ZK_STEP_|TSIP_|MAX_STEP_M|FLUSH_SECONDS)"
 print_service_cfg "aggregator_a" "^(DP_|DECODE_|K=|KD=|DOMAIN=|MASK_BITS=)"
-print_service_cfg "client_sim" "^(PROOF_|ZK_STEP_|MAX_STEP_M|REPORT_TIMEOUT_SEC|SEND_INTERVAL_SEC|MALICIOUS_RATE)"
+print_service_cfg "client_sim" "^(PROOF_|ZK_STEP_|TSIP_|MAX_STEP_M|REPORT_TIMEOUT_SEC|SEND_INTERVAL_SEC|MALICIOUS_RATE)"
