@@ -5,6 +5,11 @@ SNARK_FIELD = 218882428718392752222464057452572750885483644004160343436982041865
 COMMIT_X_COEFF = 1315423911
 COMMIT_Y_COEFF = 2654435761
 COMMIT_CONST = 97531
+CHAIN_PREV_COEFF = 65537
+CHAIN_LOC_COEFF = 11400714819323198485
+CHAIN_TIME_COEFF = 8191
+CHAIN_WINDOW_COEFF = 131071
+CHAIN_CONST = 424242
 
 
 def tsip_window_id(timestamp: int, window_sec: int) -> int:
@@ -12,16 +17,27 @@ def tsip_window_id(timestamp: int, window_sec: int) -> int:
     return int(timestamp) // window
 
 
-def compute_location_commitment(
-    user_id: str,
-    x: int,
-    y: int,
-    timestamp: int,
-    window_id: int,
-    prev_commitment: str = "",
-) -> str:
+def compute_location_commitment(user_id: str, x: int, y: int, timestamp: int, window_id: int, prev_commitment: str = "") -> str:
     del user_id, timestamp, window_id, prev_commitment
     value = (int(x) * COMMIT_X_COEFF + int(y) * COMMIT_Y_COEFF + COMMIT_CONST) % SNARK_FIELD
+    return f"{value:064x}"
+
+
+def compute_chain_commitment(
+    prev_chain_commitment: str,
+    location_commitment: str,
+    timestamp: int,
+    window_id: int,
+) -> str:
+    prev_field = commitment_to_field(prev_chain_commitment)
+    loc_field = commitment_to_field(location_commitment)
+    value = (
+        prev_field * CHAIN_PREV_COEFF
+        + loc_field * CHAIN_LOC_COEFF
+        + int(timestamp) * CHAIN_TIME_COEFF
+        + int(window_id) * CHAIN_WINDOW_COEFF
+        + CHAIN_CONST
+    ) % SNARK_FIELD
     return f"{value:064x}"
 
 

@@ -4,6 +4,7 @@ import requests
 from common.utils import gaussian_preview, gaussian_vectors, prp, derive_prp_seed_from_share
 from common.tsip import (
     commitment_to_field,
+    compute_chain_commitment,
     compute_location_commitment,
     compute_max_dist_sq,
     tsip_window_id,
@@ -441,7 +442,7 @@ def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random
         curr_y = int(round(rng.uniform(0, CITY_SIZE_M - 1)))
         curr_t = int(time.time())
         curr_window = tsip_window_id(curr_t, TSIP_WINDOW_SEC)
-        curr_commitment = compute_location_commitment(
+        curr_loc_commitment = compute_location_commitment(
             user_id=user_id,
             x=curr_x,
             y=curr_y,
@@ -449,12 +450,20 @@ def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random
             window_id=curr_window,
             prev_commitment="",
         )
+        curr_chain_commitment = compute_chain_commitment(
+            prev_chain_commitment="",
+            location_commitment=curr_loc_commitment,
+            timestamp=curr_t,
+            window_id=curr_window,
+        )
         payload = {
             "user_id": user_id,
             "timestamp": curr_t,
             "window_id": curr_window,
-            "prev_commitment": "",
-            "curr_commitment": curr_commitment,
+            "prev_loc_commitment": "",
+            "curr_loc_commitment": curr_loc_commitment,
+            "prev_chain_commitment": "",
+            "curr_chain_commitment": curr_chain_commitment,
             "time_diff": 0,
             "max_dist_sq": 0,
             "proof": None,
@@ -465,14 +474,16 @@ def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random
             "y": curr_y,
             "timestamp": curr_t,
             "window_id": curr_window,
-            "commitment": curr_commitment,
+            "loc_commitment": curr_loc_commitment,
+            "chain_commitment": curr_chain_commitment,
         }
         return payload, next_state
 
     prev_x = int(prev_state["x"])
     prev_y = int(prev_state["y"])
     prev_t = int(prev_state["timestamp"])
-    prev_commitment = str(prev_state["commitment"])
+    prev_loc_commitment = str(prev_state["loc_commitment"])
+    prev_chain_commitment = str(prev_state["chain_commitment"])
     time_diff = max(1, TSIP_WINDOW_SEC)
     curr_t = prev_t + time_diff
 
@@ -483,13 +494,19 @@ def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random
     curr_x = int(round(clamp(prev_x + math.cos(angle) * radius, 0, CITY_SIZE_M - 1)))
     curr_y = int(round(clamp(prev_y + math.sin(angle) * radius, 0, CITY_SIZE_M - 1)))
     curr_window = tsip_window_id(curr_t, TSIP_WINDOW_SEC)
-    curr_commitment = compute_location_commitment(
+    curr_loc_commitment = compute_location_commitment(
         user_id=user_id,
         x=curr_x,
         y=curr_y,
         timestamp=curr_t,
         window_id=curr_window,
-        prev_commitment=prev_commitment,
+        prev_commitment=prev_chain_commitment,
+    )
+    curr_chain_commitment = compute_chain_commitment(
+        prev_chain_commitment=prev_chain_commitment,
+        location_commitment=curr_loc_commitment,
+        timestamp=curr_t,
+        window_id=curr_window,
     )
     max_dist_sq = compute_max_dist_sq(MAX_STEP_M, time_diff)
     inputs = {
@@ -497,8 +514,8 @@ def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random
         "y1": prev_y,
         "x2": curr_x,
         "y2": curr_y,
-        "hash_prev": commitment_to_field(prev_commitment),
-        "hash_curr": commitment_to_field(curr_commitment),
+        "hash_prev": commitment_to_field(prev_loc_commitment),
+        "hash_curr": commitment_to_field(curr_loc_commitment),
         "max_dist_sq": max_dist_sq,
     }
     try:
@@ -511,8 +528,10 @@ def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random
         "user_id": user_id,
         "timestamp": curr_t,
         "window_id": curr_window,
-        "prev_commitment": prev_commitment,
-        "curr_commitment": curr_commitment,
+        "prev_loc_commitment": prev_loc_commitment,
+        "curr_loc_commitment": curr_loc_commitment,
+        "prev_chain_commitment": prev_chain_commitment,
+        "curr_chain_commitment": curr_chain_commitment,
         "time_diff": time_diff,
         "max_dist_sq": max_dist_sq,
         "proof": proof_data["proof"],
@@ -523,7 +542,8 @@ def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random
         "y": curr_y,
         "timestamp": curr_t,
         "window_id": curr_window,
-        "commitment": curr_commitment,
+        "loc_commitment": curr_loc_commitment,
+        "chain_commitment": curr_chain_commitment,
     }
     return payload, next_state
 

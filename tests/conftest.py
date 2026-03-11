@@ -30,6 +30,9 @@ def _run_p0_smoke_once() -> None:
 @pytest.fixture(scope="session", autouse=True)
 def prepared_env():
     # Make tests self-contained: ensure one valid reconstructed round exists.
+    if os.getenv("SKIP_P0_PREPARED", "0") == "1":
+        yield
+        return
     _run_p0_smoke_once()
     yield
 

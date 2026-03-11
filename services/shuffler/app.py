@@ -5,7 +5,7 @@ import os, time, random, threading, math, subprocess, tempfile, shutil, json
 import requests
 from fastapi import HTTPException
 from common.utils import chi2_ppf, seed_from_round, gaussian_vectors
-from common.tsip import commitment_to_field
+from common.tsip import commitment_to_field, compute_chain_commitment
 app = FastAPI()
 
 def _first_existing_path(candidates: list[str]) -> str:
@@ -288,26 +288,34 @@ def validate_tsip_report(r: Report):
         raise HTTPException(status_code=400, detail="missing tsip payload")
     tsip = r.tsip
     user_id = str(tsip.get("user_id", "")).strip()
-    curr_commitment = str(tsip.get("curr_commitment", "")).strip()
-    prev_commitment = str(tsip.get("prev_commitment", "")).strip()
+    prev_loc_commitment = str(tsip.get("prev_loc_commitment", "")).strip()
+    curr_loc_commitment = str(tsip.get("curr_loc_commitment", "")).strip()
+    prev_chain_commitment = str(tsip.get("prev_chain_commitment", "")).strip()
+    curr_chain_commitment = str(tsip.get("curr_chain_commitment", "")).strip()
     timestamp = int(tsip.get("timestamp", 0) or 0)
     window_id = int(tsip.get("window_id", 0) or 0)
     if not user_id:
         raise HTTPException(status_code=400, detail="invalid tsip user_id")
-    if not curr_commitment:
-        raise HTTPException(status_code=400, detail="missing curr_commitment")
+    if not curr_loc_commitment or not curr_chain_commitment:
+        raise HTTPException(status_code=400, detail="missing tsip commitments")
     if timestamp <= 0:
         raise HTTPException(status_code=400, detail="invalid tsip timestamp")
 
     prev_state = tsip_state_by_user.get(user_id)
     if prev_state is None:
-        if prev_commitment:
-            raise HTTPException(status_code=400, detail="unexpected prev_commitment for first tsip submission")
+        if prev_loc_commitment or prev_chain_commitment:
+            raise HTTPException(status_code=400, detail="unexpected previous tsip commitment for first submission")
+        expected_chain = compute_chain_commitment("", curr_loc_commitment, timestamp, window_id)
+        if curr_chain_commitment != expected_chain:
+            raise HTTPException(status_code=400, detail="invalid initial tsip chain commitment")
         return
 
-    expected_prev = str(prev_state["commitment"])
-    if prev_commitment != expected_prev:
-        raise HTTPException(status_code=400, detail="tsip prev_commitment mismatch")
+    expected_prev_loc = str(prev_state["loc_commitment"])
+    expected_prev_chain = str(prev_state["chain_commitment"])
+    if prev_loc_commitment != expected_prev_loc:
+        raise HTTPException(status_code=400, detail="tsip prev_loc_commitment mismatch")
+    if prev_chain_commitment != expected_prev_chain:
+        raise HTTPException(status_code=400, detail="tsip prev_chain_commitment mismatch")
     prev_timestamp = int(prev_state["timestamp"])
     if timestamp <= prev_timestamp:
         raise HTTPException(status_code=400, detail="tsip timestamp not monotonic")
@@ -324,8 +332,8 @@ def validate_tsip_report(r: Report):
     if not isinstance(public_signals, list) or len(public_signals) < 3:
         raise HTTPException(status_code=400, detail="invalid tsip public_signals")
 
-    expected_prev_field = str(commitment_to_field(prev_commitment))
-    expected_curr_field = str(commitment_to_field(curr_commitment))
+    expected_prev_field = str(commitment_to_field(prev_loc_commitment))
+    expected_curr_field = str(commitment_to_field(curr_loc_commitment))
     if str(public_signals[0]) != expected_prev_field:
         raise HTTPException(status_code=400, detail="tsip public hash_prev mismatch")
     if str(public_signals[1]) != expected_curr_field:
@@ -333,6 +341,9 @@ def validate_tsip_report(r: Report):
     ok, err = verify_tsip_proof(proof_obj, public_signals)
     if not ok:
         raise HTTPException(status_code=400, detail=f"invalid tsip proof: {err[:180]}")
+    expected_chain = compute_chain_commitment(prev_chain_commitment, curr_loc_commitment, timestamp, window_id)
+    if curr_chain_commitment != expected_chain:
+        raise HTTPException(status_code=400, detail="invalid tsip chain commitment")
 
 
 def register_tsip_submission(r: Report, channel: str):
@@ -340,7 +351,8 @@ def register_tsip_submission(r: Report, channel: str):
         return
     tsip = r.tsip
     user_id = str(tsip.get("user_id", "")).strip()
-    curr_commitment = str(tsip.get("curr_commitment", "")).strip()
+    curr_loc_commitment = str(tsip.get("curr_loc_commitment", "")).strip()
+    curr_chain_commitment = str(tsip.get("curr_chain_commitment", "")).strip()
     timestamp = int(tsip.get("timestamp", 0) or 0)
     window_id = int(tsip.get("window_id", 0) or 0)
     key = (int(r.round_id), str(r.submission_id))
@@ -349,18 +361,24 @@ def register_tsip_submission(r: Report, channel: str):
         {
             "channels": set(),
             "user_id": user_id,
-            "curr_commitment": curr_commitment,
+            "curr_loc_commitment": curr_loc_commitment,
+            "curr_chain_commitment": curr_chain_commitment,
             "timestamp": timestamp,
             "window_id": window_id,
         },
     )
-    if pending["user_id"] != user_id or pending["curr_commitment"] != curr_commitment:
+    if (
+        pending["user_id"] != user_id
+        or pending["curr_loc_commitment"] != curr_loc_commitment
+        or pending["curr_chain_commitment"] != curr_chain_commitment
+    ):
         raise HTTPException(status_code=400, detail="tsip payload mismatch across A/R")
     channels = pending["channels"]
     channels.add(channel)
     if channels == {"A", "R"}:
         tsip_state_by_user[user_id] = {
-            "commitment": curr_commitment,
+            "loc_commitment": curr_loc_commitment,
+            "chain_commitment": curr_chain_commitment,
             "timestamp": timestamp,
             "window_id": window_id,
         }
