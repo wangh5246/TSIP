@@ -404,8 +404,9 @@ def generate_tsip_proof(inputs: dict):
         input_path = os.path.join(td, "input.json")
         proof_path = os.path.join(td, "proof.json")
         public_path = os.path.join(td, "public.json")
+        str_inputs = {k: str(v) for k, v in inputs.items()}
         with open(input_path, "w", encoding="utf-8") as f:
-            json.dump(inputs, f, ensure_ascii=True)
+            json.dump(str_inputs, f, ensure_ascii=True)
         cmd = [
             TSIP_SNARKJS,
             "groth16",

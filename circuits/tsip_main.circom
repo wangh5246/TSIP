@@ -2,6 +2,46 @@ pragma circom 2.1.9;
 
 include "circomlib/circuits/comparators.circom";
 
+template MiMC7() {
+    signal input in;
+    signal output out;
+
+    signal states[33];
+    signal t[32];
+    signal t2[32];
+    signal t4[32];
+    signal t6[32];
+    states[0] <== in;
+
+    for (var i = 0; i < 32; i++) {
+        t[i] <== states[i] + (i + 1);
+        t2[i] <== t[i] * t[i];
+        t4[i] <== t2[i] * t2[i];
+        t6[i] <== t4[i] * t2[i];
+        states[i + 1] <== t6[i] * t[i];
+    }
+
+    out <== states[32];
+}
+
+template MiMCHash2() {
+    signal input a;
+    signal input b;
+    signal output out;
+
+    signal s1in;
+    s1in <== a;
+    component h1 = MiMC7();
+    h1.in <== s1in;
+
+    signal s2in;
+    s2in <== h1.out + b;
+    component h2 = MiMC7();
+    h2.in <== s2in;
+
+    out <== h2.out;
+}
+
 template TSIPMain() {
     signal input x1;
     signal input y1;
@@ -12,14 +52,15 @@ template TSIPMain() {
     signal input hash_curr;
     signal input max_dist_sq;
 
-    signal calc_prev;
-    signal calc_curr;
+    component prevHash = MiMCHash2();
+    prevHash.a <== x1;
+    prevHash.b <== y1;
+    prevHash.out === hash_prev;
 
-    calc_prev <== x1 * 1315423911 + y1 * 2654435761 + 97531;
-    calc_curr <== x2 * 1315423911 + y2 * 2654435761 + 97531;
-
-    calc_prev === hash_prev;
-    calc_curr === hash_curr;
+    component currHash = MiMCHash2();
+    currHash.a <== x2;
+    currHash.b <== y2;
+    currHash.out === hash_curr;
 
     signal dx;
     signal dy;
