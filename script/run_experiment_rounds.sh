@@ -8,9 +8,22 @@ ROUNDS="${ROUNDS:-10}"
 BUILD_SERVICES="${BUILD_SERVICES:-1}"
 TAU="${TAU:-3}"
 TAU2="${TAU2:-3}"
+CLIENT_TRAJ_SOURCE="${CLIENT_TRAJ_SOURCE:-synthetic}"
+GEO_TRAJ_PATH="${GEO_TRAJ_PATH:-/app/experiments/geolife_tsip_ready_50u.jsonl}"
+if [[ -z "${WARMUP_ROUNDS:-}" ]]; then
+  if [[ "$CLIENT_TRAJ_SOURCE" == "geolife" ]]; then
+    WARMUP_ROUNDS=1
+  else
+    WARMUP_ROUNDS=0
+  fi
+fi
 
 if ! [[ "$ROUNDS" =~ ^[0-9]+$ ]] || [[ "$ROUNDS" -le 0 ]]; then
   echo "error: ROUNDS must be a positive integer" >&2
+  exit 1
+fi
+if ! [[ "$WARMUP_ROUNDS" =~ ^[0-9]+$ ]]; then
+  echo "error: WARMUP_ROUNDS must be a non-negative integer" >&2
   exit 1
 fi
 
@@ -22,6 +35,10 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 echo "== Batch experiment =="
 echo "rounds=${ROUNDS} tau=${TAU} tau2=${TAU2} build_services=${BUILD_SERVICES}"
+echo "client_traj_source=${CLIENT_TRAJ_SOURCE} warmup_rounds=${WARMUP_ROUNDS}"
+if [[ "$CLIENT_TRAJ_SOURCE" == "geolife" ]]; then
+  echo "geo_traj_path=${GEO_TRAJ_PATH}"
+fi
 
 if [[ "$BUILD_SERVICES" == "1" ]]; then
   echo "bring up services with build..."
@@ -33,10 +50,33 @@ fi
 
 echo "round_idx,round_id,total,valid_clients,rejected,malicious_total,malicious_reject_rate,false_reject_rate,received_A,received_R,cells_final,dp_ok,cells_kept_post,dp_error" >"$OUT_CSV"
 
+if [[ "$WARMUP_ROUNDS" -gt 0 ]]; then
+  for i in $(seq 1 "$WARMUP_ROUNDS"); do
+    echo "---- warmup ${i}/${WARMUP_ROUNDS} ----"
+    WARMUP_LOG="${TMP_DIR}/warmup_${i}.log"
+    if ! docker compose exec -T \
+      -e CLIENT_TRAJ_SOURCE="$CLIENT_TRAJ_SOURCE" \
+      -e GEO_TRAJ_PATH="$GEO_TRAJ_PATH" \
+      client_sim python client.py >"$WARMUP_LOG"; then
+      echo "error: warmup round failed" >&2
+      tail -n 40 "$WARMUP_LOG" >&2 || true
+      exit 1
+    fi
+    grep 'summary total=' "$WARMUP_LOG" | tail -n 1 || true
+  done
+fi
+
 for i in $(seq 1 "$ROUNDS"); do
   echo "---- round ${i}/${ROUNDS} ----"
   CLIENT_LOG="${TMP_DIR}/client_${i}.log"
-  docker compose exec -T client_sim python client.py >"$CLIENT_LOG"
+  if ! docker compose exec -T \
+    -e CLIENT_TRAJ_SOURCE="$CLIENT_TRAJ_SOURCE" \
+    -e GEO_TRAJ_PATH="$GEO_TRAJ_PATH" \
+    client_sim python client.py >"$CLIENT_LOG"; then
+    echo "error: client round failed in round ${i}" >&2
+    tail -n 40 "$CLIENT_LOG" >&2 || true
+    exit 1
+  fi
 
   SUMMARY_LINE="$(grep 'summary total=' "$CLIENT_LOG" | tail -n 1 || true)"
   if [[ -z "$SUMMARY_LINE" ]]; then

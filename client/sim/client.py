@@ -113,6 +113,18 @@ TSIP_ZKEY = os.getenv(
 TSIP_TIMEOUT_SEC = int(os.getenv("TSIP_TIMEOUT_SEC", "20"))
 REPORT_TIMEOUT_SEC = float(os.getenv("REPORT_TIMEOUT_SEC", "20"))
 SEND_INTERVAL_SEC = float(os.getenv("SEND_INTERVAL_SEC", "0.03"))
+TRAJ_SOURCE = os.getenv("CLIENT_TRAJ_SOURCE", "synthetic").strip().lower()
+GEO_TRAJ_PATH = os.getenv(
+    "GEO_TRAJ_PATH",
+    _first_existing_path(
+        [
+            "/app/experiments/geolife_tsip_ready_50u.jsonl",
+            "/Users/wanghao/Desktop/risefl_mvp/experiments/geolife_tsip_ready_50u.jsonl",
+            "experiments/geolife_tsip_ready_50u.jsonl",
+        ]
+    ),
+)
+GEO_MAX_USERS = int(os.getenv("GEO_MAX_USERS", "50"))
 PRP_ENABLE = os.getenv("PRP_ENABLE", "1") == "1"
 PRP_ROUNDS = int(os.getenv("PRP_ROUNDS", "8"))
 PRP_MIN_DOMAIN = int(os.getenv("PRP_MIN_DOMAIN", "1000000"))
@@ -122,6 +134,51 @@ CLOVER_CLIENT_TOKEN_A = os.getenv("CLOVER_CLIENT_TOKEN_A", "")
 CLOVER_CLIENT_TOKEN_R = os.getenv("CLOVER_CLIENT_TOKEN_R", "")
 
 QMAX = (1 << QUANT_BITS) - 1  # INT4 => 15
+
+
+def load_geolife_trajectories() -> list[dict]:
+    if TRAJ_SOURCE != "geolife":
+        return []
+    if not os.path.exists(GEO_TRAJ_PATH):
+        raise RuntimeError(f"missing GEO_TRAJ_PATH: {GEO_TRAJ_PATH}")
+    records = []
+    with open(GEO_TRAJ_PATH, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            records.append(json.loads(line))
+            if len(records) >= max(1, GEO_MAX_USERS):
+                break
+    if not records:
+        raise RuntimeError(f"no geolife records loaded from: {GEO_TRAJ_PATH}")
+    return records
+
+
+def geolife_trajectory_points(record: dict):
+    points = []
+    base_ts = None
+    step = max(1, int(record.get("source_window_sec", TSIP_WINDOW_SEC)))
+    for idx, window in enumerate(record.get("windows", [])):
+        if base_ts is None:
+            base_ts = int(window["timestamp"])
+        points.append(
+            (
+                float(window["x_m"]),
+                float(window["y_m"]),
+                int(base_ts + idx * step),
+            )
+        )
+    return points
+
+
+def tamper_commitment_hex(commitment: str) -> str:
+    if not commitment:
+        return "1" * 64
+    chars = list(commitment)
+    last = chars[-1].lower()
+    chars[-1] = "0" if last != "0" else "1"
+    return "".join(chars)
 
 
 
@@ -434,9 +491,119 @@ def generate_tsip_proof(inputs: dict):
     return {"proof": proof, "public_signals": public_signals}
 
 
-def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random, malicious: bool):
+def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random, malicious: bool, trajectory=None):
     if not TSIP_ENABLE:
         return None, None
+
+    if trajectory:
+        cursor = -1 if prev_state is None else int(prev_state.get("cursor", -1))
+        next_idx = min(cursor + 1, len(trajectory) - 1)
+        curr_x_f, curr_y_f, curr_t = trajectory[next_idx]
+        curr_x = int(round(curr_x_f))
+        curr_y = int(round(curr_y_f))
+        curr_window = tsip_window_id(curr_t, TSIP_WINDOW_SEC)
+        if prev_state is None:
+            curr_loc_commitment = compute_location_commitment(
+                user_id=user_id,
+                x=curr_x,
+                y=curr_y,
+                timestamp=curr_t,
+                window_id=curr_window,
+                prev_commitment="",
+            )
+            curr_chain_commitment = compute_chain_commitment(
+                prev_chain_commitment="",
+                location_commitment=curr_loc_commitment,
+                timestamp=curr_t,
+                window_id=curr_window,
+            )
+            payload = {
+                "user_id": user_id,
+                "timestamp": curr_t,
+                "window_id": curr_window,
+                "prev_loc_commitment": "",
+                "curr_loc_commitment": curr_loc_commitment,
+                "prev_chain_commitment": "",
+                "curr_chain_commitment": curr_chain_commitment,
+                "time_diff": 0,
+                "max_dist_sq": 0,
+                "proof": None,
+                "public_signals": [],
+            }
+            next_state = {
+                "x": curr_x,
+                "y": curr_y,
+                "timestamp": curr_t,
+                "window_id": curr_window,
+                "loc_commitment": curr_loc_commitment,
+                "chain_commitment": curr_chain_commitment,
+                "cursor": next_idx,
+            }
+            return payload, next_state
+
+        prev_x = int(prev_state["x"])
+        prev_y = int(prev_state["y"])
+        prev_t = int(prev_state["timestamp"])
+        prev_loc_commitment = str(prev_state["loc_commitment"])
+        prev_chain_commitment = str(prev_state["chain_commitment"])
+        time_diff = max(1, int(curr_t - prev_t))
+        curr_loc_commitment = compute_location_commitment(
+            user_id=user_id,
+            x=curr_x,
+            y=curr_y,
+            timestamp=curr_t,
+            window_id=curr_window,
+            prev_commitment=prev_chain_commitment,
+        )
+        curr_chain_commitment = compute_chain_commitment(
+            prev_chain_commitment=prev_chain_commitment,
+            location_commitment=curr_loc_commitment,
+            timestamp=curr_t,
+            window_id=curr_window,
+        )
+        max_dist_sq = compute_max_dist_sq(MAX_STEP_M, time_diff)
+        inputs = {
+            "x1": prev_x,
+            "y1": prev_y,
+            "x2": curr_x,
+            "y2": curr_y,
+            "hash_prev": commitment_to_field(prev_loc_commitment),
+            "hash_curr": commitment_to_field(curr_loc_commitment),
+            "max_dist_sq": max_dist_sq,
+        }
+        try:
+            proof_data = generate_tsip_proof(inputs)
+        except Exception as e:
+            if DEBUG_CLIENT and not malicious:
+                print("[DEBUG] tsip prove failed (treated as rejected sample):", str(e))
+            proof_data = {"proof": None, "public_signals": [], "error": str(e)}
+        payload = {
+            "user_id": user_id,
+            "timestamp": curr_t,
+            "window_id": curr_window,
+            "prev_loc_commitment": prev_loc_commitment,
+            "curr_loc_commitment": curr_loc_commitment,
+            "prev_chain_commitment": prev_chain_commitment,
+            "curr_chain_commitment": curr_chain_commitment,
+            "time_diff": time_diff,
+            "max_dist_sq": max_dist_sq,
+            "proof": proof_data["proof"],
+            "public_signals": proof_data["public_signals"],
+        }
+        if malicious:
+            # Keep proof generation valid locally, then tamper wire payload for server-side rejection.
+            payload["prev_loc_commitment"] = tamper_commitment_hex(prev_loc_commitment)
+            payload["curr_chain_commitment"] = tamper_commitment_hex(curr_chain_commitment)
+        next_state = {
+            "x": curr_x,
+            "y": curr_y,
+            "timestamp": curr_t,
+            "window_id": curr_window,
+            "loc_commitment": curr_loc_commitment,
+            "chain_commitment": curr_chain_commitment,
+            "cursor": next_idx,
+        }
+        return payload, next_state
 
     if prev_state is None:
         curr_x = int(round(rng.uniform(0, CITY_SIZE_M - 1)))
@@ -487,10 +654,8 @@ def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random
     prev_chain_commitment = str(prev_state["chain_commitment"])
     time_diff = max(1, TSIP_WINDOW_SEC)
     curr_t = prev_t + time_diff
-
     honest_radius = max(1.0, MAX_STEP_M * time_diff * 0.8)
-    malicious_radius = max(MAX_STEP_M * time_diff * 2.0, honest_radius + 1000.0)
-    radius = malicious_radius if malicious else rng.uniform(0.0, honest_radius)
+    radius = rng.uniform(0.0, honest_radius)
     angle = rng.uniform(0.0, 2.0 * math.pi)
     curr_x = int(round(clamp(prev_x + math.cos(angle) * radius, 0, CITY_SIZE_M - 1)))
     curr_y = int(round(clamp(prev_y + math.sin(angle) * radius, 0, CITY_SIZE_M - 1)))
@@ -522,8 +687,8 @@ def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random
     try:
         proof_data = generate_tsip_proof(inputs)
     except Exception as e:
-        if not malicious:
-            raise
+        if DEBUG_CLIENT and not malicious:
+            print("[DEBUG] tsip prove failed (treated as rejected sample):", str(e))
         proof_data = {"proof": None, "public_signals": [], "error": str(e)}
     payload = {
         "user_id": user_id,
@@ -538,6 +703,10 @@ def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random
         "proof": proof_data["proof"],
         "public_signals": proof_data["public_signals"],
     }
+    if malicious:
+        # Keep proof generation valid locally, then tamper wire payload for server-side rejection.
+        payload["prev_loc_commitment"] = tamper_commitment_hex(prev_loc_commitment)
+        payload["curr_chain_commitment"] = tamper_commitment_hex(curr_chain_commitment)
     next_state = {
         "x": curr_x,
         "y": curr_y,
@@ -545,6 +714,7 @@ def build_tsip_payload(user_id: str, prev_state: dict | None, rng: random.Random
         "window_id": curr_window,
         "loc_commitment": curr_loc_commitment,
         "chain_commitment": curr_chain_commitment,
+        "cursor": prev_state.get("cursor", -1) if prev_state else -1,
     }
     return payload, next_state
 
@@ -597,6 +767,7 @@ def make_idx_and_val(
     prp_seed_a: int = 0,
     prp_seed_r: int = 0,
     malicious: bool = False,
+    trajectory_override=None,
 ):
     """
     返回 idx/val:
@@ -606,7 +777,7 @@ def make_idx_and_val(
     """
     # 1) 合成轨迹
     rng = random.Random(user_seed)
-    traj = gen_synthetic_trajectory(rng)
+    traj = list(trajectory_override) if trajectory_override is not None else gen_synthetic_trajectory(rng)
     if malicious:
         traj = apply_teleport(traj, TELEPORT_JUMP_M, TELEPORT_INDEX)
     proof = None
@@ -779,15 +950,24 @@ def main():
         prp_seed_r = derive_prp_seed_from_share(rid, share_r, DOMAIN, "R")
     proof_seed = fetch_seed(rid) if PROOF_ENABLE else 0
     tsip_state = load_tsip_state()
+    geolife_records = load_geolife_trajectories()
+    report_total = len(geolife_records) if TRAJ_SOURCE == "geolife" else 200
     total = 0
     valid_clients = 0
     rejected = 0
     malicious_total = 0
     malicious_rejected = 0
     false_rejects = 0
-    for i in range(200):
+    for i in range(report_total):
         round_id = rid
-        user_id = f"user_{i:04d}"
+        if TRAJ_SOURCE == "geolife":
+            record = geolife_records[i]
+            user_id = f"geolife_{record['user_id']}"
+            trajectory = geolife_trajectory_points(record)
+        else:
+            record = None
+            user_id = f"user_{i:04d}"
+            trajectory = None
         submission_id = f"U{i}_{uuid.uuid4().hex[:8]}"
 
         seed = random.getrandbits(64)
@@ -800,6 +980,7 @@ def main():
             prp_seed_a=prp_seed_a,
             prp_seed_r=prp_seed_r,
             malicious=is_malicious,
+            trajectory_override=trajectory,
         )
         if not validate_unique_idx(idx, val, seed, round_id, submission_id):
             raise RuntimeError("duplicate idx generated; aborting send")
@@ -812,6 +993,7 @@ def main():
                 prev_state=tsip_state.get(user_id),
                 rng=random.Random(seed ^ 0x5A5A5A5A),
                 malicious=is_malicious,
+                trajectory=trajectory,
             )
 
         reportA = {
