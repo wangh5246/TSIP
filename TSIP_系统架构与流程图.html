@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TSIP 系统架构与流程图</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #f0f4f8;
+    color: #1a202c;
+    padding: 32px 24px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 26px;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 14px;
+    color: #718096;
+    margin-bottom: 40px;
+  }
+  .section {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    padding: 32px 40px;
+    margin-bottom: 36px;
+  }
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 28px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .badge {
+    background: #667eea;
+    color: #fff;
+    border-radius: 6px;
+    font-size: 12px;
+    padding: 2px 10px;
+    font-weight: 600;
+  }
+  svg text { font-family: 'Segoe UI', 'PingFang SC', sans-serif; }
+  .legend {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 13px;
+    color: #4a5568;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<h1>TSIP — Temporal-Spatial Integrity Proof</h1>
+<p class="subtitle">Privacy-Preserving Location Aggregation · 系统架构与协议流程图</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 图1：系统整体架构图 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="badge">图 1</span>
+    系统整体架构图 — 5 个微服务全链路
+  </div>
+
+  <svg width="100%" viewBox="0 0 960 480" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrowBlue" markerWidth="9" markerHeight="6" refX="9" refY="3" orient="auto">
+        <path d="M0,0 L9,3 L0,6 Z" fill="#4299e1"/>
+      </marker>
+      <marker id="arrowGreen" markerWidth="9" markerHeight="6" refX="9" refY="3" orient="auto">
+        <path d="M0,0 L9,3 L0,6 Z" fill="#48bb78"/>
+      </marker>
+      <marker id="arrowGray" markerWidth="9" markerHeight="6" refX="9" refY="3" orient="auto">
+        <path d="M0,0 L9,3 L0,6 Z" fill="#a0aec0"/>
+      </marker>
+      <marker id="arrowRed" markerWidth="9" markerHeight="6" refX="9" refY="3" orient="auto">
+        <path d="M0,0 L9,3 L0,6 Z" fill="#fc8181"/>
+      </marker>
+      <filter id="shadow">
+        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#00000018"/>
+      </filter>
+    </defs>
+
+    <!-- ── 背景区域 ── -->
+    <!-- 客户端区 -->
+    <rect x="10" y="20" width="185" height="440" rx="12" fill="#ebf8ff" stroke="#bee3f8" stroke-width="1.5"/>
+    <text x="102" y="44" text-anchor="middle" font-size="12" fill="#2b6cb0" font-weight="600">Client Layer</text>
+
+    <!-- 服务端区 -->
+    <rect x="210" y="20" width="740" height="440" rx="12" fill="#f0fff4" stroke="#9ae6b4" stroke-width="1.5"/>
+    <text x="580" y="44" text-anchor="middle" font-size="12" fill="#276749" font-weight="600">Server Layer (Trusted Setup)</text>
+
+    <!-- ── 客户端 ── -->
+    <rect x="22" y="60" width="162" height="110" rx="10" fill="#fff" stroke="#4299e1" stroke-width="2" filter="url(#shadow)"/>
+    <rect x="22" y="60" width="162" height="30" rx="10" fill="#4299e1"/>
+    <rect x="22" y="78" width="162" height="12" rx="0" fill="#4299e1"/>
+    <text x="103" y="79" text-anchor="middle" font-size="13" fill="#fff" font-weight="700">Client Simulator</text>
+    <text x="103" y="100" text-anchor="middle" font-size="11" fill="#2d3748">📍 合成轨迹 / GeoLife</text>
+    <text x="103" y="116" text-anchor="middle" font-size="11" fill="#2d3748">🔐 生成 ZK 证明</text>
+    <text x="103" y="132" text-anchor="middle" font-size="11" fill="#2d3748">⛓️  计算承诺链</text>
+    <text x="103" y="148" text-anchor="middle" font-size="11" fill="#2d3748">🚀 提交 Report</text>
+
+    <!-- 客户端说明 -->
+    <rect x="22" y="190" width="162" height="100" rx="8" fill="#ebf8ff" stroke="#bee3f8" stroke-width="1"/>
+    <text x="103" y="208" text-anchor="middle" font-size="11" fill="#2b6cb0" font-weight="600">Report 内容</text>
+    <text x="103" y="225" text-anchor="middle" font-size="10" fill="#4a5568">idx[], val[]  (加密网格)</text>
+    <text x="103" y="240" text-anchor="middle" font-size="10" fill="#4a5568">curr_loc_commitment</text>
+    <text x="103" y="255" text-anchor="middle" font-size="10" fill="#4a5568">curr_chain_commitment</text>
+    <text x="103" y="270" text-anchor="middle" font-size="10" fill="#4a5568">ZK proof (π_a, π_b, π_c)</text>
+
+    <!-- ── Shuffler ── -->
+    <rect x="228" y="55" width="175" height="380" rx="10" fill="#fff" stroke="#9f7aea" stroke-width="2" filter="url(#shadow)"/>
+    <rect x="228" y="55" width="175" height="30" rx="10" fill="#9f7aea"/>
+    <rect x="228" y="73" width="175" height="12" rx="0" fill="#9f7aea"/>
+    <text x="315" y="74" text-anchor="middle" font-size="13" fill="#fff" font-weight="700">Shuffler  :8001</text>
+
+    <text x="315" y="105" text-anchor="middle" font-size="11" fill="#553c9a" font-weight="600">① ZK 证明验证</text>
+    <text x="315" y="120" text-anchor="middle" font-size="10" fill="#4a5568">snarkjs.verify(vkey, proof)</text>
+
+    <text x="315" y="145" text-anchor="middle" font-size="11" fill="#553c9a" font-weight="600">② 承诺链连续性检查</text>
+    <text x="315" y="160" text-anchor="middle" font-size="10" fill="#4a5568">prev_loc == stored_loc?</text>
+
+    <text x="315" y="185" text-anchor="middle" font-size="11" fill="#553c9a" font-weight="600">③ 黑名单管理</text>
+    <text x="315" y="200" text-anchor="middle" font-size="10" fill="#4a5568">reject_streak ≥ 3 → 封禁</text>
+
+    <text x="315" y="225" text-anchor="middle" font-size="11" fill="#553c9a" font-weight="600">④ DP 预算门控</text>
+    <text x="315" y="240" text-anchor="middle" font-size="10" fill="#4a5568">privacy_budget 检查</text>
+
+    <text x="315" y="265" text-anchor="middle" font-size="11" fill="#553c9a" font-weight="600">⑤ 双路转发</text>
+    <text x="315" y="280" text-anchor="middle" font-size="10" fill="#4a5568">ingestA → Aggregator_A</text>
+    <text x="315" y="295" text-anchor="middle" font-size="10" fill="#4a5568">ingestR → Aggregator_R</text>
+
+    <!-- 拒绝分支 -->
+    <rect x="235" y="320" width="160" height="50" rx="6" fill="#fff5f5" stroke="#fc8181" stroke-width="1.5"/>
+    <text x="315" y="341" text-anchor="middle" font-size="11" fill="#c53030" font-weight="600">❌ 拒绝恶意提交</text>
+    <text x="315" y="358" text-anchor="middle" font-size="10" fill="#742a2a">记录 reject_streak</text>
+
+    <!-- ── Aggregator A ── -->
+    <rect x="430" y="55" width="160" height="180" rx="10" fill="#fff" stroke="#f6ad55" stroke-width="2" filter="url(#shadow)"/>
+    <rect x="430" y="55" width="160" height="30" rx="10" fill="#f6ad55"/>
+    <rect x="430" y="73" width="160" height="12" rx="0" fill="#f6ad55"/>
+    <text x="510" y="74" text-anchor="middle" font-size="13" fill="#fff" font-weight="700">Aggregator A  :8002</text>
+    <text x="510" y="105" text-anchor="middle" font-size="11" fill="#7b341e" font-weight="600">Forward Pass 聚合</text>
+    <text x="510" y="122" text-anchor="middle" font-size="10" fill="#4a5568">PRP(k_A) 置换网格</text>
+    <text x="510" y="138" text-anchor="middle" font-size="10" fill="#4a5568">Σ val[PRP(i)] 累加</text>
+    <text x="510" y="154" text-anchor="middle" font-size="10" fill="#4a5568">MiMC7 掩码</text>
+    <text x="510" y="175" text-anchor="middle" font-size="11" fill="#7b341e" font-weight="600">生成 Share_A</text>
+    <text x="510" y="192" text-anchor="middle" font-size="10" fill="#4a5568">→ 发给 Decoder</text>
+    <text x="510" y="210" text-anchor="middle" font-size="10" fill="#4a5568">signature 签名验证</text>
+
+    <!-- ── Aggregator R ── -->
+    <rect x="430" y="260" width="160" height="175" rx="10" fill="#fff" stroke="#68d391" stroke-width="2" filter="url(#shadow)"/>
+    <rect x="430" y="260" width="160" height="30" rx="10" fill="#48bb78"/>
+    <rect x="430" y="278" width="160" height="12" rx="0" fill="#48bb78"/>
+    <text x="510" y="279" text-anchor="middle" font-size="13" fill="#fff" font-weight="700">Aggregator R  :8003</text>
+    <text x="510" y="309" text-anchor="middle" font-size="11" fill="#276749" font-weight="600">Reverse Pass 聚合</text>
+    <text x="510" y="325" text-anchor="middle" font-size="10" fill="#4a5568">PRP⁻¹(k_R) 逆置换</text>
+    <text x="510" y="341" text-anchor="middle" font-size="10" fill="#4a5568">恢复原始网格索引</text>
+    <text x="510" y="357" text-anchor="middle" font-size="10" fill="#4a5568">生成 DP 随机种子</text>
+    <text x="510" y="378" text-anchor="middle" font-size="11" fill="#276749" font-weight="600">生成 Share_R</text>
+    <text x="510" y="394" text-anchor="middle" font-size="10" fill="#4a5568">→ 发给 Decoder</text>
+    <text x="510" y="412" text-anchor="middle" font-size="10" fill="#4a5568">HMAC 签名验证</text>
+
+    <!-- ── Decoder ── -->
+    <rect x="630" y="130" width="165" height="200" rx="10" fill="#fff" stroke="#f687b3" stroke-width="2" filter="url(#shadow)"/>
+    <rect x="630" y="130" width="165" height="30" rx="10" fill="#ed64a6"/>
+    <rect x="630" y="148" width="165" height="12" rx="0" fill="#ed64a6"/>
+    <text x="712" y="149" text-anchor="middle" font-size="13" fill="#fff" font-weight="700">Decoder  :8010</text>
+    <text x="712" y="179" text-anchor="middle" font-size="11" fill="#702459" font-weight="600">① XOR 解码</text>
+    <text x="712" y="196" text-anchor="middle" font-size="10" fill="#4a5568">Share_A ⊕ Share_R</text>
+    <text x="712" y="212" text-anchor="middle" font-size="10" fill="#4a5568">= 真实网格计数</text>
+    <text x="712" y="233" text-anchor="middle" font-size="11" fill="#702459" font-weight="600">② DP 噪声注入</text>
+    <text x="712" y="250" text-anchor="middle" font-size="10" fill="#4a5568">Gaussian(σ=f(ε)) 噪声</text>
+    <text x="712" y="266" text-anchor="middle" font-size="10" fill="#4a5568">阈值过滤低频网格</text>
+    <text x="712" y="287" text-anchor="middle" font-size="11" fill="#702459" font-weight="600">③ 输出热力图</text>
+    <text x="712" y="304" text-anchor="middle" font-size="10" fill="#4a5568">cells_kept 有效网格</text>
+
+    <!-- ── 热力图输出 ── -->
+    <rect x="840" y="185" width="105" height="90" rx="10" fill="#fefcbf" stroke="#f6e05e" stroke-width="2" filter="url(#shadow)"/>
+    <text x="892" y="220" text-anchor="middle" font-size="22">🗺️</text>
+    <text x="892" y="240" text-anchor="middle" font-size="11" fill="#744210" font-weight="600">城市热力图</text>
+    <text x="892" y="256" text-anchor="middle" font-size="10" fill="#744210">DP 保护输出</text>
+
+    <!-- ══════════ 箭头 ══════════ -->
+
+    <!-- Client → Shuffler (ingestA + ingestR) -->
+    <line x1="184" y1="115" x2="226" y2="115" stroke="#4299e1" stroke-width="2" marker-end="url(#arrowBlue)"/>
+    <text x="205" y="109" text-anchor="middle" font-size="9" fill="#2b6cb0">Report</text>
+
+    <!-- Shuffler → Aggregator A -->
+    <line x1="403" y1="120" x2="428" y2="140" stroke="#9f7aea" stroke-width="2" marker-end="url(#arrowBlue)"/>
+    <text x="422" y="130" text-anchor="middle" font-size="9" fill="#553c9a">ingestA</text>
+
+    <!-- Shuffler → Aggregator R -->
+    <line x1="403" y1="280" x2="428" y2="330" stroke="#9f7aea" stroke-width="2" marker-end="url(#arrowBlue)"/>
+    <text x="422" y="315" text-anchor="middle" font-size="9" fill="#553c9a">ingestR</text>
+
+    <!-- Aggregator A → Decoder -->
+    <line x1="590" y1="155" x2="628" y2="200" stroke="#f6ad55" stroke-width="2" marker-end="url(#arrowBlue)"/>
+    <text x="618" y="178" text-anchor="middle" font-size="9" fill="#7b341e">Share_A</text>
+
+    <!-- Aggregator R → Decoder -->
+    <line x1="590" y1="345" x2="628" y2="290" stroke="#48bb78" stroke-width="2" marker-end="url(#arrowBlue)"/>
+    <text x="618" y="328" text-anchor="middle" font-size="9" fill="#276749">Share_R</text>
+
+    <!-- Decoder → Output -->
+    <line x1="795" y1="230" x2="838" y2="230" stroke="#ed64a6" stroke-width="2" marker-end="url(#arrowBlue)"/>
+    <text x="817" y="224" text-anchor="middle" font-size="9" fill="#702459">DP结果</text>
+
+    <!-- Client 虚线 (ingestA + ingestR 同时提交说明) -->
+    <line x1="103" y1="170" x2="103" y2="290" stroke="#4299e1" stroke-width="1" stroke-dasharray="4,3"/>
+    <text x="103" y="310" text-anchor="middle" font-size="10" fill="#2b6cb0">双路提交</text>
+    <text x="103" y="324" text-anchor="middle" font-size="10" fill="#2b6cb0">A 路 + R 路</text>
+
+    <!-- 标注：ZK Circuit -->
+    <rect x="237" y="380" width="155" height="50" rx="6" fill="#faf5ff" stroke="#d6bcfa" stroke-width="1"/>
+    <text x="315" y="400" text-anchor="middle" font-size="10" fill="#553c9a" font-weight="600">ZK 电路（Circom + Groth16）</text>
+    <text x="315" y="415" text-anchor="middle" font-size="9" fill="#4a5568">tsip_step: 70 constraints</text>
+    <text x="315" y="427" text-anchor="middle" font-size="9" fill="#4a5568">tsip_main (Poseidon2): 674 constraints</text>
+  </svg>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#4299e1"></div> 客户端提交路径</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#9f7aea"></div> Shuffler 验证层</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f6ad55"></div> Aggregator A（正向聚合）</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#48bb78"></div> Aggregator R（逆向聚合）</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ed64a6"></div> Decoder（重构 + DP）</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fefcbf; border:1px solid #d69e2e"></div> 最终热力图输出</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 图2：协议时序流程图 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="badge">图 2</span>
+    协议时序图 — 一轮完整交互流程（Round t）
+  </div>
+
+  <svg width="100%" viewBox="0 0 960 500" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#4a5568"/>
+      </marker>
+      <marker id="arrG" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#48bb78"/>
+      </marker>
+      <marker id="arrR" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#e53e3e"/>
+      </marker>
+      <marker id="arrP" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#9f7aea"/>
+      </marker>
+      <marker id="arrO" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#f6ad55"/>
+      </marker>
+    </defs>
+
+    <!-- 泳道头 -->
+    <rect x="0" y="0" width="960" height="50" fill="#f7fafc" rx="0"/>
+    <!-- 泳道竖线 -->
+    <line x1="120" y1="0" x2="120" y2="500" stroke="#e2e8f0" stroke-width="1"/>
+    <line x1="300" y1="0" x2="300" y2="500" stroke="#e2e8f0" stroke-width="1"/>
+    <line x1="480" y1="0" x2="480" y2="500" stroke="#e2e8f0" stroke-width="1"/>
+    <line x1="650" y1="0" x2="650" y2="500" stroke="#e2e8f0" stroke-width="1"/>
+    <line x1="800" y1="0" x2="800" y2="500" stroke="#e2e8f0" stroke-width="1"/>
+
+    <!-- 泳道标题 -->
+    <text x="60" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#2b6cb0">Client_i</text>
+    <text x="210" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#553c9a">Shuffler</text>
+    <text x="390" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#7b341e">Agg. A</text>
+    <text x="565" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#276749">Agg. R</text>
+    <text x="725" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#702459">Decoder</text>
+    <text x="880" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#744210">Output</text>
+
+    <!-- 生命线 -->
+    <line x1="60"  y1="50" x2="60"  y2="500" stroke="#4299e1" stroke-width="1.5" stroke-dasharray="6,4"/>
+    <line x1="210" y1="50" x2="210" y2="500" stroke="#9f7aea" stroke-width="1.5" stroke-dasharray="6,4"/>
+    <line x1="390" y1="50" x2="390" y2="500" stroke="#f6ad55" stroke-width="1.5" stroke-dasharray="6,4"/>
+    <line x1="565" y1="50" x2="565" y2="500" stroke="#48bb78" stroke-width="1.5" stroke-dasharray="6,4"/>
+    <line x1="725" y1="50" x2="725" y2="500" stroke="#ed64a6" stroke-width="1.5" stroke-dasharray="6,4"/>
+    <line x1="880" y1="50" x2="880" y2="500" stroke="#d69e2e" stroke-width="1.5" stroke-dasharray="6,4"/>
+
+    <!-- ── 步骤 ── -->
+
+    <!-- Step 1: 客户端本地计算 -->
+    <rect x="4" y="58" width="112" height="72" rx="6" fill="#ebf8ff" stroke="#4299e1" stroke-width="1.5"/>
+    <text x="60" y="76" text-anchor="middle" font-size="10" fill="#2b6cb0" font-weight="600">① 本地计算</text>
+    <text x="60" y="91" text-anchor="middle" font-size="9" fill="#4a5568">采集 (x_t, y_t)</text>
+    <text x="60" y="105" text-anchor="middle" font-size="9" fill="#4a5568">H_t = Poseidon2(x,y)</text>
+    <text x="60" y="119" text-anchor="middle" font-size="9" fill="#4a5568">chain_t = MiMC7(...)</text>
+
+    <!-- Step 2: 生成 ZK 证明 -->
+    <rect x="4" y="148" width="112" height="60" rx="6" fill="#faf5ff" stroke="#9f7aea" stroke-width="1.5"/>
+    <text x="60" y="165" text-anchor="middle" font-size="10" fill="#553c9a" font-weight="600">② 生成 ZK 证明</text>
+    <text x="60" y="180" text-anchor="middle" font-size="9" fill="#4a5568">rapidsnark fullprove</text>
+    <text x="60" y="194" text-anchor="middle" font-size="9" fill="#4a5568">π = {π_a, π_b, π_c}</text>
+
+    <!-- 箭头: Client → Shuffler (提交) -->
+    <line x1="116" y1="230" x2="204" y2="230" stroke="#4a5568" stroke-width="1.5" marker-end="url(#arr)"/>
+    <rect x="125" y="215" width="70" height="28" rx="4" fill="#f7fafc" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="160" y="227" text-anchor="middle" font-size="9" fill="#2d3748">Report(idx,val,</text>
+    <text x="160" y="239" text-anchor="middle" font-size="9" fill="#2d3748">H_t, chain_t, π)</text>
+
+    <!-- Shuffler: 验证 -->
+    <rect x="155" y="260" width="112" height="110" rx="6" fill="#faf5ff" stroke="#9f7aea" stroke-width="1.5"/>
+    <text x="211" y="278" text-anchor="middle" font-size="10" fill="#553c9a" font-weight="600">③ 多层验证</text>
+    <text x="211" y="294" text-anchor="middle" font-size="9" fill="#4a5568">ZK: verify(vkey, π)</text>
+    <text x="211" y="308" text-anchor="middle" font-size="9" fill="#4a5568">链: prev_loc match?</text>
+    <text x="211" y="322" text-anchor="middle" font-size="9" fill="#4a5568">黑名单: streak < 3?</text>
+    <text x="211" y="336" text-anchor="middle" font-size="9" fill="#4a5568">DP: budget ok?</text>
+    <text x="211" y="352" text-anchor="middle" font-size="9" fill="#4a5568">→ 更新 tsip_state</text>
+
+    <!-- 通过分支 → Agg A -->
+    <line x1="267" y1="320" x2="334" y2="320" stroke="#48bb78" stroke-width="1.5" marker-end="url(#arrG)"/>
+    <text x="301" y="313" text-anchor="middle" font-size="9" fill="#276749">✓ ingestA</text>
+
+    <!-- 通过分支 → Agg R -->
+    <line x1="267" y1="350" x2="509" y2="350" stroke="#48bb78" stroke-width="1.5" marker-end="url(#arrG)"/>
+    <text x="385" y="343" text-anchor="middle" font-size="9" fill="#276749">✓ ingestR</text>
+
+    <!-- 拒绝分支 -->
+    <line x1="267" y1="370" x2="200" y2="430" stroke="#e53e3e" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrR)"/>
+    <rect x="144" y="432" width="112" height="36" rx="6" fill="#fff5f5" stroke="#fc8181" stroke-width="1.5"/>
+    <text x="200" y="448" text-anchor="middle" font-size="9" fill="#c53030" font-weight="600">❌ 拒绝</text>
+    <text x="200" y="461" text-anchor="middle" font-size="9" fill="#c53030">streak++ / blacklist</text>
+
+    <!-- Agg A 处理 -->
+    <rect x="334" y="290" width="112" height="80" rx="6" fill="#fffaf0" stroke="#f6ad55" stroke-width="1.5"/>
+    <text x="390" y="308" text-anchor="middle" font-size="10" fill="#7b341e" font-weight="600">④ 正向聚合</text>
+    <text x="390" y="323" text-anchor="middle" font-size="9" fill="#4a5568">PRP(k_A) 置换</text>
+    <text x="390" y="337" text-anchor="middle" font-size="9" fill="#4a5568">累加 → Share_A</text>
+    <text x="390" y="352" text-anchor="middle" font-size="9" fill="#4a5568">→ decode endpoint</text>
+    <text x="390" y="363" text-anchor="middle" font-size="9" fill="#4a5568">commit(Share_A)</text>
+
+    <!-- Agg R 处理 -->
+    <rect x="509" y="290" width="112" height="80" rx="6" fill="#f0fff4" stroke="#48bb78" stroke-width="1.5"/>
+    <text x="565" y="308" text-anchor="middle" font-size="10" fill="#276749" font-weight="600">⑤ 逆向聚合</text>
+    <text x="565" y="323" text-anchor="middle" font-size="9" fill="#4a5568">PRP⁻¹(k_R) 逆置换</text>
+    <text x="565" y="337" text-anchor="middle" font-size="9" fill="#4a5568">恢复索引 → Share_R</text>
+    <text x="565" y="352" text-anchor="middle" font-size="9" fill="#4a5568">DP 随机种子</text>
+    <text x="565" y="363" text-anchor="middle" font-size="9" fill="#4a5568">→ decode endpoint</text>
+
+    <!-- Agg A → Decoder -->
+    <line x1="446" y1="330" x2="669" y2="330" stroke="#f6ad55" stroke-width="1.5" marker-end="url(#arrO)"/>
+    <text x="558" y="323" text-anchor="middle" font-size="9" fill="#7b341e">Share_A</text>
+
+    <!-- Agg R → Decoder -->
+    <line x1="621" y1="356" x2="669" y2="356" stroke="#48bb78" stroke-width="1.5" marker-end="url(#arrG)"/>
+    <text x="645" y="349" text-anchor="middle" font-size="9" fill="#276749">Share_R</text>
+
+    <!-- Decoder 处理 -->
+    <rect x="669" y="290" width="112" height="100" rx="6" fill="#fff5f7" stroke="#ed64a6" stroke-width="1.5"/>
+    <text x="725" y="308" text-anchor="middle" font-size="10" fill="#702459" font-weight="600">⑥ 解码 + DP</text>
+    <text x="725" y="323" text-anchor="middle" font-size="9" fill="#4a5568">A ⊕ R = counts</text>
+    <text x="725" y="337" text-anchor="middle" font-size="9" fill="#4a5568">+ Gaussian noise</text>
+    <text x="725" y="351" text-anchor="middle" font-size="9" fill="#4a5568">过滤低频网格</text>
+    <text x="725" y="366" text-anchor="middle" font-size="9" fill="#4a5568">dp/latest 接口</text>
+    <text x="725" y="380" text-anchor="middle" font-size="9" fill="#4a5568">cells_kept_post</text>
+
+    <!-- Decoder → Output -->
+    <line x1="781" y1="340" x2="834" y2="340" stroke="#ed64a6" stroke-width="1.5" marker-end="url(#arr)"/>
+
+    <!-- Output -->
+    <rect x="834" y="300" width="112" height="80" rx="6" fill="#fefcbf" stroke="#d69e2e" stroke-width="1.5"/>
+    <text x="890" y="320" text-anchor="middle" font-size="10" fill="#744210" font-weight="600">⑦ 聚合结果</text>
+    <text x="890" y="337" text-anchor="middle" font-size="9" fill="#4a5568">城市热力图</text>
+    <text x="890" y="351" text-anchor="middle" font-size="9" fill="#4a5568">(ε,δ)-DP 保护</text>
+    <text x="890" y="366" text-anchor="middle" font-size="9" fill="#4a5568">~8200 网格/轮</text>
+
+    <!-- 时间轴标注 -->
+    <line x1="4" y1="490" x2="956" y2="490" stroke="#a0aec0" stroke-width="1" marker-end="url(#arr)"/>
+    <text x="480" y="485" text-anchor="middle" font-size="10" fill="#718096">时间 →（每轮 60s 时间窗口）</text>
+  </svg>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 图3：TSIP 承诺链机制 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="badge">图 3</span>
+    TSIP 承诺链机制 — 跨时间窗口完整性保证
+  </div>
+
+  <svg width="100%" viewBox="0 0 960 380" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="a1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#4299e1"/>
+      </marker>
+      <marker id="a2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#9f7aea"/>
+      </marker>
+      <marker id="a3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#48bb78"/>
+      </marker>
+      <marker id="a4" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#e53e3e"/>
+      </marker>
+    </defs>
+
+    <!-- 时间轴 -->
+    <text x="30" y="30" font-size="13" font-weight="700" fill="#2d3748">合法用户（正常轨迹）</text>
+
+    <!-- 窗口 t=0 -->
+    <rect x="30" y="50" width="180" height="100" rx="8" fill="#ebf8ff" stroke="#4299e1" stroke-width="2"/>
+    <text x="120" y="72" text-anchor="middle" font-size="11" fill="#2b6cb0" font-weight="700">窗口 t = 0</text>
+    <text x="120" y="90" text-anchor="middle" font-size="10" fill="#4a5568">loc₀ = (x₀, y₀)</text>
+    <text x="120" y="106" text-anchor="middle" font-size="10" fill="#4a5568">H₀ = Poseidon2(x₀,y₀)</text>
+    <text x="120" y="122" text-anchor="middle" font-size="10" fill="#4a5568">chain₀ = MiMC7("",H₀,t₀)</text>
+    <text x="120" y="138" text-anchor="middle" font-size="10" fill="#718096">（首轮无需 ZK 证明）</text>
+
+    <!-- 窗口 t=1 -->
+    <rect x="270" y="50" width="200" height="120" rx="8" fill="#f0fff4" stroke="#48bb78" stroke-width="2"/>
+    <text x="370" y="72" text-anchor="middle" font-size="11" fill="#276749" font-weight="700">窗口 t = 1</text>
+    <text x="370" y="90" text-anchor="middle" font-size="10" fill="#4a5568">loc₁ = (x₁, y₁)</text>
+    <text x="370" y="106" text-anchor="middle" font-size="10" fill="#4a5568">H₁ = Poseidon2(x₁,y₁)</text>
+    <text x="370" y="122" text-anchor="middle" font-size="10" fill="#4a5568">ZK证明：||loc₁-loc₀|| ≤ v·Δt</text>
+    <text x="370" y="138" text-anchor="middle" font-size="10" fill="#4a5568">prev_loc = H₀ (公开输入)</text>
+    <text x="370" y="154" text-anchor="middle" font-size="10" fill="#4a5568">chain₁ = MiMC7(chain₀,H₁,t₁)</text>
+
+    <!-- 窗口 t=2 -->
+    <rect x="530" y="50" width="200" height="120" rx="8" fill="#f0fff4" stroke="#48bb78" stroke-width="2"/>
+    <text x="630" y="72" text-anchor="middle" font-size="11" fill="#276749" font-weight="700">窗口 t = 2</text>
+    <text x="630" y="90" text-anchor="middle" font-size="10" fill="#4a5568">loc₂ = (x₂, y₂)</text>
+    <text x="630" y="106" text-anchor="middle" font-size="10" fill="#4a5568">H₂ = Poseidon2(x₂,y₂)</text>
+    <text x="630" y="122" text-anchor="middle" font-size="10" fill="#4a5568">ZK证明：||loc₂-loc₁|| ≤ v·Δt</text>
+    <text x="630" y="138" text-anchor="middle" font-size="10" fill="#4a5568">prev_loc = H₁ (公开输入)</text>
+    <text x="630" y="154" text-anchor="middle" font-size="10" fill="#4a5568">chain₂ = MiMC7(chain₁,H₂,t₂)</text>
+
+    <!-- ... -->
+    <text x="790" y="105" font-size="22" fill="#a0aec0">···</text>
+
+    <!-- 承诺链箭头 -->
+    <line x1="210" y1="100" x2="268" y2="100" stroke="#4299e1" stroke-width="2" marker-end="url(#a1)"/>
+    <text x="239" y="93" text-anchor="middle" font-size="9" fill="#2b6cb0">H₀ → 下轮</text>
+
+    <line x1="470" y1="100" x2="528" y2="100" stroke="#48bb78" stroke-width="2" marker-end="url(#a3)"/>
+    <text x="499" y="93" text-anchor="middle" font-size="9" fill="#276749">H₁ → 下轮</text>
+
+    <line x1="730" y1="100" x2="782" y2="100" stroke="#48bb78" stroke-width="2" marker-end="url(#a3)"/>
+    <text x="756" y="93" text-anchor="middle" font-size="9" fill="#276749">H₂ → ···</text>
+
+    <!-- ─── 攻击场景 ─── -->
+    <line x1="0" y1="210" x2="960" y2="210" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="6,4"/>
+    <text x="30" y="235" font-size="13" font-weight="700" fill="#c53030">恶意用户（瞬移攻击）</text>
+
+    <!-- 恶意窗口 t=0 -->
+    <rect x="30" y="250" width="180" height="80" rx="8" fill="#fff5f5" stroke="#fc8181" stroke-width="2"/>
+    <text x="120" y="272" text-anchor="middle" font-size="11" fill="#c53030" font-weight="700">窗口 t = 0（通过）</text>
+    <text x="120" y="290" text-anchor="middle" font-size="10" fill="#4a5568">loc₀ = (东京, 5000,5000)</text>
+    <text x="120" y="306" text-anchor="middle" font-size="10" fill="#4a5568">H₀ = Poseidon2(x₀,y₀)</text>
+    <text x="120" y="320" text-anchor="middle" font-size="10" fill="#718096">首轮无约束 → 通过 ✓</text>
+
+    <!-- 恶意窗口 t=1 (瞬移) -->
+    <rect x="270" y="250" width="210" height="100" rx="8" fill="#fff5f5" stroke="#e53e3e" stroke-width="2.5"/>
+    <text x="375" y="272" text-anchor="middle" font-size="11" fill="#c53030" font-weight="700">窗口 t = 1（瞬移）</text>
+    <text x="375" y="290" text-anchor="middle" font-size="10" fill="#4a5568">loc₁' = (大阪, 9000,9000)</text>
+    <text x="375" y="306" text-anchor="middle" font-size="10" fill="#4a5568">||loc₁'-loc₀|| ≫ v_max × Δt</text>
+    <text x="375" y="322" text-anchor="middle" font-size="10" fill="#c53030" font-weight="600">ZK 证明生成失败！</text>
+    <text x="375" y="338" text-anchor="middle" font-size="10" fill="#c53030">电路约束不满足 → 无合法 π</text>
+
+    <!-- 阻断箭头 -->
+    <line x1="210" y1="290" x2="268" y2="290" stroke="#e53e3e" stroke-width="2.5" marker-end="url(#a4)"/>
+    <rect x="490" y="265" width="160" height="60" rx="8" fill="#c53030"/>
+    <text x="570" y="288" text-anchor="middle" font-size="12" fill="#fff" font-weight="700">❌ Shuffler 拒绝</text>
+    <text x="570" y="305" text-anchor="middle" font-size="10" fill="#fed7d7">ZK 验证失败</text>
+    <text x="570" y="319" text-anchor="middle" font-size="10" fill="#fed7d7">恶意提交被拦截</text>
+
+    <!-- 拒绝箭头 -->
+    <line x1="480" y1="300" x2="488" y2="300" stroke="#e53e3e" stroke-width="2" marker-end="url(#a4)"/>
+
+    <!-- 攻击说明 -->
+    <rect x="680" y="255" width="265" height="100" rx="8" fill="#fffaf0" stroke="#f6ad55" stroke-width="1.5"/>
+    <text x="812" y="276" text-anchor="middle" font-size="11" fill="#7b341e" font-weight="600">为什么 RiseFL 无法防御？</text>
+    <text x="812" y="294" text-anchor="middle" font-size="10" fill="#4a5568">RiseFL 只验证"单点物理合理性"</text>
+    <text x="812" y="310" text-anchor="middle" font-size="10" fill="#4a5568">loc₀ 单独看合理 ✓</text>
+    <text x="812" y="326" text-anchor="middle" font-size="10" fill="#4a5568">loc₁' 单独看合理 ✓</text>
+    <text x="812" y="342" text-anchor="middle" font-size="10" fill="#c53030" font-weight="600">但跨窗口位移违反物理规律 ❌</text>
+  </svg>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#4299e1"></div> 首轮提交（无 ZK）</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#48bb78"></div> 合法提交（ZK 验证通过）</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e53e3e"></div> 恶意提交（ZK 不可满足）</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f6ad55"></div> RiseFL 盲区对比</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 图4：ZK 电路约束结构 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="badge">图 4</span>
+    ZK 电路约束结构 — Groth16 (BN254) + Poseidon2
+  </div>
+
+  <svg width="100%" viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ax" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <path d="M0,0 L8,3 L0,6 Z" fill="#4a5568"/>
+      </marker>
+    </defs>
+
+    <!-- tsip_step 电路 -->
+    <rect x="20" y="30" width="260" height="220" rx="10" fill="#ebf8ff" stroke="#4299e1" stroke-width="2"/>
+    <text x="150" y="56" text-anchor="middle" font-size="13" fill="#2b6cb0" font-weight="700">tsip_step.circom</text>
+    <text x="150" y="74" text-anchor="middle" font-size="11" fill="#4a5568">70 约束  ·  Groth16</text>
+
+    <!-- Private inputs -->
+    <rect x="30" y="88" width="110" height="80" rx="6" fill="#fff" stroke="#bee3f8" stroke-width="1.5"/>
+    <text x="85" y="104" text-anchor="middle" font-size="10" fill="#2b6cb0" font-weight="600">私密输入 (witness)</text>
+    <text x="85" y="120" text-anchor="middle" font-size="10" fill="#4a5568">x₁, y₁</text>
+    <text x="85" y="134" text-anchor="middle" font-size="10" fill="#4a5568">x₂, y₂</text>
+    <text x="85" y="148" text-anchor="middle" font-size="10" fill="#4a5568">t₁, t₂</text>
+    <text x="85" y="162" text-anchor="middle" font-size="10" fill="#4a5568">(原始坐标)</text>
+
+    <!-- Public inputs -->
+    <rect x="155" y="88" width="115" height="80" rx="6" fill="#fff" stroke="#bee3f8" stroke-width="1.5"/>
+    <text x="212" y="104" text-anchor="middle" font-size="10" fill="#2b6cb0" font-weight="600">公开输入</text>
+    <text x="212" y="120" text-anchor="middle" font-size="10" fill="#4a5568">max_dist_sq</text>
+    <text x="212" y="134" text-anchor="middle" font-size="10" fill="#4a5568">= (v_max × Δt)²</text>
+    <text x="212" y="148" text-anchor="middle" font-size="10" fill="#4a5568">= (110 × 60)²</text>
+    <text x="212" y="162" text-anchor="middle" font-size="10" fill="#4a5568">= 43,560,000</text>
+
+    <!-- 约束 -->
+    <rect x="30" y="182" width="240" height="55" rx="6" fill="#faf5ff" stroke="#d6bcfa" stroke-width="1.5"/>
+    <text x="150" y="200" text-anchor="middle" font-size="10" fill="#553c9a" font-weight="600">核心约束</text>
+    <text x="150" y="216" text-anchor="middle" font-size="10" fill="#4a5568">(x₂-x₁)² + (y₂-y₁)² ≤ max_dist_sq</text>
+    <text x="150" y="230" text-anchor="middle" font-size="10" fill="#4a5568">+ range_check(x,y &lt; 10⁶)</text>
+
+    <!-- tsip_main 电路 -->
+    <rect x="330" y="30" width="290" height="220" rx="10" fill="#f0fff4" stroke="#48bb78" stroke-width="2"/>
+    <text x="475" y="56" text-anchor="middle" font-size="13" fill="#276749" font-weight="700">tsip_main.circom</text>
+    <text x="475" y="74" text-anchor="middle" font-size="11" fill="#4a5568">674 约束  ·  Poseidon2</text>
+
+    <rect x="340" y="88" width="130" height="80" rx="6" fill="#fff" stroke="#9ae6b4" stroke-width="1.5"/>
+    <text x="405" y="104" text-anchor="middle" font-size="10" fill="#276749" font-weight="600">私密输入</text>
+    <text x="405" y="120" text-anchor="middle" font-size="10" fill="#4a5568">x₁, y₁  (前一位置)</text>
+    <text x="405" y="134" text-anchor="middle" font-size="10" fill="#4a5568">x₂, y₂  (当前位置)</text>
+
+    <rect x="485" y="88" width="125" height="80" rx="6" fill="#fff" stroke="#9ae6b4" stroke-width="1.5"/>
+    <text x="548" y="104" text-anchor="middle" font-size="10" fill="#276749" font-weight="600">公开输入</text>
+    <text x="548" y="120" text-anchor="middle" font-size="10" fill="#4a5568">H_prev = Poseidon2(x₁,y₁)</text>
+    <text x="548" y="134" text-anchor="middle" font-size="10" fill="#4a5568">H_curr = Poseidon2(x₂,y₂)</text>
+    <text x="548" y="148" text-anchor="middle" font-size="10" fill="#4a5568">max_dist_sq</text>
+
+    <rect x="340" y="182" width="270" height="55" rx="6" fill="#f0fff4" stroke="#9ae6b4" stroke-width="1.5"/>
+    <text x="475" y="200" text-anchor="middle" font-size="10" fill="#276749" font-weight="600">组合约束</text>
+    <text x="475" y="216" text-anchor="middle" font-size="10" fill="#4a5568">① Poseidon2(x₁,y₁) === H_prev（位置一致性）</text>
+    <text x="475" y="230" text-anchor="middle" font-size="10" fill="#4a5568">② 距离约束 + ③ Poseidon2(x₂,y₂) === H_curr</text>
+
+    <!-- Prover 性能对比 -->
+    <rect x="670" y="30" width="270" height="220" rx="10" fill="#fffaf0" stroke="#f6ad55" stroke-width="2"/>
+    <text x="805" y="56" text-anchor="middle" font-size="13" fill="#7b341e" font-weight="700">Prover 性能基准</text>
+    <text x="805" y="74" text-anchor="middle" font-size="11" fill="#4a5568">实测 5 轮均值（CPU-only 服务器）</text>
+
+    <!-- 表头 -->
+    <rect x="680" y="85" width="250" height="22" rx="4" fill="#f6ad55"/>
+    <text x="730" y="100" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">电路</text>
+    <text x="805" y="100" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">Prove</text>
+    <text x="880" y="100" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">Verify</text>
+
+    <!-- snarkjs 行 -->
+    <rect x="680" y="107" width="250" height="20" rx="0" fill="#fefcbf"/>
+    <text x="730" y="120" text-anchor="middle" font-size="9" fill="#4a5568">tsip_step (snarkjs)</text>
+    <text x="805" y="120" text-anchor="middle" font-size="9" fill="#c05621">1151 ms</text>
+    <text x="880" y="120" text-anchor="middle" font-size="9" fill="#4a5568">1041 ms</text>
+
+    <rect x="680" y="127" width="250" height="20" rx="0" fill="#fff"/>
+    <text x="730" y="140" text-anchor="middle" font-size="9" fill="#4a5568">tsip_step (rapidsnark)</text>
+    <text x="805" y="140" text-anchor="middle" font-size="9" fill="#276749" font-weight="600">308 ms ↓</text>
+    <text x="880" y="140" text-anchor="middle" font-size="9" fill="#4a5568">1035 ms</text>
+
+    <rect x="680" y="147" width="250" height="20" rx="0" fill="#fefcbf"/>
+    <text x="730" y="160" text-anchor="middle" font-size="9" fill="#4a5568">tsip_main (snarkjs)</text>
+    <text x="805" y="160" text-anchor="middle" font-size="9" fill="#c05621">1388 ms</text>
+    <text x="880" y="160" text-anchor="middle" font-size="9" fill="#4a5568">1064 ms</text>
+
+    <rect x="680" y="167" width="250" height="20" rx="0" fill="#fff"/>
+    <text x="730" y="180" text-anchor="middle" font-size="9" fill="#4a5568">tsip_main (rapidsnark)</text>
+    <text x="805" y="180" text-anchor="middle" font-size="9" fill="#276749" font-weight="600">409 ms ↓</text>
+    <text x="880" y="180" text-anchor="middle" font-size="9" fill="#4a5568">1033 ms</text>
+
+    <rect x="680" y="195" width="250" height="50" rx="4" fill="#ebf8ff" stroke="#bee3f8" stroke-width="1"/>
+    <text x="805" y="214" text-anchor="middle" font-size="10" fill="#2b6cb0" font-weight="600">证明大小（Groth16）</text>
+    <text x="805" y="230" text-anchor="middle" font-size="10" fill="#4a5568">tsip_step: 706–805 Bytes</text>
+    <text x="805" y="244" text-anchor="middle" font-size="10" fill="#4a5568">tsip_main: 708–804 Bytes</text>
+  </svg>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 图5：实验结果汇总 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">
+    <span class="badge">图 5</span>
+    实验结果汇总 — 主要指标（论文可用数据）
+  </div>
+
+  <svg width="100%" viewBox="0 0 960 260" xmlns="http://www.w3.org/2000/svg">
+
+    <!-- 主结果表 -->
+    <!-- 表头 -->
+    <rect x="20" y="20" width="920" height="28" rx="6" fill="#4299e1"/>
+    <text x="110" y="38" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">实验设置</text>
+    <text x="290" y="38" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">数据集</text>
+    <text x="430" y="38" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">轮数/客户端</text>
+    <text x="560" y="38" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">恶意拒绝率</text>
+    <text x="680" y="38" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">误拒率</text>
+    <text x="800" y="38" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">有效网格数</text>
+    <text x="910" y="38" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">状态</text>
+
+    <!-- 行1: 合成 10 轮 -->
+    <rect x="20" y="48" width="920" height="26" rx="0" fill="#f7fafc"/>
+    <text x="110" y="65" text-anchor="middle" font-size="10" fill="#4a5568">TSIP+ZK+DP（合成）</text>
+    <text x="290" y="65" text-anchor="middle" font-size="10" fill="#4a5568">Gaussian 随机游走</text>
+    <text x="430" y="65" text-anchor="middle" font-size="10" fill="#4a5568">10 轮 / 200 客户端</text>
+    <text x="560" y="65" text-anchor="middle" font-size="10" fill="#276749" font-weight="700">1.0000</text>
+    <text x="680" y="65" text-anchor="middle" font-size="10" fill="#276749" font-weight="700">0.0017</text>
+    <text x="800" y="65" text-anchor="middle" font-size="10" fill="#4a5568">8204 ± 35</text>
+    <text x="910" y="65" text-anchor="middle" font-size="10" fill="#276749">✅ 论文主结果</text>
+
+    <!-- 行2: 合成 30 轮 -->
+    <rect x="20" y="74" width="920" height="26" rx="0" fill="#fff"/>
+    <text x="110" y="91" text-anchor="middle" font-size="10" fill="#4a5568">TSIP+ZK+DP（合成）</text>
+    <text x="290" y="91" text-anchor="middle" font-size="10" fill="#4a5568">Gaussian 随机游走</text>
+    <text x="430" y="91" text-anchor="middle" font-size="10" fill="#4a5568">30 轮 / 200 客户端</text>
+    <text x="560" y="91" text-anchor="middle" font-size="10" fill="#276749" font-weight="700">1.0000</text>
+    <text x="680" y="91" text-anchor="middle" font-size="10" fill="#276749" font-weight="700">0.0017</text>
+    <text x="800" y="91" text-anchor="middle" font-size="10" fill="#4a5568">8232 ± 84</text>
+    <text x="910" y="91" text-anchor="middle" font-size="10" fill="#276749">✅ 论文主结果</text>
+
+    <!-- 行3: GeoLife (修复前) -->
+    <rect x="20" y="100" width="920" height="26" rx="0" fill="#f7fafc"/>
+    <text x="110" y="117" text-anchor="middle" font-size="10" fill="#4a5568">TSIP+ZK+DP（真实）</text>
+    <text x="290" y="117" text-anchor="middle" font-size="10" fill="#4a5568">GeoLife（50 用户）</text>
+    <text x="430" y="117" text-anchor="middle" font-size="10" fill="#4a5568">10 轮 / 50 客户端</text>
+    <text x="560" y="117" text-anchor="middle" font-size="10" fill="#276749" font-weight="700">1.0000</text>
+    <text x="680" y="117" text-anchor="middle" font-size="10" fill="#c05621" font-weight="600">0.0043</text>
+    <text x="800" y="117" text-anchor="middle" font-size="10" fill="#4a5568">3492 ± —</text>
+    <text x="910" y="117" text-anchor="middle" font-size="10" fill="#c05621">⚠️ 修复前版本</text>
+
+    <!-- 行4: Scale 500 -->
+    <rect x="20" y="126" width="920" height="26" rx="0" fill="#fff"/>
+    <text x="110" y="143" text-anchor="middle" font-size="10" fill="#4a5568">TSIP+ZK（规模验证）</text>
+    <text x="290" y="143" text-anchor="middle" font-size="10" fill="#4a5568">Gaussian 随机游走</text>
+    <text x="430" y="143" text-anchor="middle" font-size="10" fill="#4a5568">1 轮 / 500 客户端</text>
+    <text x="560" y="143" text-anchor="middle" font-size="10" fill="#276749" font-weight="700">1.0000</text>
+    <text x="680" y="143" text-anchor="middle" font-size="10" fill="#276749" font-weight="700">0.0000</text>
+    <text x="800" y="143" text-anchor="middle" font-size="10" fill="#4a5568">455 valid</text>
+    <text x="910" y="143" text-anchor="middle" font-size="10" fill="#c05621">⚠️ 缺多轮统计</text>
+
+    <!-- 行5: 参数对照 -->
+    <rect x="20" y="152" width="920" height="26" rx="0" fill="#f7fafc"/>
+    <text x="110" y="169" text-anchor="middle" font-size="10" fill="#4a5568">参数对照 60s/110 m/s</text>
+    <text x="290" y="169" text-anchor="middle" font-size="10" fill="#4a5568">Gaussian 随机游走</text>
+    <text x="430" y="169" text-anchor="middle" font-size="10" fill="#4a5568">10 轮 / 200 客户端</text>
+    <text x="560" y="169" text-anchor="middle" font-size="10" fill="#276749" font-weight="700">1.0000</text>
+    <text x="680" y="169" text-anchor="middle" font-size="10" fill="#276749" font-weight="700">0.0000</text>
+    <text x="800" y="169" text-anchor="middle" font-size="10" fill="#4a5568">8261 平均</text>
+    <text x="910" y="169" text-anchor="middle" font-size="10" fill="#276749">✅ 参数论证</text>
+
+    <!-- 待补充行 -->
+    <rect x="20" y="178" width="920" height="26" rx="0" fill="#fff"/>
+    <text x="110" y="195" text-anchor="middle" font-size="10" fill="#a0aec0">规模扩展（200/500/1000）</text>
+    <text x="290" y="195" text-anchor="middle" font-size="10" fill="#a0aec0">Gaussian / GeoLife</text>
+    <text x="430" y="195" text-anchor="middle" font-size="10" fill="#a0aec0">5 轮 × 3 档</text>
+    <text x="560" y="195" text-anchor="middle" font-size="10" fill="#a0aec0">待测</text>
+    <text x="680" y="195" text-anchor="middle" font-size="10" fill="#a0aec0">待测</text>
+    <text x="800" y="195" text-anchor="middle" font-size="10" fill="#a0aec0">—</text>
+    <text x="910" y="195" text-anchor="middle" font-size="10" fill="#e53e3e">🔴 待完成</text>
+
+    <!-- 待补充行2 -->
+    <rect x="20" y="204" width="920" height="26" rx="0" fill="#f7fafc"/>
+    <text x="110" y="221" text-anchor="middle" font-size="10" fill="#a0aec0">攻防实验（6 种攻击类型）</text>
+    <text x="290" y="221" text-anchor="middle" font-size="10" fill="#a0aec0">合成 + 注入</text>
+    <text x="430" y="221" text-anchor="middle" font-size="10" fill="#a0aec0">各 3 轮</text>
+    <text x="560" y="221" text-anchor="middle" font-size="10" fill="#a0aec0">待测</text>
+    <text x="680" y="221" text-anchor="middle" font-size="10" fill="#a0aec0">待测</text>
+    <text x="800" y="221" text-anchor="middle" font-size="10" fill="#a0aec0">—</text>
+    <text x="910" y="221" text-anchor="middle" font-size="10" fill="#e53e3e">🔴 待完成</text>
+
+    <rect x="20" y="48" width="920" height="182" rx="0" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+    <!-- 竖线分隔 -->
+    <line x1="180" y1="48" x2="180" y2="230" stroke="#e2e8f0" stroke-width="0.5"/>
+    <line x1="360" y1="48" x2="360" y2="230" stroke="#e2e8f0" stroke-width="0.5"/>
+    <line x1="500" y1="48" x2="500" y2="230" stroke="#e2e8f0" stroke-width="0.5"/>
+    <line x1="620" y1="48" x2="620" y2="230" stroke="#e2e8f0" stroke-width="0.5"/>
+    <line x1="740" y1="48" x2="740" y2="230" stroke="#e2e8f0" stroke-width="0.5"/>
+    <line x1="860" y1="48" x2="860" y2="230" stroke="#e2e8f0" stroke-width="0.5"/>
+  </svg>
+</div>
+
+<div style="text-align:center; color:#a0aec0; font-size:12px; margin-top:8px; margin-bottom:24px;">
+  TSIP — Temporal-Spatial Integrity Proof for Privacy-Preserving Location Aggregation · 2026
+</div>
+
+</body>
+</html>
