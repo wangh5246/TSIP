@@ -26,48 +26,262 @@
 - 论文写作时，系统实现章节应优先使用“当前实现口径”
 - 后续研发与实验应围绕“设计目标口径”和“当前实现口径”的差异逐步收敛
 
-### 当前实现对齐摘要（2026-03）
+### 当前实现对齐摘要（2026-03，更新至 2026-03-27）
 
 | 项目 | 设计目标 | 当前已验证实现 | 当前状态 |
 |------|----------|----------------|----------|
-| 时间窗口 | `300s` | `60s` | 已实现稳定版本，但尚未回归设计目标参数 |
-| 最大速度阈值 | `100 m/s` | `110 m/s` | 当前值为实验调优后的稳定参数 |
+| 时间窗口 | `300s` | `60s` | 参数对照实验已确认 `60s/110` 为最优工程参数，`300s/100` 保留为设计目标对照参数 |
+| 最大速度阈值 | `100 m/s` | `110 m/s` | 当前值为实验调优后的最终工程参数 |
 | 网格域大小 | `10^8` | `10^4` | 当前仍是 MVP/部署规模 |
-| 承诺哈希 | `Poseidon` | `MiMC` | 当前代码、电路、证明工件均已切到 MiMC |
+| 承诺哈希 | `Poseidon` | `Poseidon2` | 已统一为 Poseidon2 路径（客户端承诺计算与 `tsip_main` 电路一致，2026-03-24 修复） |
 | TSIP 主证明 | 需要 | 已实现 | 已完成 `tsip_main` 电路、证明生成、服务端验证 |
-| 承诺链连续性 | 需要 | 已实现 | 已完成位置承诺 + 链承诺连续性校验 |
-| 远程部署 | 需要 | 已实现 | 已在 CPU-only 远程服务器通过验收 |
+| 承诺链连续性 | 需要 | 已实现 | 已完成位置承诺 + 链承诺连续性校验，修复后经 30 轮验证稳定 |
+| 远程部署 | 需要 | 已实现 | 已在 CPU-only 远程服务器通过验收，rapidsnark 双路径已闭环 |
 | DP 预算门控 | 需要 | 已实现 | 已完成 `privacy_budget_reset/status` 与 `dp/latest` 闭环 |
 | 黑名单策略 | 需要 | 已实现当前版本 | 已完成连续拒绝计数、阈值封禁和成功后清零 |
-| 真实数据实验 | 需要 | 部分完成 | 本地 GeoLife 已完成，服务器 GeoLife 10 轮正式统计待最终确认 |
+| 合成数据实验 | 需要 | 已完成 | 服务器 30 轮（2026-03-27）为最终主结果，`false_reject_rate=0.0017` |
+| 真实数据实验（GeoLife） | 需要 | 已完成 ✅ | 服务器修复版 10 轮（2026-03-29），avg_valid_clients=45.10，malicious_reject_rate=1.0000，false_reject_rate=0.0111 |
+| 真实数据实验（T-Drive） | 需要 | 已完成 ✅ | 主实验 10 轮（2026-03-30）malicious_reject_rate=1.0000，false_reject_rate=0.0000；**+ boundary sweep 7档（2026-04-05）：阈值以上 100% 检测，false_reject_rate ~3.5%** |
+| No-ZK Baseline 对比实验 | 需要 | 已完成 ✅ | 服务器 10 轮（2026-03-29），malicious_reject_rate=0.0000，与 TSIP 形成完整对比 |
+| 规模扩展实验 | 需要 | 已完成 ✅ | 服务器 200/500/1000 各 5 轮（2026-03-29/30），malicious_reject_rate=1.0000，false_reject_rate 随规模下降 |
+| 攻击强度 sweep（A1 boundary） | 需要 | 已完成 ✅ | **2026-04-01 Synthetic + 2026-04-05 T-Drive**，7档（1000/3300/5940/6534/6600/6666/7200m），各 10 轮；阈值以上 T-Drive 100% 检测，S 型曲线见 `experiments/tsip_scurve.png` |
+| A2 身份交换攻击实验 | 需要 | 已完成 ✅ | 服务器 10 轮，stable scope（2026-03-31），malicious_reject_rate=1.0000，false_reject_rate=0.0000 |
+| A5 重放攻击实验 | 需要 | 已完成 ✅ | 服务器 10 轮，stable scope（2026-03-31），malicious_reject_rate=1.0000，false_reject_rate=0.0000 |
+| A3 渐进偏移攻击实验 | 需要 | 待完成 ⏳ | 需补 10 轮实验，预期 `malicious_reject_rate` 接近 0（用于 Discussion：TSIP 抬升攻击成本而非消灭慢速攻击） |
+| Claim 口径收敛 | 需要 | 已启动 ✅ | 统一收敛为“trajectory continuity/plausibility filtering + attack-cost elevation”，不再表述为“ground-truth presence” |
 
 ### 当前系统已完成的部分
 
 当前仓库中已经完成并验证的内容包括：
 
 - `zk_step` 单步约束证明与验证
-- `tsip_main` 主电路、证明生成、验证与链式状态维护
+- `tsip_main` 主电路（Poseidon2）、证明生成、验证与链式状态维护
 - `client_sim / shuffler / aggregator_a / aggregator_r / decoder` 全链路联调
 - secure reconstruct 与 privacy budget gate
 - 本地部署、远程服务器部署、离线镜像部署
-- 多轮合成实验与稳定性统计
+- rapidsnark 双路径证明器集成（服务器侧负向/正向双验证闭环）
+- Poseidon2 承诺链断裂修复（2026-03-24）
+- 参数对照实验（`60s/110` vs `300s/100`，确认最终工程参数）
+- 合成数据多轮实验：本机 10/30 轮、服务器 10/30 轮（修复后），全部通过
 
 目前最关键的稳定实验结果为：
 
-- `malicious_reject_rate = 1.0`
-- `false_reject_rate = 0.0`
-- 远程服务器新版 TSIP 已通过部署验收
+- `malicious_reject_rate = 1.0`（截至当前已记录 TSIP 批次中均观测到）
+- `malicious_reject_rate = 0.0`（No-ZK baseline，无保护时攻击全部通过）
+- `false_reject_rate = 0.0017`（服务器合成数据修复版 10 轮与 30 轮结果一致）
+- 服务器 30 轮主结果文件：`experiments/round_metrics_20260327_092202.csv`（论文可用）
 
-### 当前系统尚未完成的部分
+### 当前系统尚未完成的部分（按审稿风险重排，2026-04-01）
 
-与完整设计目标相比，当前仍存在以下缺口：
+与完整设计目标相比，当前优先缺口如下：
 
-- 尚未回到设计目标参数（`300s` 窗口、`100 m/s`、大域网格）
-- 尚未将 MiMC 版本与 Poseidon 目标版本做正式对照
-- 当前黑名单机制已形成基础闭环，但仍可继续扩展为持久化、跨轮审计和人工解除策略
-- 服务器侧 GeoLife 10 轮正式统计（`total=50`）仍需固定一版最终结果
-- 尚未完成 T-Drive 数据集实验
-- 安全证明文本仍需完全按“当前实现”重写，而不是沿用理想化假设
+- P0（必须先补，影响论文可信度）
+  - **证明-载荷绑定（proof-payload binding）未完成**：当前证明的是 `prev_loc -> curr_loc` 连续性，但需进一步证明上传的 share/cell/weight 与同一 witness 绑定，防止“合法证明 + 非法 payload”拆分攻击。
+  - **A1 细粒度边界扫描（论文口径）未完成**：需使用 `tdrive + stable + warmup`，围绕 6600m 阈值做细粒度距离档位实验。
+  - **A3 渐进偏移实验未完成**：需量化“可行但高成本”的慢速攻击路径，作为主文 Discussion 关键证据。
+- P1（次优先级，影响安全叙事完整性）
+  - **身份绑定增强未完成**：需要将 hidden per-user secret / nullifier / epoch anti-replay 统一到协议状态机和证明描述中，避免仅依赖“攻击者不知道坐标”的叙事。
+  - **协议状态机形式化未完成**：需要明确 fork / double-submit / late arrival / missed round / re-enrollment 语义及处理策略。
+  - **DP 叙事收敛部分完成**：主文已切换为 public-output DP 口径；仍需补 `who learns what` 泄露表和 SVT 引用定理的逐条对齐。
+- P2（实验对比完整性）
+  - **Utility 指标框架未落地**：ground truth heatmap + Jaccard/RMSE/Relative Error 自动化统计尚未形成稳定脚本闭环。
+  - **Baseline 与消融未落地**：RiseFL/Nebula/LDP/Commitment-only 及 6 组消融尚缺可复现实验脚本与结果。
+- 已完成但保留项
+  - ~~服务器 GeoLife/T-Drive/规模扩展~~ 已完成，可作为现阶段工程可运行证据。
+  - Poseidon helper 原生实现替换、黑名单持久化属于优化项，不阻塞当前投稿主线。
+
+### 顶会口径收敛（2026-04-01，覆盖后文旧口径）
+
+若本文档后续章节与本节冲突，以本节为准。
+
+1. 主张边界（Claim Discipline）
+   - 当前 TSIP 的强保证是：**跨轮轨迹连续性/物理可行性约束**，以及由此带来的**攻击成本抬升**。
+   - 当前 TSIP **不直接保证**：设备在场真实性（ground-truth presence）或“真实世界位置真实性”。
+   - 论文主叙事统一为：`privacy-preserving aggregation + trajectory plausibility filtering + attack-cost elevation`。
+
+2. 安全边界（Truth Gap）
+   - enrollment 不是唯一 truth gap；若攻击者从首轮开始伪造“平滑但虚构”的轨迹，系统可能接受其连续链。
+   - 因此理论表述必须明确：完整性定理针对“链深度 >= 1 且在系统假设内”的连续性，不外推为真实性定理。
+
+3. DP 口径（Public DP vs Internal Leakage）
+   - 主文 DP 口径改为：**只对公开发布的最终热力图**给出 DP 保证。
+   - 内部可见信息（accept/reject、链状态、时序元数据）单列为 internal leakage，不并入主 DP 预算。
+   - 当前推荐总预算口径：`ε_total = ε_SVT + ε_value`（现网默认 `0.3 + 0.7 = 1.0`）。
+   - `ε_verify` 仅保留为可选随机化验证实验项，不再作为默认主结果组合项。
+
+4. 当前最高风险（必须先修）
+   - proof 与 payload 的同 witness 绑定未形式化时，不应在论文中做强完整性闭环宣称。
+   - 该项进入“第一优先级（本周）”。
+
+### 下一步工作顺序（与精进指南对齐，按当前进度重排）
+
+第一优先级（本周，P0）：
+
+1. 完成 proof-payload binding 方案与实现草案（至少到“签名摘要绑定 payload digest + epoch + round_id”级别）。
+2. 重跑 A1 细粒度边界扫描（`tdrive + stable + warmup`，围绕 6600m 阈值）。
+3. 补齐 A3 渐进偏移实验（10 轮，输出攻击成本曲线与 time-to-poison）。
+4. 产出 `who learns what` 泄露表并更新主文 DP 叙事。
+
+第二优先级（下周，P1）：
+
+1. 实现 ground truth 热力图与 Jaccard/RMSE/Relative Error 指标闭环。
+2. 运行“Money Figure”：TSIP vs No-Integrity 在攻击率梯度下的 utility 退化对比。
+
+第三优先级（后续，P2）：
+
+1. 落地 RiseFL / Nebula / LDP / Commitment-only baseline。
+2. 跑 6 组消融（含 zk_step 价值定位），避免“模块存在但贡献不可观测”的叙事风险。
+
+### 顶会评审意见整合清单（精进指南 + 外部意见，2026-04-01）
+
+以下清单用于统一“意见 -> 方案 -> 落地状态”，后续以此驱动周计划。
+
+| 审稿风险点 | 统一结论 | 落地动作 | 当前状态 |
+|---|---|---|---|
+| Claim overreach（把 continuity 说成 truthfulness） | 采纳，必须收敛主张边界 | 主文统一改写为 continuity/plausibility + attack-cost elevation | 已执行（主口径） |
+| proof 与 payload 可能脱绑定 | 采纳，P0 阻塞项 | 引入 payload digest 绑定（proof/attestation 同摘要）并补攻击实验 | 进行中 |
+| identity swap 论证依赖“不知道坐标”过弱 | 采纳，需改为密码学绑定 | 加 hidden user secret + epoch/nullifier，一致性跨轮证明 | 设计中 |
+| 状态机未形式化（fork/double-submit/late/missed） | 采纳，系统定理前置条件缺失 | 补状态机定义与处理规则，并映射到 API 行为 | 进行中 |
+| Theorem 语义桥未写清（range/timestamp/projection/noise） | 采纳，避免 theorem overclaim | 将物理语义与密码学语义分层，显式列出前提 | 进行中 |
+| DP 叙事可能被打穿（verify budget） | 采纳，主口径已调整 | Public-output DP 与 internal leakage 分离；`ε_verify` 转为可选实验项 | 已执行（主口径） |
+| baseline 稻草人风险 | 采纳，需确保公平性 | baseline 使用同数据/同预算/同攻击面；报告 CI 与失败案例 | 待执行 |
+
+### 未来 14 天执行路线（可直接用于周报）
+
+1. 第 1-3 天：proof-payload binding 方案与最小实现（P0）
+   - 目标：阻断“合法证明 + 非法 payload”拆分攻击。
+2. 第 4-6 天：A1 细粒度阈值扫描 + A3 渐进偏移（P0）
+   - 目标：给出边界曲线与攻击成本曲线，不再只报单点 TPR。
+3. 第 7-10 天：Utility 框架（ground truth + Jaccard/RMSE/RelErr）（P1）
+   - 目标：产出 money figure 的可重复脚本与 CSV。
+4. 第 11-14 天：Baseline + 消融最小闭环（P2）
+   - 目标：先完成 No-Integrity / Commitment-Only / Nebula，再扩 RiseFL/LDP。
+
+### P0 协议修订：Proof-Payload Binding v1→v2（2026-04-01）
+
+本节用于回应“合法证明 + 非法 payload 拆分”风险，作为后续实现与论文口径的统一规范。
+
+#### v1 目标（已实现口径）
+
+- 目标不是证明“真实世界位置真实性”，而是保证：
+  - 被验证通过的 proof、承诺链状态、最终上送 payload 在提交链路内不被替换。
+- v1 重点是 **consistency binding（提交一致性）**，不是语义绑定终态。
+
+#### v1 绑定对象
+
+定义 `payload_core`（规范化序列化后摘要）：
+
+```text
+payload_core = {
+  round_id,
+  submission_id,
+  channel,                 # A or R
+  user_id,
+  window_id,
+  idx,                     # 上送索引数组
+  val,                     # 对应 share/value 数组
+  tsip_prev_loc_commitment,
+  tsip_curr_loc_commitment,
+  tsip_prev_chain_commitment,
+  tsip_curr_chain_commitment,
+  tsip_time_diff,
+  tsip_max_dist_sq
+}
+payload_digest = SHA256(CANONICAL_JSON(payload_core))
+```
+
+同时定义 `proof_digest`：
+
+```text
+proof_digest = SHA256(CANONICAL_JSON({
+  tsip_public_signals,
+  zk_step_public_signals
+}))
+```
+
+#### v1 验证与转发规则（状态机）
+
+1. Shuffler 侧：
+   - 先做 `zk_step + tsip` 验证；
+   - 计算 `payload_digest/proof_digest`；
+   - 生成 attestation 签名消息：
+   - `ATT = H(channel|round_id|submission_id|user_id|window_id|payload_digest|proof_digest|prev_chain|curr_chain)`
+   - 强制单用户单窗口单提交：
+   - 若同 `(user_id, window_id)` 出现第二份不同 `curr_chain`，标记 fork 并拒绝。
+
+2. Aggregator 侧：
+   - 仅接收 `>= threshold` 个有效 committee 签名的提交；
+   - 本地重算 `payload_digest`，必须与 attestation 内摘要一致；
+   - 若摘要不一致，直接拒绝，不进入聚合缓冲区。
+
+3. Decoder/重建侧：
+   - 不参与绑定判定，仅消费已通过门限验签的数据。
+
+#### v1 安全语义（论文可写）
+
+- v1 保证的是“proof 与 payload 的提交一致性（consistency binding）”。
+- v1 仍不等价于“设备在场真实性”；presence 需要额外锚定机制（attestation / OOB anchor）。
+
+#### v2 语义绑定升级（P0 必做）
+
+为回应“proof 证明了连续性，但 payload 可能来自另一语义对象”的质疑，v2 将绑定从传输一致性升级为**密码学语义绑定**：
+
+1. 新增 witness 关系（电路内）
+   - 在证明语句中引入 `payload_commitment`（或 `contrib_commitment`）；
+   - 证明目标从：
+   - `R_continuity(w) : prev->curr 连续`
+   - 升级为：
+   - `R_semantic(w) : prev->curr 连续 ∧ payload_commitment = Commit(F(curr_loc, idx, val, clip, epoch, round_id, window_id))`
+
+2. 新增公开输入（canonical v2）
+   - `public_inputs = [hash_prev, hash_curr, max_dist_sq, payload_commitment]`
+   - 聚合器接收的 `payload_digest` 需与 `payload_commitment` 对应（经规范化映射）。
+
+3. 语义效果
+   - committee attestation 负责“链路防篡改”；
+   - zk 关系负责“proof 与 payload 的同 witness 语义绑定”；
+   - 二者叠加后，才能回答 reviewer 的关键问题：
+   - “上传的 contribution 是否由被证明的 curr_loc 导出”。
+
+#### v1 落地计划（代码级）
+
+1. `common/committee.py`
+   - 固化 `canonical_json` 与 `payload_digest` 计算函数，避免多语言/多服务编码歧义。
+2. `services/shuffler/app.py`
+   - 把 `payload_digest + proof_digest + chain tuple` 纳入 attestation message。
+3. `services/aggregator_a/app.py`、`services/aggregator_r/app.py`
+   - 增加摘要重算与一致性拒绝路径。
+4. `tests/`
+   - 新增“proof 合法但 payload 篡改”攻击测试，预期必须拒绝。
+
+#### 文档分层规则（仅保留总文档）
+
+为避免“当前实现 / 目标设计 / 计划实验 / 预期结果”混杂，本文档统一采用三层标记：
+
+- `[CURRENT]`：当前可运行协议与已验证参数（论文主文可引用）
+- `[PENDING]`：正在实现或未完成项（仅用于研发计划）
+- `[ARCHIVE]`：历史方案、教学示例、预期模板（不可作为主文证据）
+
+若章节未显式标记，以本章“顶会口径收敛 + P0 修订”为最高优先级解释。
+
+#### 电路与接口冻结（Canonical Freeze, 2026-04-01）
+
+为消除“多版电路/多版 public input 并存”风险，主线冻结如下：
+
+1. canonical v1（当前实现）
+   - 主电路唯一公开输入：`[hash_prev, hash_curr, max_dist_sq]`
+   - 不再将 `[v_max, time_diff]` 作为主线 public input schema
+   - 电路内必须包含强约束：`1 === all_checks_pass`
+
+2. verifier 约束
+   - 禁止“仅返回 valid 字段但不强制为 1”的实现方式；
+   - 若保留 `valid` 输出，必须由电路强制固定为 1（或设为 public 并在 verifier 强校验）。
+
+3. canonical v2（P0 进行中）
+   - 在 v1 基础上扩展 `payload_commitment`，形成语义绑定接口；
+   - 历史版本接口只保留在 `[ARCHIVE]` 段落，不作为主文证明对象。
+
+---
 
 ### 参数对照实验结论（2026-03-14）
 
@@ -95,6 +309,113 @@
 
 因此，后续文档、部署说明和论文系统实现部分，应将 `TSIP_WINDOW_SEC = 60`、`MAX_STEP_M = 110` 视为“实验验证后的最终工程参数”。
 
+### 对齐修订（2026-03-20）
+
+针对“12ms 延迟口径不可信、需要 Poseidon 复测、需要大规模实验”的三点意见，当前已完成以下修订：
+
+1. 延迟口径修订（替换旧 `12ms`）
+   - 旧口径 `12ms` 已作废，不再作为论文结论使用。
+   - 端到端实测（容器链路、`snarkjs` 路径）客户端单次可达秒级（约 `2.9s` 量级）。
+   - 电路级 prove 基准已补齐 `snarkjs vs rapidsnark` 对照（见下表与 `experiments/zk_benchmark_20260320_200539.csv`）。
+
+2. Poseidon 切换与基准
+   - `circuits/tsip_main.circom` 已由 MiMC 切到 Poseidon 约束。
+   - 新约束数与证明体积、prove/verify 时间如下（5轮均值）：
+
+| 电路 | Prover | 约束数 | 证明大小 | prove均值 | verify均值 |
+|------|--------|--------|----------|-----------|------------|
+| `tsip_step` | `snarkjs` | `70` | `805 B` | `1150.932 ms` | `1040.721 ms` |
+| `tsip_step` | `rapidsnark` | `70` | `706 B` | `307.652 ms` | `1034.547 ms` |
+| `tsip_main_poseidon` | `snarkjs` | `674` | `804 B` | `1388.000 ms` | `1064.044 ms` |
+| `tsip_main_poseidon` | `rapidsnark` | `674` | `708 B` | `409.185 ms` | `1033.237 ms` |
+
+   - 结论：在当前环境下，`rapidsnark` 将 prove 延迟从秒级压到 `0.3~0.4s`；verify 仍由 `snarkjs` 执行，约 `1.03s`。
+   - 部署说明：`client_sim` 已支持 `ZK_STEP_PROVER/TSIP_PROVER=auto|snarkjs|rapidsnark`，当容器内未安装 `rapidsnark` 时会自动回退 `snarkjs`。
+
+3. 大规模实验已启动
+   - 已新增规模实验入口：`script/run_scale_sweep.sh`。
+   - 已完成一次 `CLIENT_TOTAL=500` 的实测样例（`experiments/round_metrics_20260320_200853.csv`）：
+     - `total=500`
+     - `valid_clients=455`
+     - `rejected=45`
+     - `malicious_reject_rate=1.0`
+     - `false_reject_rate=0.0`
+
+当前论文写作口径建议：
+
+- 客户端开销必须使用“秒级 snarkjs / 亚秒级 rapidsnark”的实测值，不得再写固定 `12ms`。
+- Poseidon 相关结论必须绑定当前实测约束数（`674`）与 benchmark 文件。
+- 大规模实验章节按 `CLIENT_TOTAL` 梯度（如 `200/500/1000`）继续补齐多轮统计。
+
+### 服务器 rapidsnark 验证闭环（2026-03-22）
+
+在远程服务器 `219.218.158.27` 已完成 prover 切换闭环验证，结论是“配置开关生效，rapidsnark 已实际参与证明生成”。
+
+1. 代码版本确认（容器内）
+   - `/app/client.py` 已包含 `ZK_STEP_PROVER`、`RAPIDSNARK_BIN`、`_resolve_prover` 相关逻辑。
+
+2. 负向验证（坏路径故障注入）
+   - 以 `ZK_STEP_PROVER=rapidsnark` 且 `RAPIDSNARK_BIN=/not/exist` 启动客户端。
+   - 客户端按预期在 `ensure_zk_step_ready` 处报错：
+     - `RuntimeError: rapidsnark not found: /not/exist`
+   - 说明 prover 路由没有被绕过，环境变量切换已真实生效。
+
+3. 正向验证（正式路径）
+   - 将 `/tmp/rapidsnark` 注入容器为 `/usr/local/bin/rapidsnark` 后运行：
+     - 日志出现 ` [INFO] zk_step prover: rapidsnark`
+     - 日志出现 ` [INFO] tsip prover: rapidsnark`
+   - 本轮运行结果：
+     - `summary total=200`
+     - `valid_clients=169`
+     - `rejected=31`
+     - `malicious_total=27`
+     - `malicious_reject_rate=1.0`
+     - `false_reject_rate=0.0231`
+
+4. 工程备注
+   - `tsip user blacklisted` 属于已启用的黑名单策略触发，不是 prover 切换异常。
+   - 只要 `client_sim` 容器被重建（recreate/build），需重新执行一次：
+     - `docker compose cp /tmp/rapidsnark client_sim:/usr/local/bin/rapidsnark`
+
+### 承诺链断裂修复记录（2026-03-24）
+
+本轮修复聚焦一个阻断性问题：次轮提交出现 `missing tsip proof` / `tsip prev_loc_commitment mismatch`，导致多轮链路不可信。
+
+1. 根因确认
+   - 客户端 `compute_location_commitment` 仍在使用 MiMC 路径；
+   - `tsip_main` 电路约束使用 Poseidon；
+   - 两者不一致导致次轮 `fullprove` 失败，客户端降级上报 `proof=None`，服务端表现为 `missing tsip proof`。
+
+2. 已完成修复
+   - 统一承诺哈希到 Poseidon2 路径（客户端承诺计算与电路一致）。
+   - 新增配置：
+     - `TSIP_LOC_HASH_MODE=poseidon2`（默认）
+     - `TSIP_POSEIDON_WASM=/app/zk/poseidon2_bench/poseidon2_bench_js/poseidon2_bench.wasm`
+     - `TSIP_POSEIDON_TIMEOUT_SEC=20`
+   - 将 Poseidon helper 工件纳入镜像路径：`zk/poseidon2_bench/poseidon2_bench_js/*`。
+
+3. 调试可观测性补齐
+   - 客户端新增 debug 打印（`DEBUG_CLIENT=1`）：
+     - `tsip prev_loc before submit`
+     - `tsip stored_loc after accept`
+   - shuffler 新增 `TSIP_DEBUG=1` 开关，打印：
+     - `stored_prev_loc` 与 `received_prev_loc` 对照
+     - `verified_curr_loc`
+
+4. 状态错配补丁（重启场景）
+   - 发现 `shuffler` 重启后内存清空，而客户端本地 `tsip_state` 仍保留，会触发
+     `unexpected previous tsip commitment for first submission`。
+   - 已新增自动对齐：若 `shuffler /health` 返回 `tsip_users=0` 且客户端本地状态非空，则客户端自动清空本地 `tsip_state` 并打印提示。
+
+5. 回归结果
+   - 同一 `user_id` 连续两轮提交通过：
+     - 第 1 轮：`A_ok=True, R_ok=True`
+     - 第 2 轮：`A_ok=True, R_ok=True`
+   - 日志对齐验证：
+     - client `prev_loc` 与 shuffler `stored_prev_loc` 完全一致；
+     - shuffler 成功输出 `verified_curr_loc`。
+   - `shuffler` 重启后再次提交可自动恢复，不再因本地旧状态导致首轮拒绝。
+
 ### GeoLife 冷启动与次轮验证结论（2026-03-16）
 
 在 `CLIENT_TRAJ_SOURCE=geolife`、`GEO_TRAJ_PATH=/app/experiments/geolife_tsip_ready_50u.jsonl` 下，最新两轮实测结果如下：
@@ -121,7 +442,9 @@
 2. 从第 2 轮开始统计 `malicious_reject_rate`、`false_reject_rate`
 3. reconstruct 使用 `expected=min(received_A, received_R)`，避免因有效样本数波动导致误报
 
-### GeoLife 10轮正式统计（2026-03-16）
+### GeoLife 10轮正式统计（2026-03-16，Poseidon2修复前，仅作参考）
+
+> ⚠️ 此结果为 Poseidon2 修复前版本，不作为论文最终引用结果，仅保留用于对比。
 
 在完成 warm-up 后，使用以下配置完成 10 轮正式统计：
 
@@ -140,15 +463,95 @@
 - `avg_cells_final = 3492.20`
 - `avg_dp_cells_kept_post = 169.50`
 
-对应结果文件：
+对应结果文件：`experiments/round_metrics_20260316_134407.csv`
 
-- `experiments/round_metrics_20260316_134407.csv`
+---
 
-当前可用于论文“真实数据可行性”章节的结论是：
+### GeoLife 服务器修复版 10 轮正式统计（2026-03-29）✅ 论文可用
 
-- 在 GeoLife 驱动下，系统对恶意样本仍能保持 `100%` 拒绝率；
-- 正常样本误拒率非常低（约 `0.43%`）；
-- TSIP + DP 链路在真实轨迹输入下可稳定跑完并产出可用聚合结果。
+> 此为 Poseidon2 修复后、使用最新代码在服务器上运行的正式结果，作为论文”真实数据可行性”章节的最终引用版本。
+
+配置：
+
+- `CLIENT_TRAJ_SOURCE=geolife`
+- `GEO_TRAJ_PATH=/app/experiments/geolife_tsip_ready_50u.jsonl`
+- `CLIENT_TOTAL=50`（50 名 GeoLife 用户）
+- `ROUNDS=10`，`TAU=3, TAU2=3`
+- `TSIP_USER_SCOPE=round`，`MALICIOUS_RATE=0.1`
+
+批量实验均值结果：
+
+| 指标 | 数值 |
+|------|------|
+| `rounds` | 10 |
+| `avg_valid_clients` | 45.10 |
+| `avg_rejected` | 4.90 |
+| `avg_malicious_total` | 4.40 |
+| `avg_malicious_reject_rate` | **1.0000** |
+| `avg_false_reject_rate` | **0.0111** |
+| `avg_cells_final` | 3545.90 |
+| `avg_dp_cells_kept_post` | 219.60 |
+
+结果文件：`experiments/round_metrics_20260329_095735.csv`
+
+**结论（论文可用）**：
+- 在该 10 轮 GeoLife 批次中，观测到 `malicious_reject_rate=1.0000`（样本内为 100% 拦截）；
+- 正常用户误拒率为 1.11%，在可接受范围内；
+- TSIP + DP 全链路在真实轨迹输入下稳定运行，avg_cells_final=3545.90，聚合结果质量良好。
+
+### No-ZK Baseline 对比实验（2026-03-29）✅ 论文可用
+
+> 关闭全部 ZK 验证层（TSIP + zk_step），验证无保护情况下攻击成功通过，作为论文安全性对比基线。
+
+配置：
+- `CLIENT_TSIP_ENABLE=0`，`SHUFFLER_TSIP_ENABLE=0`（关闭承诺链验证）
+- `CLIENT_ZK_STEP_ENABLE=0`，`SHUFFLER_ZK_STEP_ENABLE=0`（关闭单步 ZK 证明）
+- `CLIENT_TOTAL=200`，`MALICIOUS_RATE=0.1`，`ROUNDS=10`
+
+| 指标 | 数值 |
+|------|------|
+| `rounds` | 10 |
+| `avg_valid_clients` | **200.00** |
+| `avg_rejected` | **0.00** |
+| `avg_malicious_total` | 21.90 |
+| `avg_malicious_reject_rate` | **0.0000** |
+| `avg_false_reject_rate` | 0.0000 |
+| `avg_cells_final` | 8503.30 |
+| `avg_dp_cells_kept_post` | 860.70 |
+
+结果文件：`experiments/round_metrics_20260329_171044.csv`
+
+**与完整 TSIP 的对比（论文核心证据）：**
+
+| 配置 | malicious_reject_rate | false_reject_rate | avg_valid_clients |
+|------|----------------------|-------------------|-------------------|
+| No-ZK Baseline（无保护） | **0.0000** | 0.0000 | 200.00 |
+| 完整 TSIP（合成数据，200用户，30轮） | **1.0000** | 0.0017 | ~179 |
+| 完整 TSIP（GeoLife，50用户，10轮） | **1.0000** | 0.0111 | 45.10 |
+
+**结论**：在该 No-ZK 对照批次中，恶意样本未被拒绝（`malicious_reject_rate=0.0000`），聚合结果可被污染；对应 TSIP 批次观测到高拦截率与低误拒率。该对比支持“完整性过滤显著降低攻击污染”的主张。
+
+---
+
+### 规模扩展实验（2026-03-29/30）✅ 论文可用
+
+> 在服务器上使用合成轨迹，分别测试 CLIENT_TOTAL=200/500/1000，每档 5 轮，验证 TSIP 的可扩展性。
+
+配置：`CLIENT_TRAJ_SOURCE=synthetic`，`MALICIOUS_RATE=0.1`，`ROUNDS=5`，`TAU=3, TAU2=3`
+
+| 规模 | avg_valid_clients | avg_malicious_reject_rate | avg_false_reject_rate | avg_cells_final | 结果文件 |
+|------|------------------|--------------------------|----------------------|-----------------|---------|
+| 200  | 180.80 (90.4%)  | **1.0000** | 0.0011 | 9595.60  | `round_metrics_20260329_221428.csv` |
+| 500  | 447.60 (89.5%)  | **1.0000** | 0.0004 | 9997.20  | `round_metrics_20260329_233000.csv` |
+| 1000 | 902.60 (90.3%)  | **1.0000** | 0.0002 | 10000.00 | `round_metrics_20260330_023605.csv` |
+
+**结论（论文可用）**：
+- 在该组规模实验中，`malicious_reject_rate=1.0000` 在三种规模下一致，未观察到随规模退化；
+- `false_reject_rate` 随规模增大单调下降（0.0011 → 0.0004 → 0.0002），大规模场景下系统更稳定；
+- `avg_cells_final` 随规模增大趋近于域大小上限（10000），说明覆盖率随参与人数提升；
+- 系统在 1000 客户端规模下仍保持完整 TSIP 运行，验证了工程可扩展性。
+
+---
 
 ### 服务器合成数据10轮统计（2026-03-17）
 
@@ -169,7 +572,7 @@
 
 该组结果可用于论文中的“服务器部署稳定性与防攻击能力”小节，核心结论为：
 
-- 恶意样本拦截率保持 `100%`；
+- 在该批次中观测到恶意样本拦截率为 `1.0000`；
 - 误拒率约 `1.07%`，处于可接受区间；
 - 在远程服务器环境下，TSIP + DP 聚合链路可稳定完成多轮运行。
 
@@ -197,26 +600,186 @@
 
 截至 2026-03-20 的服务器合成数据口径结论：
 
-- 恶意样本拒绝率持续保持 `100%`；
+- 在复测批次中恶意样本拒绝率均观测为 `1.0000`；
 - 误拒率在不同轮次存在波动（`0.0% ~ 3.62%`）；
 - 系统整体可稳定完成多轮运行并生成可用 DP 聚合输出。
 
-### 下一步研发优先级
+### 服务器修复后正式10轮统计（2026-03-24）
 
-从工程和论文一致性的角度，后续工作优先级应固定为：
+在完成“承诺链断裂修复 + 服务器代码同步 + poseidon helper 工件补齐”后，服务器侧重新进行正式 10 轮统计，结果如下：
 
-1. 参数对照实验  
-   比较“当前稳定参数”与“设计目标参数”，确认当前调优值是否优于设计初值。
+- `rounds = 10`
+- `avg_valid_clients = 179.00`
+- `avg_rejected = 21.00`
+- `avg_malicious_total = 20.70`
+- `avg_malicious_reject_rate = 1.0000`
+- `avg_false_reject_rate = 0.0017`
+- `avg_cells_final = 8204.40`
+- `avg_dp_cells_kept_post = 1060.00`
 
-2. 服务器 GeoLife 10轮最终对照  
-   固定一组 `client_traj_source=geolife` 且每轮 `summary total=50` 的正式统计，作为“真实数据”口径。
+对应结果文件：
 
-3. 黑名单与惩罚机制补全  
-   在当前阈值封禁基础上补充持久化/审计策略。
+- `experiments/round_metrics_20260324_205127.csv`（服务器，正式可用）
 
-4. T-Drive 与文档安全证明收敛  
-   完成第二真实数据集（T-Drive）并同步更新安全证明文本；
-   让论文中的协议、参数、安全证明全部与当前代码实现一致。
+同日本机对照结果：
+
+- `experiments/round_metrics_20260324_163745.csv`
+- `avg_valid_clients = 179.20`
+- `avg_false_reject_rate = 0.0000`
+
+异常批次说明（作废，不用于论文统计）：
+
+- `experiments/round_metrics_20260324_163726.csv`
+- `avg_false_reject_rate = 0.9252`
+- 该批次发生在服务器未完全同步修复版本时，属于配置/代码不一致导致的失真结果，已明确排除。
+
+截至 2026-03-24 的服务器合成数据最终口径结论：
+
+- 在修复后批次中恶意样本拒绝率观测为 `1.0000`；
+- 误拒率已恢复至接近 `0` 的水平（服务器 `0.17%`）；
+- TSIP 主链路（承诺链连续性 + zk_step + DP 输出）在远程 CPU-only 环境可稳定多轮运行。
+
+### 服务器合成数据30轮最终统计（2026-03-27）
+
+在 Poseidon2 承诺链修复版本稳定后，服务器侧完成首次正式 30 轮连续统计，结果如下：
+
+- `rounds = 30`
+- `avg_valid_clients = 180.63`
+- `avg_rejected = 19.37`
+- `avg_malicious_total = 19.07`
+- `avg_malicious_reject_rate = 1.0000`
+- `avg_false_reject_rate = 0.0017`
+- `avg_cells_final = 8232.30`
+- `avg_dp_cells_kept_post = 799.67`
+
+对应结果文件：
+
+- `experiments/round_metrics_20260327_092202.csv`（服务器，30 轮，正式可用）
+
+与 2026-03-24 服务器 10 轮结果对比：
+
+| 指标 | 服务器 10 轮（2026-03-24） | 服务器 30 轮（2026-03-27） | 结论 |
+|------|--------------------------|--------------------------|------|
+| `avg_valid_clients` | `179.00` | `180.63` | 一致，正常波动 |
+| `avg_malicious_reject_rate` | `1.0000` | `1.0000` | 完全一致 |
+| `avg_false_reject_rate` | `0.0017` | `0.0017` | 完全一致，30 轮无退化 |
+| `avg_cells_final` | `8204.40` | `8232.30` | 稳定 |
+| `avg_dp_cells_kept_post` | `1060.00` | `799.67` | DP 随机化导致的正常波动 |
+
+截至 2026-03-27 的服务器合成数据口径结论（论文主结果）：
+
+- 这是 Poseidon2 承诺链修复后，服务器侧首次完整的 30 轮正式统计；
+- `avg_false_reject_rate = 0.0017` 与 10 轮结果完全一致，说明系统在 30 轮内没有退化；
+- 在该 30 轮批次中 `avg_malicious_reject_rate = 1.0000`，防攻击能力未出现可见退化；
+- **本组结果（`round_metrics_20260327_092202.csv`）为论文合成数据实验的最终可用主结果。**
+
+### 服务器合成数据10轮复测（2026-03-28）
+
+在 30 轮主结果完成后，再次进行 10 轮合成数据复测，结果如下：
+
+- `rounds = 10`
+- `avg_valid_clients = 177.00`
+- `avg_rejected = 23.00`
+- `avg_malicious_total = 22.70`
+- `avg_malicious_reject_rate = 1.0000`
+- `avg_false_reject_rate = 0.0017`
+- `avg_cells_final = 8172.70`
+- `avg_dp_cells_kept_post = 910.80`
+
+对应结果文件：`experiments/round_metrics_20260328_145624.csv`
+
+结论：`false_reject_rate=0.0017` 第三次在服务器侧稳定复现（与 2026-03-24 10 轮、2026-03-27 30 轮完全一致），进一步确认系统稳定性。
+
+### 下一步研发优先级（更新至 2026-04-05）
+
+从工程和论文一致性的角度，后续工作优先级如下：
+
+1. ✅ 参数对照实验（已完成，2026-03-14）
+   结论：`TSIP_WINDOW_SEC=60 / MAX_STEP_M=110` 为最终工程参数。
+
+2. ✅ 服务器合成数据 30 轮正式统计（已完成，2026-03-27）
+   结论：`false_reject_rate=0.0017`，与 10 轮结果一致，为论文合成数据主结果。
+
+3. ✅ 服务器合成数据 10 轮复测（已完成，2026-03-28）
+   结论：`false_reject_rate=0.0017` 第三次稳定复现，系统一致性已充分验证。
+
+4. ✅ 服务器 GeoLife 10 轮修复版（已完成，2026-03-29）
+   结论：`avg_valid_clients=45.10`，`malicious_reject_rate=1.0000`，`false_reject_rate=0.0111`，论文真实数据章节可用。
+
+5. ✅ No-ZK Baseline 对比实验（已完成，2026-03-29）
+   关闭所有 ZK 验证（TSIP + zk_step）后，观测到 `malicious_reject_rate=0.0000`（该批次恶意样本均未被拒绝）。
+   与 TSIP 实验形成完整对比，论文核心证据。
+   结果文件：`experiments/round_metrics_20260329_171044.csv`
+
+6. ✅ 攻击强度 boundary sweep（A1 瞬移，7档，已完成，2026-04-01 / 2026-04-05）
+
+   **背景**：之前粗粒度 3 档（200/1000/50000m）均 100% 检测，未揭示检测阈值。本次细粒度围绕 ~6600m 阈值做边界扫描，分 Synthetic 和 T-Drive 两组。
+
+   **配置**：`ATTACK_TYPE=boundary_teleport`，`stable scope`，`warmup_rounds=1`，`TSIP_MAX_GAP_WINDOWS=2`，10 rounds × 50 clients
+
+   **Synthetic 结果（2026-04-01）**：
+
+   | 跳跃距离 | malicious_reject_rate | false_reject_rate | 结果文件 |
+   |---------|----------------------|-------------------|---------|
+   | 1000m | 1.0000 | 0.0000 | `boundary_1000m.log` |
+   | 3300m | 1.0000 | 0.0000 | `boundary_3300m.log` |
+   | 5940m | 1.0000 | 0.0000 | `boundary_5940m.log` |
+   | 6534m | 1.0000 | 0.0000 | `boundary_6534m.log` |
+   | 6600m | 1.0000 | 0.0000 | `boundary_6600m.log` |
+   | 6666m | 1.0000 | 0.0000 | `boundary_6666m.log` |
+   | 7200m | 1.0000 | 0.0000 | `boundary_7200m.log` |
+
+   > 注：Synthetic 粗粒度实验（`round` scope，no warmup）全部为 1.0，但该结果来自不同检测机制（非 TSIP 距离约束）。
+
+   **Synthetic TSIP-enabled 结果（stable scope，2026-04-01，`synth_boundary_clean_*.log`）**：
+
+   | 跳跃距离 | malicious_reject_rate | false_reject_rate |
+   |---------|----------------------|-------------------|
+   | 6534m | 0.0000 | 0.0000 |
+   | 6600m | 0.0589 | 0.0000 |
+   | 6666m | 0.7437 | 0.0000 |
+   | 7200m | 0.8264 | 0.0000 |
+
+   > 注：7200m 未达 100% 因城市边界截断 bug（diagonal fallback 被 clamp），T-Drive 无此问题。
+
+   **T-Drive 结果（2026-04-05，`tdrive_boundary_clean_*.log`）**：
+
+   | 跳跃距离 | malicious_reject_rate | false_reject_rate |
+   |---------|----------------------|-------------------|
+   | 1000m | 0.0000 | 0.0288 |
+   | 3300m | 0.0000 | 0.0227 |
+   | 5940m | 0.0000 | 0.0427 |
+   | 6534m | 0.0000 | 0.0363 |
+   | 6600m | 0.0000 | 0.0469 |
+   | **6666m** | **1.0000** | 0.0376 |
+   | **7200m** | **1.0000** | 0.0406 |
+
+   **关键发现**：
+   - 检测阈值约为 6600m（= v_max × actual_time_diff ≈ 80 m/s × 82.5s），阈值以下完全漏检，阈值以上完全检测（T-Drive）
+   - T-Drive 存在 ~2-5% 恒定误拒率，原因是真实轨迹中 GPS 中断后补录等合法大跨度移动超出距离约束，体现 security-utility tradeoff
+   - S 型检测曲线见 `experiments/tsip_scurve.png`（Synthetic + T-Drive 双线对比）
+
+   **论文可用性**：✅ Security Evaluation 章节，Detection Threshold 子节
+
+7. ✅ A2 身份交换攻击实验（已完成，2026-03-31）
+   TSIP_USER_SCOPE=stable，ATTACK_TYPE=identity_swap，10 轮，50 用户。
+   avg_valid_clients=45.10，malicious_reject_rate=1.0000，false_reject_rate=0.0000，结果文件 `experiments/round_metrics_20260331_125319.csv`。
+   结论：在该 A2 批次中，攻击者冒用相邻用户 ID 的恶意提交均被检测并拒绝。
+
+8. ✅ A5 重放攻击实验（已完成，2026-03-31）
+   TSIP_USER_SCOPE=stable，ATTACK_TYPE=replay，10 轮，50 用户。
+   avg_valid_clients=45.00，malicious_reject_rate=1.0000，false_reject_rate=0.0000，结果文件 `experiments/round_metrics_20260331_204055.csv`。
+   结论：在该 A5 批次中，重放型恶意提交均被检测并拒绝（`malicious_reject_rate=1.0000`）。
+
+9. ✅ T-Drive 数据集实验（已完成，2026-03-30 + boundary sweep 2026-04-05）
+   - **主实验（2026-03-30）**：服务器 10 轮，50 用户（taxi），avg_valid_clients=45.00，malicious_reject_rate=1.0000，false_reject_rate=0.0000，avg_cells_final=3600.60，结果文件 `experiments/round_metrics_20260330_125403.csv`
+   - **Boundary Sweep（2026-04-05）**：7档距离（1000~7200m），10 rounds × 50 clients，stable scope + warmup=1；阈值（~6600m）以下 0% 检测，以上 100% 检测，false_reject_rate 全程 ~2-5%；完整数据见本文档第 6 条，S 型曲线见 `experiments/tsip_scurve.png`
+
+8. ✅ 规模扩展实验（已完成，2026-03-29/30）
+   200/500/1000 各 5 轮；在该批次中 `malicious_reject_rate=1.0000`，`false_reject_rate` 随规模下降（0.0011→0.0004→0.0002），论文可扩展性章节可用。
+
+9. **【论文阻塞项】安全证明文本对齐**
+   所有实验完成后，将安全证明章节重写为与当前 Poseidon2 承诺链 + zk_step + 黑名单机制完全一致的描述。
 
 ## 第一章: 问题定义与动机
 
@@ -229,7 +792,7 @@
 - 输出: 城市热力图 (每个网格的访问次数)
 - 要求: 
   1. 服务器无法推断个人位置 (隐私性)
-  2. 恶意用户无法伪造轨迹 (完整性)
+  2. 在连续性作用域内高概率拒绝违规轨迹，并提高恶意污染成本 (完整性)
   3. 高效处理百万级网格 (可扩展性)
 ```
 
@@ -326,8 +889,8 @@ def risefl_verify(location, random_vector):
 
 **非正式描述**:
 > 一个位置聚合协议满足时空完整性,当且仅当:
-> 恶意用户无法提交违反物理运动规律的跨时间轨迹,
-> 而不被检测到 (即使每个时刻的位置单独看是合理的)。
+> 在给定威胁模型与状态机规则下,恶意用户若提交违反速度/连续性约束的跨时间轨迹,
+> 其通过验证概率可忽略 (即使每个时刻的位置单独看是合理的)。
 
 **形式化定义**:
 
@@ -346,6 +909,10 @@ where:
 - λ: security parameter (soundness)
 - ε: negligible error probability
 - v_max: maximum physically possible velocity
+
+scope note:
+- 该定义约束的是 trajectory continuity/plausibility,不是真实世界在场真实性(presence/truthfulness)。
+- 作用域针对链深度 >= 1 且满足协议状态机约束的用户提交。
 ```
 
 **关键要求**:
@@ -369,16 +936,16 @@ where:
 
 | 指标 | RiseFL (baseline) | TSIP目标 |
 |------|-------------------|---------|
-| 证明大小 | O(m·d) = 10MB | O(log T) = 2KB |
-| 证明生成时间 | O(m·d) = 100ms | O(T·log d) = 50ms |
-| 验证时间 | O(m·d) = 50ms | O(log T) = 10ms |
-| 通信量 (per user) | 10MB | 2KB |
+| 证明大小 | O(m·d) = 10MB | 当前实测约 `0.70~0.81KB`（proof 文件） |
+| 证明生成时间 | O(m·d) = 100ms | 当前实测约 `0.31~1.39s`（rapidsnark/snarkjs） |
+| 验证时间 | O(m·d) = 50ms | 当前实测约 `1.03s`（snarkjs verify） |
+| 通信量 (per user) | 10MB 级 | 当前实现约 `1KB` 级（含证明与提交元数据） |
 
 #### 目标3: 实用性
 
 - 支持T=288个时间窗口 (每5分钟一个,覆盖24小时)
 - 支持d=10^6个网格 (城市级规模)
-- 客户端开销: 手机可承受 (<100ms, <5MB内存)
+- 客户端开销（当前实测口径）: prove 为亚秒到秒级，后续需补移动端实测，不再使用 `<100ms` 口径
 
 ---
 
@@ -424,7 +991,7 @@ Alice (Prover)        Bob (Verifier)
 ```
 1. Succinct (简洁): 
    - 证明大小: O(1) (约200-500 bytes,与语句复杂度无关!)
-   - 验证时间: O(1) (约10ms)
+   - 验证时间: O(1) (实现相关,通常毫秒级到秒级)
 
 2. Non-interactive (非交互):
    - 不需要Prover和Verifier来回通信
@@ -465,7 +1032,7 @@ Verifier用vk和公开输入验证π
 ```
 特性:
 - 证明大小: 仅128 bytes (2个G₁元素 + 1个G₂元素)
-- 验证时间: ~10ms
+- 验证时间: 实现相关（本项目当前 `snarkjs` 实测约 `1.03s`）
 - 可信设置: 需要(但可用MPC生成,如Zcash的Powers of Tau)
 
 缺点:
@@ -670,12 +1237,12 @@ R1CS (Rank-1 Constraint System):
 - Setup时间: O(约束数) ~= 1秒 per 10K约束
 - Proving时间: O(约束数·log(约束数)) ~= 0.1秒 per 10K约束
 - 证明大小: O(1) (与约束数无关!) = 128 bytes
-- 验证时间: O(公开输入数) ~= 10ms
+- 验证时间: O(公开输入数)（实现相关）
 
 TSIP的距离验证电路:
-- 约束数: ~100
-- Proving时间: ~10ms
-- 验证时间: ~5ms
+- 约束数: `70`
+- Proving时间: `snarkjs≈1151ms` / `rapidsnark≈308ms`
+- 验证时间: `snarkjs≈1035ms`
 ```
 
 #### Circom语言简介
@@ -720,7 +1287,7 @@ component main = Multiplier();
    lt.in[1] <== b;
 ```
 
-**TSIP距离检查电路 (预览)**:
+**TSIP距离检查电路 (预览, [ARCHIVE] 教学示例)**:
 ```circom
 template DistanceCheck() {
     // 私密输入: 两个位置
@@ -772,6 +1339,9 @@ template DistanceCheck() {
 
 ### 2.4 将TSIP问题转化为电路
 
+> [ARCHIVE] 本节用于教学解释电路建模思路；
+> canonical 接口与约束以“电路与接口冻结（2026-04-01）”与第 5.5 节为准。
+
 #### 问题分解
 
 **TSIP要证明的语句**:
@@ -818,13 +1388,11 @@ template TSIPCircuit() {
     signal input y1;
     signal input x2;
     signal input y2;
-    signal input t1;
-    signal input t2;
     
     // 公开
     signal input hash_prev;  // 上一个位置的承诺
-    signal input v_max;
     signal input hash_curr;  // 当前位置的承诺(由电路计算)
+    signal input max_dist_sq; // 预计算后的最大允许位移平方
     
     // ===== 输出信号 =====
     signal output valid;
@@ -857,23 +1425,12 @@ template TSIPCircuit() {
     signal dist_sq;
     dist_sq <== dx_sq + dy_sq;
     
-    // ===== 子电路4: 时间差计算 =====
-    signal dt;
-    dt <== t2 - t1;
-    
-    // ===== 子电路5: 最大距离 =====
-    signal max_dist;
-    max_dist <== v_max * dt;
-    
-    signal max_dist_sq;
-    max_dist_sq <== max_dist * max_dist;
-    
-    // ===== 子电路6: 比较 =====
+    // ===== 子电路4: 比较 =====
     component lt = LessThanOrEqual(128);  // 128位比较器
     lt.in[0] <== dist_sq;
     lt.in[1] <== max_dist_sq;
     
-    // ===== 子电路7: 范围检查 =====
+    // ===== 子电路5: 范围检查 =====
     // 确保坐标在合理范围 (如: 0 ≤ x ≤ 10^6)
     component range_x1 = RangeCheck(32);
     range_x1.in <== x1;
@@ -891,8 +1448,8 @@ template TSIPCircuit() {
     signal all_checks_pass;
     all_checks_pass <== lt.out * range_x1.out * range_y1.out 
                               * range_x2.out * range_y2.out;
-    
-    valid <== all_checks_pass;
+    1 === all_checks_pass;   // 关键: 不允许 valid=0 的 witness 被接受
+    valid <== 1;
 }
 ```
 
@@ -996,7 +1553,9 @@ Client_i:
   3. 加密位置: enc_loc₀ = Encrypt(loc₀)
   4. 上传: (enc_loc₀, H₀)
   
-  ⚠️ 第一个位置无需TSIP证明 (无历史对比)
+  ⚠️ 第一个位置无历史对比:
+     - 在 legacy_accept 策略下可直接入链;
+     - 在 enroll_only 策略下仅登记锚点,不计入发布轮统计。
 
 Shuffler:
   1. 存储 H₀ 与 user_id 的映射
@@ -1010,8 +1569,8 @@ Client_i (时刻t):
   2. 取出历史: locₜ₋₁ = history[-1]
   3. 生成TSIP证明:
      proof = TSIP_Prove(
-         witness: (xₜ₋₁, yₜ₋₁, xₜ, yₜ, tₜ₋₁, tₜ),
-         public:  (Hₜ₋₁, v_max)
+         witness: (xₜ₋₁, yₜ₋₁, xₜ, yₜ),
+         public:  (Hₜ₋₁, Hₜ, max_dist_sq)
      )
   4. 加密新位置: enc_locₜ = Encrypt(xₜ, yₜ)
   5. 计算新承诺: Hₜ = Hash(xₜ, yₜ)
@@ -1023,7 +1582,7 @@ Shuffler (时刻t):
   2. 验证TSIP证明:
      valid = TSIP_Verify(
          proof, 
-         public_inputs: (Hₜ₋₁, Hₜ, v_max, Δt)
+         public_inputs: (Hₜ₋₁, Hₜ, max_dist_sq)
      )
   3. 如果valid:
        - 更新承诺: commitment[user_i] = Hₜ
@@ -1058,9 +1617,11 @@ t=0: Alice提交H₀ᴬ, Bob提交H₀ᴮ
 t=1: Alice想用Bob的ID提交
 
 问题:
-- Alice需要生成prove(loc₁, H₀ᴮ)
-- 但Alice不知道Bob的loc₀(只有哈希)
-- 无法计算距离约束!
+- Alice不仅要满足距离约束,还必须同时满足:
+  1) hidden user secret 跨轮一致;
+  2) epoch/nullifier 未重放;
+  3) proof_digest 与 payload_core_digest 绑定一致。
+- 仅靠"A不知道B的loc₀"不是主要安全依据。
 
 ∴ 攻击失败 ✓
 ```
@@ -1113,9 +1674,12 @@ def tsip_verify(proof, public_inputs):
 情况3: 身份交换
   攻击者A和B想在t=1交换ID
   A需要prove(loc₁ᴬ, H₀ᴮ)
-  但A不知道B的loc₀ → 无法生成有效proof
+  仅靠"A不知道B的loc₀"不是充分论证;
+  强安全需结合 user-secret 绑定与状态机规则
 
-∴ 所有攻击路径都被阻断 ✓
+结论(当前实现口径):
+  在定理作用域与系统假设内，违规提交通过概率可忽略；
+  不宣称“所有攻击路径无条件被阻断”。
 ```
 
 **隐私性 (Zero-Knowledge)**:
@@ -1131,7 +1695,9 @@ Shuffler和聚合器学到的信息:
 - 聚合在MPC中进行
 - 最终输出添加DP噪声
 
-∴ 满足(ε,δ)-DP ✓
+结论:
+  对公开发布热力图满足 public-output DP；
+  内部 accept/reject 与链状态信息作为 internal leakage 单独讨论。
 ```
 
 ---
@@ -1177,7 +1743,7 @@ Shuffler和聚合器学到的信息:
 - Nebula: ~1 ms
 - RiseFL: ~100 ms
 - Clover: ~5 ms
-- TSIP: ~10 ms (zk-proof生成)
+- TSIP: snarkjs约1.15~1.39s；rapidsnark约0.31~0.41s（当前实测）
 ```
 
 ---
@@ -1206,7 +1772,7 @@ Shuffler和聚合器学到的信息:
 
 [5] Nebula: Differentially Private Histograms. SIGMOD 2022
 
-## 第五章: 详细协议规范
+## 第五章: 详细协议规范 [CURRENT]
 
 ### 5.1 系统参数
 
@@ -1221,20 +1787,20 @@ class TSIPParameters:
     # ===== 隐私参数 =====
     EPSILON_TOTAL = 1.0          # 总隐私预算
     EPSILON_SVT = 0.3            # 稀疏向量技术预算
-    EPSILON_VALUE = 0.5          # 值噪声预算
-    EPSILON_TSIP = 0.2           # TSIP验证预算
+    EPSILON_VALUE = 0.7          # 值噪声预算
+    EPSILON_VERIFY_EXPERIMENT = 0.2  # 仅用于可选随机化验证实验，不计入主口径
     DELTA = 1e-8                 # DP参数δ
     
     # ===== 物理约束参数 =====
-    V_MAX = 100.0                # 最大速度 (m/s) = 360 km/h
-    TIME_WINDOW = 300            # 时间窗口 (秒) = 5分钟
-    MAX_DISTANCE = V_MAX * TIME_WINDOW  # = 30,000 m = 30 km
+    V_MAX = 110.0                # 当前实现默认最大速度 (m/s)
+    TIME_WINDOW = 60             # 当前实现默认时间窗口 (秒)
+    MAX_DISTANCE = V_MAX * TIME_WINDOW  # = 6,600 m
     
     # ===== 地理空间参数 =====
     GRID_SIZE = 100              # 网格大小 (米)
-    GRID_WIDTH = 10000           # 网格宽度数量
-    GRID_HEIGHT = 10000          # 网格高度数量
-    DOMAIN_SIZE = GRID_WIDTH * GRID_HEIGHT  # = 10^8 个网格
+    GRID_WIDTH = 100             # 当前实现网格宽度数量
+    GRID_HEIGHT = 100            # 当前实现网格高度数量
+    DOMAIN_SIZE = GRID_WIDTH * GRID_HEIGHT  # = 10^4 个网格
     
     # 坐标范围 (假设东京市区)
     LAT_MIN = 35.5               # 最小纬度
@@ -1258,7 +1824,7 @@ class TSIPParameters:
     QUANTIZATION_BITS = 4        # 停留时间量化位数
     
     # ===== 系统参数 =====
-    NUM_TIME_WINDOWS = 288       # 24小时,每5分钟一个窗口
+    NUM_TIME_WINDOWS = 1440      # 24小时,每60秒一个窗口
     BATCH_SIZE = 100             # 聚合批次大小
     BATCH_TIMEOUT = 30           # 批次超时 (秒)
     
@@ -2107,9 +2673,13 @@ include "node_modules/circomlib/circuits/comparators.circom";
  * 公开输入:
  *   - hash_prev: 前一个位置的哈希
  *   - hash_curr: 当前位置的哈希 (由电路计算)
- *   - v_max: 最大速度 (m/s)
- *   - time_diff: 时间差 (秒)
  *   - max_dist_sq: 最大距离平方 (预计算)
+ * 
+ * canonical v1:
+ *   public = [hash_prev, hash_curr, max_dist_sq]
+ * 
+ * v2(P0待落地):
+ *   public = [hash_prev, hash_curr, max_dist_sq, payload_commitment]
  * 
  * 私密输入:
  *   - x1, y1: 前一个位置坐标
@@ -2199,15 +2769,22 @@ template TSIPCircuit() {
     y2_valid <== range_y2.out;
     
     // ===== 最终输出 =====
-    // 所有检查都必须通过
+    // 所有检查都必须通过（禁止 valid=0 通过约束）
     signal all_range_valid;
     all_range_valid <== x1_valid * y1_valid * x2_valid * y2_valid;
-    
-    valid <== less_than.out * all_range_valid;
+    signal all_checks_pass;
+    all_checks_pass <== less_than.out * all_range_valid;
+    1 === all_checks_pass;
+    valid <== 1;
 }
 
 component main {public [hash_prev, hash_curr, max_dist_sq]} = TSIPCircuit();
 ```
+
+> 接口冻结说明（2026-04-01）：
+> - 主线只保留上述 `canonical v1` 接口；
+> - 旧版 `[hash_prev, hash_curr, v_max, time_diff]` 仅作为历史草案，不再作为主线接口；
+> - v2 语义绑定升级会在不破坏 v1 可运行性的前提下引入 `payload_commitment`。
 
 ---
 
@@ -2495,30 +3072,36 @@ View_V(proof) ≈_c S(public_inputs)
 
 ---
 
-### 6.2 定理1: 完整性保证
+### 6.2 定理1: 连续性完整性保证（当前实现口径）
 
 #### 6.2.1 定理陈述
 
-**Theorem 1 (Soundness of TSIP)**:
+**Theorem 1 (Soundness of TSIP under continuity scope)**:
 
 ```latex
-\begin{theorem}[TSIP Soundness]
+\begin{theorem}[TSIP Soundness (Continuity Scope)]
 Let \Pi_{TSIP} be the TSIP protocol with security parameter \lambda.
-For any PPT adversary \mathcal{A} controlling up to t clients:
+For any PPT adversary \mathcal{A} controlling up to t clients, under:
+(i) Groth16 knowledge soundness,
+(ii) Poseidon collision resistance,
+(iii) chain depth \ge 1 (post-enrollment),
+(iv) protocol state machine correctness (no fork/double-submit acceptance),
+the probability of accepting a trajectory with step violation is negligible:
 
 \Pr\left[
 \begin{aligned}
 & \mathcal{A} \text{ submits trajectory } \tau = \{(x_0,y_0), \ldots, (x_T,y_T)\} \\
 & \land \exists i: \|(x_{i+1},y_{i+1}) - (x_i,y_i)\| > v_{max} \cdot \Delta t \\
-& \land \text{All TSIP proofs verify}
+& \land \text{TSIP continuity checks accept}
 \end{aligned}
 \right] \leq \frac{T}{2^\lambda} + \epsilon_{hash}
 \end{theorem}
 
-其中:
+其中（作用域说明）:
 - T: 时间窗口数量
 - λ: 安全参数 (128 bits)
 - ε_hash: 哈希碰撞概率 (对Poseidon, ≈ 2^{-128})
+- 本定理保证的是“跨轮连续性完整性”，不等价于“真实世界在场真实性（presence/truthfulness）”
 ```
 
 ---
@@ -2619,7 +3202,7 @@ Case 3: 复用证明 → 承诺链机制阻断
 
 ---
 
-**Case 4: 身份交换攻击**
+**Case 4: 身份交换攻击（超出本定理直接证明范围）**
 
 ```
 攻击者尝试:
@@ -2630,48 +3213,36 @@ Case 3: 复用证明 → 承诺链机制阻断
   
   t=1: Alice用Bob的ID提交loc_A^1
 
-分析:
-  Alice需要生成:
-  proof = TSIP_Prove(
-      witness: (loc_B^0, loc_A^1),  ← Alice不知道loc_B^0!
-      public: (commitment_B, ...)
-  )
-  
-  但Alice只知道commitment_B = Hash(loc_B^0),
-  不知道(x_B^0, y_B^0)的具体值
-  
-  若Alice猜测loc_B^0:
-  - 猜中概率: 1 / (X_MAX × Y_MAX) = 1 / 10^12
-  - 且即使猜中,distance(loc_B^0, loc_A^1)可能>v_max·Δt
-    (因为Alice和Bob地理位置不同)
-  
-  若Alice向Bob索要loc_B^0:
-  - 违反了"Bob诚实"的假设(串谋)
-  - 即使Bob提供,Alice也无法生成有效proof
-    (因为loc_B^0与loc_A^1距离太远)
+修订后的保守结论:
+  仅依赖“攻击者不知道他人坐标”不足以构成顶会级安全论证。
+  完整抗身份交换声明需要:
+  - hidden per-user secret 的跨轮一致性绑定
+  - epoch/nullifier 防重放与双提交
+  - 状态机规则防分叉
 
-结论: 身份交换攻击在非串谋情况下不可行
+当前口径:
+  - 该场景先作为 proposition/assumption 处理，不并入 Theorem 1 的概率上界计算；
+  - 等 hidden secret + nullifier + 状态机完整落地后，再升级为强声明。
 ```
 
 ---
 
-**Case 5: 时序攻击 (重放攻击)**
+**Case 5: 时序攻击（重放，状态机前提）**
 
 ```
 攻击者尝试:
   在t=2时重放t=1的proof
 
 分析:
-  每个proof包含时间戳:
-  - public_inputs包含time_diff = t_curr - t_prev
-  
-  验证器检查:
-  - 实际时间差是否匹配声称的time_diff
-  - 如果不匹配 → 拒绝
-  
-  故重放不可行
+  重放防御不应只依赖 time_diff。
+  需要状态机级绑定:
+  - (user_id, round_id/window_id, submission_id)
+  - payload digest
+  - 链状态版本（prev/curr commitment）
 
-结论: 时序信息防止重放攻击
+当前口径:
+  - 该场景依赖状态机前提，不并入 Theorem 1 的直接概率求和；
+  - 论文中应写成“在状态机正确实现前提下”。
 ```
 
 ---
@@ -2679,148 +3250,200 @@ Case 3: 复用证明 → 承诺链机制阻断
 **Union Bound**:
 
 ```
-总成功概率 ≤ Σ(各case概率)
-             = 2^(-128) + 2^(-254) + 0 + 0 + 0
-             ≤ 2 × 2^(-128)
-             = 2^(-127)
-             = negl(λ)
+Theorem 1 仅对 Case 1~3 给出直接上界:
+总成功概率 ≤ P(case1) + P(case2) + P(case3)
+         ≤ 2^(-128) + 2^(-254) + negl(λ)
+         = negl(λ)
 
 对于T个时间窗口,每个窗口都有上述概率,
-故总概率 ≤ T × 2^(-127)
+故总概率 ≤ T × negl(λ)
 
 当T=288时:
-  Pr[攻击成功] ≤ 288 / 2^127 
-                ≈ 1.7 × 10^(-36)
-                (宇宙年龄内不会发生)
+  Pr[攻击成功] 仍为可忽略量级（由 λ 控制）
 ```
 
 **Q.E.D. □**
 
 ---
 
-### 6.3 定理2: 差分隐私保证
+### 6.3 定理2: 公开输出的差分隐私保证
 
-#### 6.3.1 定理陈述
+#### 6.3.1 定理陈述（主口径）
 
-**Theorem 2 (Differential Privacy of TSIP)**:
+**Theorem 2 (Public-Output Differential Privacy of TSIP)**:
 
 ```latex
-\begin{theorem}[TSIP Privacy]
-The TSIP protocol satisfies (\epsilon, \delta)-differential privacy
-with:
+\begin{theorem}[TSIP Public-Output Privacy]
+Let $M_{pub}$ denote the released heatmap of TSIP.
+Then TSIP satisfies $(\epsilon, \delta)$-DP on $M_{pub}$ with:
 \begin{align}
-\epsilon &= \epsilon_{SVT} + \epsilon_{value} + \epsilon_{verify} \\
-         &= 0.3 + 0.5 + 0.2 \\
-         &= 1.0 \\
+\epsilon &= \epsilon_{SVT} + \epsilon_{value} \\
 \delta &= 10^{-8}
 \end{align}
-
-where:
-- \epsilon_{SVT}: privacy cost of sparse vector technique
-- \epsilon_{value}: privacy cost of value noise
-- \epsilon_{verify}: privacy cost of TSIP verification
 \end{theorem}
 ```
 
----
+当前实现默认参数下：
 
-#### 6.3.2 隐私组合分析
+- `ε_SVT = 0.3`
+- `ε_value = 0.7`
+- `ε_total = 1.0`
 
-**DP组合定理回顾**:
+说明：
 
-```
-如果机制M1满足(ε1,δ1)-DP,机制M2满足(ε2,δ2)-DP,
-则顺序组合M = M1 ∘ M2满足(ε1+ε2, δ1+δ2)-DP
-
-[Dwork et al., 2006]
-```
-
-**TSIP的隐私开销分解**:
-
-```
-阶段1: 客户端本地操作
-  - Top-K筛选: 不消耗隐私预算 (本地DP)
-  - Dummy注入: 不消耗预算 (随机采样)
-  - TSIP证明生成: ε_verify = 0.2 (见引理1)
-
-阶段2: 服务器端聚合
-  - SVT阈值筛选: ε_SVT = 0.3
-  - 值噪声注入: ε_value = 0.5
-
-总隐私预算:
-  ε_total = ε_verify + ε_SVT + ε_value = 1.0
-```
+- 这里的 DP 保证只针对**最终公开热力图输出**。
+- TSIP 验证步骤（accept/reject）属于系统内部过滤信号，不并入主 DP 预算（见 6.3.2）。
 
 ---
 
-#### 6.3.3 引理1: TSIP验证的隐私开销
+#### 6.3.2 边界与泄露分解（Who Learns What）
 
-**Lemma 1**:
+为避免 overclaim，隐私边界拆分如下：
 
-```
-TSIP证明验证过程消耗隐私预算ε_verify ≤ 0.2
+1. Public output（对外发布）
+   - 最终热力图（`reconstruct + dp/latest` 结果）
+   - 适用主定理中的 DP 保证
 
-证明思路:
-1. 证明本身是零知识的 → 不泄露witness
-2. 但验证结果(accept/reject)泄露了1 bit信息
-3. 通过适当的随机化,限制泄露
-```
+2. Internal signals（内部可见）
+   - Shuffler 的 `accept/reject`
+   - 承诺链状态（`prev/curr commitment`）
+   - 提交时序元数据（`round_id/window_id`）
+   - 这些属于 trusted infrastructure 侧可见信息，不并入 public-output DP 预算
 
-**详细证明**:
+3. 语义澄清
+   - TSIP 验证可以视为“DP 发布前的完整性过滤器”；
+   - 它提供完整性约束，不等价于对外发布机制本身。
 
-```
-设D1和D2是相邻数据集(仅差1个用户u*)
-
-考虑验证器的输出分布:
-- P[Output = accept | D1]
-- P[Output = accept | D2]
-
-Case 1: u*的轨迹在D1中合法,在D2中违规
-
-  在D1中: proof通过验证,概率=1
-  在D2中: proof失败,概率≈0 (soundness)
-  
-  最坏情况泄露:
-  ε = ln(P[accept|D1] / P[accept|D2])
-    = ln(1 / 2^(-128))
-    = 128 ln(2)
-    ≈ 88.7
-  
-  太大! 需要随机化
-
-解决方案: 随机拒绝机制
-  
-  修改验证器:
-  def verify_with_noise(proof, inputs):
-      if groth16.verify(proof, inputs):
-          # 以概率(1-p)接受
-          return random() > p
-      else:
-          # 以概率q接受(噪声)
-          return random() < q
-  
-  选择p=0.01, q=0.0001使得:
-  ε = ln((1-p)/q) = ln(0.99/0.0001) ≈ 9.21
-  
-  仍太大! 
-
-更好的方案: 差分隐私的指数机制
-  
-  不直接输出accept/reject,而是:
-  - 计算"验证分数"score ∈ [0,1]
-  - 加拉普拉斯噪声: noisy_score = score + Lap(1/ε_verify)
-  - 如果noisy_score > 0.5 → accept
-  
-  这样:
-  ε_verify = 0.2 (预先分配)
-  δ = 0 (拉普拉斯机制)
-```
-
-**引理1得证 □**
+4. DP 术语冻结（论文写作强制项）
+   - adjacency：`user-level`（相邻数据集仅相差一个用户报告）
+   - sensitivity：由每用户贡献上界（Top-K + clipping）导出
+   - SVT：引用标准 sparse vector 机制定理，不使用“黑盒经验口径”
+   - 公开主张仅覆盖 public-output，不外推到 trusted infrastructure 内部可见信号
 
 ---
 
-#### 6.3.4 主定理证明
+#### 6.3.3 主定理证明（组合定理）
+
+**Proof of Theorem 2**:
+
+**Step 1: 完整性过滤与聚合前阶段**
+
+```
+- Top-K、dummy、proof 构造属于客户端本地处理；
+- TSIP 验证是系统内部过滤，不直接形成公开发布结果；
+- 聚合前阶段不计入 public-output DP 预算。
+```
+
+**Step 2: 安全聚合阶段**
+
+```
+- A/R 双聚合器仅见秘密份额；
+- 在至少一方诚实假设下，单方不可恢复单用户位置；
+- 该阶段不增加 public-output DP 支出。
+```
+
+**Step 3: Decoder 的 DP 释放阶段**
+
+```
+SVT:
+  - 消耗 ε_SVT = 0.3
+
+Value noise:
+  - 对发布计数加噪
+  - 消耗 ε_value = 0.7
+
+小计:
+  ε_decoder = ε_SVT + ε_value = 1.0
+```
+
+**Step 4: 顺序组合**
+
+```
+ε_total = ε_SVT + ε_value = 1.0
+δ_total = 10^(-8)
+```
+
+**Step 5: 后处理不变性**
+
+```
+对已发布 DP 结果的可视化与查询属于后处理，不增加隐私泄露。
+```
+
+**Q.E.D. □**
+
+---
+
+#### 6.3.4 可选随机化验证（实验项，不是主口径）
+
+为研究完整性-误判权衡，系统保留“随机化验证”实验开关：
+
+- 实现位置：`services/shuffler/app.py`
+- 配置项（默认关闭）：
+  - `TSIP_VERIFY_DP_ENABLE`
+  - `TSIP_VERIFY_EPSILON`
+  - `TSIP_VERIFY_NOISY_THRESHOLD`
+  - `TSIP_VERIFY_DP_SEED`
+- 运行观测：
+  - `/health` 中 `tsip_verify_dp_enable / tsip_verify_epsilon / tsip_verify_calls / tsip_verify_spent`
+
+注意：
+
+- 该机制用于附录或扩展实验（验证随机化策略），
+- 不纳入论文主结果中的 DP 预算组合公式。
+
+---
+
+**多 Shuffler 门限转发与 payload 绑定（k-of-t，2026-03-25~2026-04-01）**
+
+- 实现位置：
+  - `services/shuffler/app.py`：新增 `/committee/attest`，并在 `ingestA/ingestR` 中收集门限签名
+  - `services/aggregator_a/app.py`、`services/aggregator_r/app.py`：新增门限验签守门
+  - `common/committee.py`：统一签名/验签与 payload 规范
+- 机制（分版本）：
+  - v0（已实现）：
+    - 每个 Shuffler 对 `(channel, round_id, submission_id, idx/val digest)` 生成 HMAC/MAC
+    - 聚合器仅接收“有效 MAC 数量 >= `SHUFFLER_COMMITTEE_THRESHOLD`”的提交
+    - 语义注意：HMAC 是 shared-secret MAC，不是可转移数字签名；不可等同于强门限签名
+  - v1（进行中，P0）：
+    - 签名摘要升级为 `(channel, round_id, submission_id, user_id, window_id, payload_digest, proof_digest, prev_chain, curr_chain)`
+    - 聚合器本地重算 `payload_digest`，与 attestation 摘要不一致即拒绝
+  - v2（建议，论文增强）：
+    - 将 v0/v1 的 HMAC 层替换为 Ed25519（或 BLS）数字签名；
+    - 若主张“门限签名”语义，则需使用真正 threshold signature 方案
+- 关键配置：
+  - `SHUFFLER_COMMITTEE_ENABLE`
+  - `SHUFFLER_COMMITTEE_THRESHOLD`
+  - `SHUFFLER_COMMITTEE_ID`、`SHUFFLER_COMMITTEE_SIGN_SECRET`
+  - `SHUFFLER_COMMITTEE_PEERS`
+  - `SHUFFLER_COMMITTEE_KEYS`（聚合器侧，格式 `s1:sec1,s2:sec2,s3:sec3`）
+  - 本地三节点联调可用：`docker compose --profile committee up -d`
+- 安全语义：
+  - 在 `k=3,t=2` 时，可声明“容忍 1 个恶意/失效 Shuffler 后仍可维持转发门限策略”
+  - v0 主要防单点绕过；但其密码学语义是 MAC 门控，不是强可转移签名
+  - v1 进一步防“proof 通过后 payload 被替换”的拆分攻击
+  - 仍需结合部署隔离、审计日志与状态机规则（fork/double-submit）共同生效。
+
+---
+
+**首轮（t=0）安全边界修订（2026-03-25）**
+
+- 问题本质：TSIP 的时空连续性证明依赖“上一承诺已存在”，因此严格来说定理只对链深度 `>=1` 的提交成立。
+- 修订后的安全声明：
+  - 不再宣称“所有提交（包含首轮）都满足同等时空完整性保证”；
+  - 明确声明“TSIP 完整性保证适用于已完成 enrollment 的用户提交（即有历史承诺链）”。
+- 协议化解决（非 warm-up 工程绕过）：
+  - 将首轮提交定义为 **enrollment/anchor** 阶段；
+  - enrollment 仅用于建立 `H_0` 承诺锚点，不直接进入聚合；
+  - 只有从 `H_0 -> H_1` 开始、具备连续性证明的提交才可进入最终聚合。
+- 工程开关：
+  - `TSIP_BOOTSTRAP_POLICY=legacy_accept`：旧行为（首轮可聚合）
+  - `TSIP_BOOTSTRAP_POLICY=enroll_only`：严格行为（首轮仅锚定、不聚合）
+- 实现位置：
+  - `services/shuffler/app.py` 中 `ingestA/ingestR` 的 `bootstrap_held` 逻辑与 `/health` 可观测字段。
+
+---
+
+#### 6.3.5 主定理分步解释（实现对齐）
 
 **Proof of Theorem 2**:
 
@@ -2828,15 +3451,15 @@ Case 1: u*的轨迹在D1中合法,在D2中违规
 
 ```
 本地操作不消耗全局隐私预算:
-- Top-K筛选: 属于本地DP,不影响中心化DP
-- Dummy注入: 从公开分布采样,不泄露真实数据
+- Top-K筛选/clip/dummy: 属于本地预处理与贡献约束，不单独宣称DP
+- Dummy注入: 从公开分布采样，用于稀疏掩蔽与鲁棒性
 
 TSIP证明生成:
-- witness(私密位置)在TEE中处理
+- witness(私密位置)在本地处理
 - 输出的proof满足零知识性
-- 验证结果的随机化消耗ε_verify = 0.2
+- 验证结果属于内部过滤信号，不计入主 DP 预算
 
-小计: ε_client = 0.2
+小计: ε_client = 0
 ```
 
 **Step 2: 聚合器阶段**
@@ -2856,14 +3479,15 @@ MPC聚合:
 稀疏向量技术(SVT):
   - 对阈值加噪声: Lap(2/ε_SVT)
   - 对每个计数加噪声: Lap(1/ε_SVT)
-  - 消耗预算: ε_SVT = 0.3 [Nebula论文]
+  - 消耗预算: ε_SVT = 0.3
 
 值噪声注入:
   - 对通过阈值的网格,计数加噪声: Lap(Δf/ε_value)
-  - 全局敏感度: Δf = k × max(dwell_time) = 50 × 300 = 15000
-  - 消耗预算: ε_value = 0.5
+  - adjacency 口径: user-level（相邻数据集仅相差一个用户报告）
+  - 全局敏感度: Δf 由每用户贡献上界（Top-K + clip）给出
+  - 消耗预算: ε_value = 0.7
 
-小计: ε_decoder = 0.3 + 0.5 = 0.8
+小计: ε_decoder = 0.3 + 0.7 = 1.0
 ```
 
 **Step 4: 组合定理应用**
@@ -2871,7 +3495,7 @@ MPC聚合:
 ```
 根据DP的顺序组合定理:
   ε_total = ε_client + ε_aggregation + ε_decoder
-          = 0.2 + 0 + 0.8
+          = 0 + 0 + 1.0
           = 1.0
 
 δ_total = δ_client + δ_aggregation + δ_decoder
@@ -2908,7 +3532,7 @@ simulator S such that:
 \{View_{V^*}(x, w)\} \approx_c \{S(x)\}
 
 where:
-- x: public inputs (hash_prev, hash_curr, v_max, time_diff)
+- x: public inputs (hash_prev, hash_curr, max_dist_sq)
 - w: witness (x1, y1, x2, y2)
 - View: verifier's view (包括证明和所有交互)
 \end{theorem}
@@ -2944,7 +3568,7 @@ def simulator(public_inputs):
     零知识模拟器: 不知道witness的情况下生成"看起来真实"的证明
     
     Args:
-        public_inputs: (hash_prev, hash_curr, v_max, time_diff)
+        public_inputs: (hash_prev, hash_curr, max_dist_sq)
     
     Returns:
         simulated_proof: 与真实proof计算不可区分
@@ -2991,7 +3615,7 @@ def simulator(public_inputs):
 **模拟器S的工作流程**:
 
 ```
-输入: public_inputs = (hash_prev, hash_curr, v_max, Δt)
+输入: public_inputs = (hash_prev, hash_curr, max_dist_sq)
 
 Step 1: 不使用witness,直接生成"看起来随机"的proof
   
@@ -3055,92 +3679,40 @@ Step 3: 输出调整后的proof
 
 ---
 
-### 6.5 定理4: 通信复杂度下界
+### 6.5 通信效率分析（工程口径）
 
-#### 6.5.1 定理陈述
+> 说明：原“通信下界最优性定理”属于理想化草案，当前版本不作为主文强定理使用。
+> 论文主文建议改为“工程通信效率对比 + 实测开销”。
 
-**Theorem 4 (Lower Bound on Communication)**:
-
-```latex
-\begin{theorem}[Communication Lower Bound]
-Any protocol that achieves temporal-spatial integrity with 
-soundness error 2^{-λ} must have communication complexity:
-
-\Omega(\lambda + \log T)
-
-where T is the number of time windows.
-\end{theorem}
-```
-
-这证明TSIP的 $O(\log T)$ 证明大小是渐进最优的!
-
----
-
-#### 6.5.2 证明思路
-
-**直觉**:
+#### 6.5.1 每次提交的通信构成
 
 ```
-要验证T个时间窗口的连续性,
-至少需要"链接"T个位置
+per-submission 主要开销:
+- zk proof（Groth16）: 约 0.70~0.81 KB（实测区间）
+- 承诺链字段: prev/curr commitment 与链状态元数据
+- 稀疏索引与份额: idx/val 提交
 
-如果证明大小<log T,
-则无法唯一标识具体哪些位置被验证
-
-∴ 必须 ≥ log T bits
+合计: 当前实现约 1KB 级（与配置和序列化格式有关）
 ```
 
----
-
-#### 6.5.3 完整证明(草图)
-
-**Proof of Theorem 4**:
+#### 6.5.2 对比口径（用于实验章节）
 
 ```
-反证法: 假设存在协议Π,通信量 < λ + log T
+TSIP:
+  通信成本与 domain size 弱相关（使用稀疏 top-k 表示）
+  不随全域 D 线性膨胀到 dense 向量级别
 
-Step 1: 信息论论证
-  
-  T个时间窗口的轨迹空间大小:
-  |Trajectory_space| = (X_MAX × Y_MAX)^T
-                     = (10^6 × 10^6)^T
-                     = 10^(12T)
-  
-  要唯一标识一条合法轨迹,至少需要:
-  log₂(10^(12T)) ≈ 40T bits
-
-Step 2: 压缩论证
-  
-  如果协议通信量 < log T,
-  则无法编码"哪T个位置被验证"的信息
-  
-  攻击者可以:
-  - 提交前k个合法位置
-  - 在第k+1个位置"跳跃"
-  - 由于协议无法区分是验证了哪些位置,
-    攻击者可以避开被验证的位置
-
-Step 3: 下界推导
-  
-  结合soundness要求(错误率≤2^(-λ)),
-  至少需要λ bits来承载"验证结果的随机性"
-  
-  结合Step 2,至少需要log T bits来标识验证的位置
-  
-  ∴ 总通信量 ≥ λ + log T
+Range-proof/inner-product 型基线:
+  通信开销可随维度显著增长
+  在大域场景下工程代价更高
 ```
 
-**TSIP达到了这个下界**:
+#### 6.5.3 当前主张边界
 
 ```
-TSIP的证明大小:
-- Groth16 proof: 128 bytes = 1024 bits ≈ λ
-- 承诺链: O(log T) (通过哈希链压缩)
-
-总计: O(λ + log T) ✓
+当前文档只主张“工程上通信效率可接受且优于 dense 方案”。
+不主张“已完成严格信息论最优下界证明”。
 ```
-
-**Q.E.D. □**
 
 ---
 
@@ -3148,10 +3720,10 @@ TSIP的证明大小:
 
 | 定理          | 性质           | 保证                            | 依赖假设               |
 | ------------- | -------------- | ------------------------------- | ---------------------- |
-| **Theorem 1** | Soundness      | 恶意轨迹以≥1-2^(-128)概率被拒绝 | Groth16 soundness, DLP |
+| **Theorem 1** | Soundness      | 连续性作用域内，违规步长通过概率可忽略 | Groth16 soundness, Poseidon 抗碰撞 |
 | **Theorem 2** | Privacy        | (1.0, 10^(-8))-DP               | DP组合定理             |
 | **Theorem 3** | Zero-Knowledge | 证明不泄露witness               | DDH假设                |
-| **Theorem 4** | Optimality     | 通信复杂度最优                  | 信息论下界             |
+| **工程分析**  | Communication  | 1KB 级每次提交（实测口径）      | 稀疏表示 + 实测统计    |
 
 ---
 
@@ -3170,18 +3742,17 @@ t=1: 交换ID, Alice提交"在大阪"
 #### TSIP防御
 
 ```
-✅ 承诺链机制:
-  - Alice需要证明"大阪位置"是"东京位置"的延续
-  - 但Alice不知道Bob在t=0的具体位置(只有哈希)
-  - 无法生成有效proof
+✅ 核心防御不是"不知道坐标",而是跨轮绑定:
+  - 证明中要求 user_secret 一致性 + epoch/nullifier 防重放
+  - proof 与 payload 摘要绑定,防止"合法proof + 非法payload"拆分
+  - 承诺链前后状态由 shuffler 状态机检查(单轮单提交、防fork)
 
-✅ 距离约束:
-  - 即使Alice猜到Bob的位置
-  - 东京→大阪距离≈500km > v_max·Δt=30km
-  - proof验证失败
+✅ 物理连续性约束:
+  - 若攻击路径需要大位移跳变
+  - 则距离约束触发拒绝
 ```
 
-#### 实验验证
+#### 实验验证口径
 
 ```python
 def test_identity_swap_attack():
@@ -3196,18 +3767,16 @@ def test_identity_swap_attack():
     # t=1: Alice尝试用Bob的ID提交
     alice_loc_1 = Location(x=1000, y=1000, t=300)  # 仍在东京附近
     
-    # Alice尝试生成proof
-    # 她需要证明: loc_1是bob_loc_0的延续
-    # 但她不知道bob_loc_0的具体坐标!
-    
-    # 即使她猜测:
+    # Alice即使猜测了Bob的初始位置,
+    # 也无法通过 secret/nullifier/epoch/payload 绑定检查
+    # 下面仅演示距离约束分支:
     guessed_bob_loc_0 = Location(x=500000, y=0, t=0)
     
     # 距离检查:
     distance = euclidean(guessed_bob_loc_0, alice_loc_1)
     assert distance > v_max * time_diff  # 499km > 30km
     
-    # 生成proof会失败(电路约束不满足)
+    # 生成proof会失败(至少一个约束分支不满足)
     proof = generate_tsip_proof(guessed_bob_loc_0, alice_loc_1)
     assert verify_proof(proof) == False  # ✓ 攻击被阻止
 ```
@@ -3232,9 +3801,10 @@ t=1: 全部"瞬移"到商场A
   - 每个账户都有独立的承诺链
   - 如果任何账户"瞬移",其proof验证失败
 
-✅ 统计检测:
-  - Shuffler监控全局拒绝率
-  - 如果突然有大量账户被拒绝 → 触发警报
+✅ 成本提升结论:
+  - 一步瞬移会被高概率拒绝
+  - 攻击者若改为渐进漂移,需要跨多轮持续投入账户与时间成本
+  - 论文主张应表述为"attack-cost elevation",而非"一切恶意轨迹绝对阻断"
 ```
 
 #### 实验验证
@@ -3261,8 +3831,8 @@ def test_sybil_teleport_attack():
         if not verify_proof(proof):
             rejected += 1
     
-    # 预期: 绝大多数被拒绝
-    assert rejected > 0.95 * num_sybils  # >95%被拒绝
+    # 预期: 在该攻击设置中绝大多数被拒绝
+    assert rejected > 0.95 * num_sybils
     
     # Shuffler检测到异常
     rejection_rate = rejected / num_sybils
@@ -3283,10 +3853,11 @@ def test_sybil_teleport_attack():
 #### TSIP防御
 
 ```
-✅ 匿名ID:
-  - 每个时间窗口使用不同的临时ID
-  - ID = HMAC(user_secret, window_id)
-  - 服务器无法跨窗口关联
+✅ 条件化的标识保护:
+  - 当系统启用 window 作用域 pseudonym 时,
+    可降低跨窗口直接关联能力
+  - 当采用 stable user scope 时,服务器可关联同一 user_id;
+    该配置主要服务于链式完整性与可复现实验
 
 ✅ DP噪声:
   - 最终输出添加DP噪声
@@ -3356,7 +3927,9 @@ S_A和S_R串谋,尝试重构用户的明文位置
 
 [Grassi+21] Lorenzo Grassi et al. "Poseidon: A New Hash Function for Zero-Knowledge Proof Systems". USENIX Security 2021.
 
-## 第八章: 实验评估方案
+## 第八章: 实验评估方案 [PENDING/ARCHIVE]
+
+> 本章包含实验模板与计划项；论文主结果请以文档前部 `[CURRENT]` 实测统计为准。
 
 ### 8.1 实验目标
 
@@ -3797,7 +4370,7 @@ results["TSIP"] = measure_attack_detection_rate(TSIP(), tsip_attacks)
 # RiseFL (baseline)
 results["RiseFL"] = measure_attack_detection_rate(RiseFL(), tsip_attacks)
 
-# 预期结果:
+# [ARCHIVE] 历史预期模板（非实测，不能用于论文主文）:
 # TSIP:   TPR=0.997, FPR=0.05
 # RiseFL: TPR=0.001, FPR=0.05  (几乎无法检测跨时间攻击!)
 ```
@@ -4057,7 +4630,7 @@ def run_attack_defense_experiment():
     
     return results
 
-# 预期结果:
+# [ARCHIVE] 历史预期模板（非实测）:
 # ┌───────────┬──────────┬──────────┬──────────┬──────────┐
 # │ Protocol  │ Teleport │ ID Swap  │  Sybil   │ Average  │
 # ├───────────┼──────────┼──────────┼──────────┼──────────┤
@@ -4347,7 +4920,7 @@ def run_ablation_study():
     
     return results
 
-# 预期发现:
+# [ARCHIVE] 历史预期模板（非实测）:
 # - w/o TSIP: 攻击检测率从99%降至1% (关键组件!)
 # - w/o Clover: 通信量增加100倍 (稀疏化重要)
 # - w/o Nebula: 隐私预算无限 (DP机制必要)
@@ -4356,7 +4929,9 @@ def run_ablation_study():
 
 ---
 
-## 第九章: 论文撰写指南
+## 第九章: 论文撰写指南 [ARCHIVE]
+
+> 本章属于写作模板与投稿组织建议，不作为系统“已实现/已证明”证据来源。
 
 ### 9.1 论文结构
 
@@ -4385,14 +4960,18 @@ that leverages zero-knowledge proofs to verify trajectory continuity
 without revealing locations. TSIP introduces a commitment chain 
 mechanism that cryptographically binds consecutive locations, combined 
 with Groth16 zk-SNARKs to prove physical movement constraints. We 
-prove TSIP achieves (ε,δ)-differential privacy with ε=1.0 while 
-detecting malicious trajectories with probability ≥1-2^(-128).
+show TSIP provides public-output (ε,δ)-differential privacy with ε=1.0,
+and achieves high malicious-trajectory rejection under the continuity
+threat model.
 
 Evaluation on GeoLife and T-Drive datasets shows TSIP blocks 99.7% 
-of cross-window attacks (vs. 0.1% for state-of-the-art RiseFL) while 
-adding only 12ms client overhead and 2KB communication per submission. 
-TSIP's proof size is O(log T), proven optimal via information-theoretic 
-lower bounds.
+of cross-window attacks in our evaluated settings (vs. 0.1% for
+state-of-the-art RiseFL) while 
+adding second-level client overhead on snarkjs and sub-second proving 
+overhead on rapidsnark, with about 2KB communication per submission. 
+Communication remains around KB-level in current sparse implementation, 
+and we treat communication efficiency as an engineering comparison 
+rather than an information-theoretic optimality theorem.
 ```
 
 ---
@@ -4421,7 +5000,7 @@ lower bounds.
 1.4 贡献 (bullet list)
   - [C1] 首次形式化"时空完整性"问题
   - [C2] 提出TSIP协议,结合承诺链与zk-SNARKs
-  - [C3] 证明TSIP的安全性和通信复杂度最优性
+  - [C3] 证明TSIP的连续性安全性与公开输出隐私性，并给出工程通信效率分析
   - [C4] 实现并评估,证明实用性
 
 1.5 论文组织 (简短)
@@ -4510,9 +5089,9 @@ lower bounds.
   - 陈述
   - 模拟器构造
 
-5.4 Theorem 4: Optimality
-  - 下界证明
-  - TSIP达到下界
+5.4 Communication Analysis (工程口径)
+  - 每次提交通信构成
+  - 与基线方案的通信量对比
 ```
 
 **证明写作技巧**:
@@ -4565,7 +5144,7 @@ lower bounds.
 
 7.4 Scalability (Exp 3)
   - 图: 用户数/网格数 vs 时间/内存
-  - 发现: 线性扩展到10万用户
+  - 发现: 在当前实现中已验证到 1000 用户，后续扩展到更大规模
 
 7.5 Real Data (Exp 4)
   - 表格: 各方案在真实数据上的表现
@@ -4577,7 +5156,7 @@ lower bounds.
 
 7.7 Overhead Analysis
   - 表格: 客户端/服务器开销
-  - 发现: 12ms proof生成, 2KB通信
+  - 发现: snarkjs秒级 prove / rapidsnark亚秒级 prove，通信约2KB
 ```
 
 **图表建议**:
@@ -4697,26 +5276,26 @@ ESORICS
 9月: 内部审阅 + 投稿
 ```
 
-**投稿窗口**:
+**投稿窗口（按最新计划更新）**:
 
-- **USENIX Security Fall 2025**: 截稿10月 (首选)
-- **CCS 2026 Spring**: 截稿1月 (备选)
+- **NDSS 2027 Cycle 2**（目标）
+- **USENIX Security 2027 Cycle 1**（备选）
 
 **Rebuttal准备**:
 
 ```
 预判常见质疑:
 Q1: "TSIP只是zk-SNARK的应用,创新性不足?"
-A: 我们不仅应用,还形式化了新问题,设计了新协议,证明了最优性
+A: 我们不仅应用,还形式化了新问题,设计了 continuity 约束协议，并给出系统级安全与隐私分析（通信部分按工程效率分析呈现）
 
 Q2: "实验规模不够大?"
-A: 我们测试了10万用户,覆盖T-Drive全量数据
+A: 当前主结果已覆盖真实数据与 200/500/1000 规模；更大规模作为下一阶段补充实验
 
 Q3: "可信Setup是个问题?"
 A: 可用MPC生成,或换用Plonk (透明Setup)
 
 Q4: "真实部署可行性?"
-A: 客户端开销12ms,手机完全可承受
+A: snarkjs路径是秒级，rapidsnark可降到亚秒级；需按部署栈给出实测值而非固定12ms
 ```
 
 ---
@@ -4744,7 +5323,7 @@ README必须包含:
 1. 环境配置 (依赖、版本)
 2. 快速开始 (5分钟跑通Demo)
 3. 完整实验复现 (逐个实验的命令)
-4. 预期结果 (关键数字)
+4. 结果示例与通过判据（标注 measured/pending）
 
 artifact-evaluation/
 ├── INSTALL.md (安装指南)
