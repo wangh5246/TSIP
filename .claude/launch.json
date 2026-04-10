@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Full Stack",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["compose", "up", "shuffler", "aggregator_a", "aggregator_r", "decoder"],
+      "port": 8001
+    },
+    {
+      "name": "Shuffler",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["compose", "up", "shuffler"],
+      "port": 8001
+    },
+    {
+      "name": "Aggregator A",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["compose", "up", "aggregator_a"],
+      "port": 8002
+    },
+    {
+      "name": "Aggregator R",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["compose", "up", "aggregator_r"],
+      "port": 8003
+    },
+    {
+      "name": "Decoder",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["compose", "up", "decoder"],
+      "port": 8010
+    }
+  ]
+}

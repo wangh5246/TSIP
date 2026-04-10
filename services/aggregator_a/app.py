@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel, Field
-from typing import List, Dict
+from typing import List, Dict, Optional, Tuple
 import requests
 import os
 import math
@@ -11,6 +11,7 @@ import logging
 import hmac
 import hashlib
 from common.utils import derive_prp_seed_from_share, inv_prp
+from common.committee import parse_id_secret_map, count_valid_signatures
 app = FastAPI()
 seen = set()  # 存 (round_id, submission_id)
 
@@ -50,6 +51,9 @@ DP_TAU2 = float(os.getenv("DP_TAU2", "3.0"))
 DP_SENSITIVITY = float(os.getenv("DP_SENSITIVITY", "1.0"))
 DP_DECODE_ENABLE = os.getenv("DP_DECODE_ENABLE", "0") == "1"
 ALLOW_INSECURE_RECONSTRUCT = os.getenv("ALLOW_INSECURE_RECONSTRUCT", "0") == "1"
+SHUFFLER_COMMITTEE_ENABLE = os.getenv("SHUFFLER_COMMITTEE_ENABLE", "0") == "1"
+SHUFFLER_COMMITTEE_THRESHOLD = int(os.getenv("SHUFFLER_COMMITTEE_THRESHOLD", "1"))
+SHUFFLER_COMMITTEE_KEYS = parse_id_secret_map(os.getenv("SHUFFLER_COMMITTEE_KEYS", ""))
 
 def _decode_signature_payload(round_id: int, tokens: List[int]) -> str:
     joined = ",".join(str(int(t)) for t in tokens)
@@ -115,6 +119,7 @@ class Report(BaseModel):
     submission_id: str
     idx: List[int] = Field(..., min_length=KPRIME, max_length=KPRIME)
     val: List[int] = Field(..., min_length=KPRIME, max_length=KPRIME)
+    committee_sigs: Optional[List[Dict[str, str]]] = None
 
 class ForwardBatch(BaseModel):
     reports: List[Report]
@@ -140,6 +145,37 @@ def validate_report(r: Report):
             return f"idx out of range: {c}"
     return None
 
+
+def _committee_valid_report(channel: str, r: Report) -> Tuple[bool, str]:
+    if not SHUFFLER_COMMITTEE_ENABLE:
+        return True, ""
+    if SHUFFLER_COMMITTEE_THRESHOLD <= 0:
+        return False, "invalid SHUFFLER_COMMITTEE_THRESHOLD"
+    if not SHUFFLER_COMMITTEE_KEYS:
+        return False, "missing SHUFFLER_COMMITTEE_KEYS"
+
+    pairs: List[Tuple[str, str]] = []
+    for s in (r.committee_sigs or []):
+        sid = str((s or {}).get("shuffler_id", "")).strip()
+        sig = str((s or {}).get("signature", "")).strip()
+        if sid and sig:
+            pairs.append((sid, sig))
+    if not pairs:
+        return False, "missing committee signatures"
+
+    valid = count_valid_signatures(
+        id_secret_map=SHUFFLER_COMMITTEE_KEYS,
+        signatures=pairs,
+        channel=channel,
+        round_id=int(r.round_id),
+        submission_id=str(r.submission_id),
+        idx=r.idx,
+        val=r.val,
+    )
+    if valid < SHUFFLER_COMMITTEE_THRESHOLD:
+        return False, f"committee signatures not enough: valid {valid} need {SHUFFLER_COMMITTEE_THRESHOLD}"
+    return True, ""
+
 # ✅ round_id -> (cell -> sum_share)
 aggA_by_round: Dict[int, Dict[int, int]] = {}
 received_by_round: Dict[int, int] = {}
@@ -164,6 +200,8 @@ def health():
         "decode_enabled": DECODE_ENABLE,
         "dp_decode_enabled": DP_DECODE_ENABLE,
         "allow_insecure_reconstruct": ALLOW_INSECURE_RECONSTRUCT,
+        "committee_enable": SHUFFLER_COMMITTEE_ENABLE,
+        "committee_threshold": SHUFFLER_COMMITTEE_THRESHOLD,
     }
 
 @app.post("/forward")
@@ -179,6 +217,12 @@ def forward(batch: ForwardBatch):
             skipped_invalid += 1
             if len(invalid_samples) < 3:
                 invalid_samples.append(err)
+            continue
+        ok_committee, err_committee = _committee_valid_report("A", r)
+        if not ok_committee:
+            skipped_invalid += 1
+            if len(invalid_samples) < 3:
+                invalid_samples.append(err_committee)
             continue
         rid = int(r.round_id)
         key = (rid, r.submission_id)
@@ -777,7 +821,15 @@ def dump_latest_dp(epsilon: float = 1.0, tau: float = 3.0, tau2: float = 3.0):
     rid = max(aggA_by_round.keys())
 
     if rid not in final_by_round:
-        return {"ok": False, "error": "latest round not reconstructed yet", "round_id": rid}
+        # Auto-reconstruct (same pattern as /dp/latest)
+        recon = _reconstruct_round(rid=rid, expected=0, min_cells=1)
+        if not recon.get("ok"):
+            return {
+                "ok": False,
+                "error": "latest round not reconstructed yet",
+                "round_id": rid,
+                "reconstruct_error": recon,
+            }
 
     final_map = final_by_round[rid]
     # 在 final_map = final_by_round[rid] 之后立刻加：

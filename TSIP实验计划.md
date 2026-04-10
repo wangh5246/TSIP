@@ -13,6 +13,8 @@
 | 真实数据 | GeoLife 本地 10 轮（修复前），malicious_reject_rate=1.0, false_reject_rate=0.0043 | ⚠️ 需重跑修复版 |
 | **攻防评估** | **T-Drive boundary sweep（7档距离，10轮）：阈值以上100%检测，误拒率~3.5%** | **✅ 已完成 2026-04-05** |
 | **攻防评估** | **Synthetic boundary sweep（7档距离，10轮）：阈值以上74-83%检测，误拒率0%** | **✅ 已完成 2026-04-01** |
+| **攻防评估** | **A3 gradual drift（服务器初版，Synthetic fixed seeds，30轮）：0%恶意拒绝、0%误拒、累计偏移约2.6-2.7km** | **⚠️ 已完成 2026-04-07，可用于 Limitation，强度曲线待补** |
+| **攻防评估** | **T-Drive 恶意比例 sweep（7200m，5档比例，10轮）：完成 Full TSIP / Commitment-Only / No-TSIP 三路对照；仅 Full TSIP 保持 100% 恶意拦截** | **✅ 已完成 2026-04-09** |
 | 可视化 | S 型检测曲线（synthetic + T-Drive 双线），见 `experiments/tsip_scurve.png` | ✅ 已完成 2026-04-05 |
 | 参数调优 | 60s/110 vs 300s/100 对照实验，确认 60s/110 为最优 | ✅ |
 | ZK 基准 | snarkjs vs rapidsnark 对照，prove 时间 1.15s → 0.31s | ✅ |
@@ -47,11 +49,24 @@ TOTALS="200 500 1000" ROUNDS_PER_SCALE=5 BUILD_FIRST=0 \
 bash script/run_scale_sweep.sh
 ```
 
-#### 实验 3：恶意比例敏感性实验（Malicious Ratio Sweep）
-- **为什么必须做**：当前只测了固定 10% 恶意比例，审稿人会问 "What happens at 30%? 50%?"
-- **需要展示**：在不同恶意比例（5%/10%/20%/30%/50%）下，malicious_reject_rate 始终为 1.0，false_reject_rate 变化趋势
-- **预期耗时**：3-4 小时
-- **需要新增**：修改 `client.py` 中的 `MALICIOUS_RATE` 环境变量，或新建 `run_malicious_sweep.sh` 脚本
+#### 实验 3：恶意比例敏感性实验（Malicious Ratio Sweep）✅ 已完成（三路对照，服务器正式结果，2026-04-08/09）
+- **目的**：回答 “What happens at 30%? 50% malicious users?”，并通过 `Full TSIP / Commitment-Only / No-TSIP` 三路对照区分“commitment 链作用”和“ZK 距离验证作用”。
+- **配置**：`T-Drive`，`ATTACK_TYPE=boundary_teleport`，`TELEPORT_JUMP_M=7200m`，`TSIP_USER_SCOPE=stable`，`WARMUP_ROUNDS=1`，`TSIP_MAX_GAP_WINDOWS=1000`，`TSIP_BLACKLIST_THRESHOLD=0`，10 rounds × 50 clients。
+
+| Malicious Rate | Full TSIP MRR | Full TSIP FRR | Commitment-Only MRR | Commitment-Only FRR | No-TSIP MRR | No-TSIP FRR |
+|---------------|---------------|---------------|---------------------|---------------------|-------------|-------------|
+| 0.05 | 1.0000 | 0.0378 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| 0.10 | 1.0000 | 0.0402 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| 0.20 | 1.0000 | 0.0412 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| 0.30 | 1.0000 | 0.0345 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| 0.50 | 1.0000 | 0.0522 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+
+![T-Drive 7200m mode comparison](experiments/tsip_mode_comparison_7200m.png)
+
+- **结论**：
+  - `Full TSIP` 在恶意比例从 `5%` 到 `50%` 时，`avg_malicious_reject_rate` 全程保持 `1.0000`；
+  - `avg_false_reject_rate` 仅在 `0.0345 ~ 0.0522` 范围内波动，说明高恶意占比下检测鲁棒性仍稳定；
+  - `Commitment-Only` 与 `No-TSIP` 均为 `0.0000` 恶意拦截、`0.0000` 误拒，说明 commitment 链本身不能检测 `7200m` teleport，真正提供检测能力的是 ZK 距离验证。
 
 ### 🟡 P1：强烈建议完成
 
@@ -63,7 +78,7 @@ bash script/run_scale_sweep.sh
 |---------|------|---------|
 | **A1: 瞬移攻击 (Teleportation)** | 恶意客户端在连续窗口间报告不可能的距离跳跃 | TSIP 100% 拦截 ✅（已验证） |
 | **A2: 身份交换攻击 (Identity Swap)** | 两个串谋客户端在某轮交换 user_id | TSIP 应在下一轮通过承诺链不匹配拦截 |
-| **A3: 渐进式偏移攻击 (Gradual Drift)** | 恶意客户端每步移动刚好低于 v_max，但总位移不合理 | TSIP 单步无法拦截（这是 limitation），需讨论 |
+| **A3: 渐进式偏移攻击 (Gradual Drift)** | 恶意客户端每步移动刚好低于 v_max，但总位移不合理 | **服务器初版已完成**：三档 bias 均 `0%` 恶意拒绝、`0%` 误拒；可作为 limitation 证据，强度曲线待补 |
 | **A4: Sybil 攻击 (Sybil + 集中报告)** | 大量假 ID 在某区域集中报告 | DP 层可缓解，展示 DP 前后对比 |
 | **A5: 重放攻击 (Replay)** | 重放之前轮次的合法证明 | 承诺链 + window_id 检查应拦截 |
 | **A6: 伪造证明攻击 (Proof Forgery)** | 提交非法 ZK 证明 | snarkjs verify 拒绝 |
@@ -82,19 +97,19 @@ bash script/run_scale_sweep.sh
 - **最低要求**：至少做 RiseFL (无 TSIP) vs TSIP 的对比
 - **预期耗时**：3-5 天
 
-#### 实验 6：T-Drive 数据集实验 ✅ 已完成（2026-04-05）
+#### 实验 6：T-Drive 数据集实验 ✅ 已完成（服务器正式结果，2026-04-05/06）
 
-**Boundary Sweep 结果（stable scope, warmup=1, TSIP enabled, 10 rounds × 50 clients）：**
+**Boundary Sweep 结果（远程 CPU-only 服务器，stable scope, warmup=1, TSIP enabled, `TSIP_MAX_GAP_WINDOWS=1000`, `TSIP_BLACKLIST_THRESHOLD=0`, 10 rounds × 50 clients）：**
 
-| 跳跃距离 | malicious_reject_rate | false_reject_rate | 说明 |
-|---------|----------------------|-------------------|------|
-| 1000m | 0.0000 | 0.0288 | 阈值内，完全漏检（符合预期） |
-| 3300m | 0.0000 | 0.0227 | 阈值内，完全漏检（符合预期） |
-| 5940m | 0.0000 | 0.0427 | 阈值内，完全漏检（符合预期） |
-| 6534m | 0.0000 | 0.0363 | 0.99× 阈值，漏检（符合预期） |
-| 6600m | 0.0000 | 0.0469 | 刚好在阈值处，漏检 |
-| **6666m** | **1.0000** | 0.0376 | 1.01× 阈值，**完全检测** ✅ |
-| **7200m** | **1.0000** | 0.0406 | 1.09× 阈值，**完全检测** ✅ |
+| 跳跃距离 | avg_valid_clients | malicious_reject_rate | false_reject_rate | 说明 |
+|---------|-------------------|----------------------|-------------------|------|
+| 1000m | 48.40 | 0.0000 | 0.0355 | 阈值内，完全漏检（符合预期） |
+| 3300m | 48.80 | 0.0000 | 0.0261 | 阈值内，完全漏检（符合预期） |
+| 5940m | 49.40 | 0.0000 | 0.0133 | 阈值内，完全漏检（符合预期） |
+| 6534m | 47.90 | 0.0000 | 0.0470 | 0.99× 阈值，漏检（符合预期） |
+| 6600m | 48.80 | 0.0000 | 0.0264 | 刚好在阈值处，仍被接受 |
+| **6666m** | **42.90** | **1.0000** | 0.0357 | 1.01× 阈值，**完全检测** ✅ |
+| **7200m** | **42.90** | **1.0000** | 0.0407 | 1.09× 阈值，**完全检测** ✅ |
 
 **与 Synthetic 的关键差异：**
 - T-Drive 在 6666m 和 7200m 均达到 **100% 检测率**（Synthetic 分别为 74% 和 83%），因为真实轨迹不触发城市边界截断 bug
@@ -102,9 +117,42 @@ bash script/run_scale_sweep.sh
 
 **S 型检测曲线：** 见 `experiments/tsip_scurve.png`
 
-**结论：** 检测阈值约为 6600m（= v_max × actual_time_diff），阈值以下完全漏检，阈值以上完全检测，呈清晰阶跃。误拒率 ~3.5% 是真实轨迹数据的固有代价，体现了 security-utility tradeoff。
+**结论：** 服务器正式结果表明检测阈值与当前工程参数一致，即 `6600m = 110 * 60`。`<=6600m` 时恶意拒绝率为 `0%`，`>=6666m` 时恶意拒绝率为 `100%`，呈清晰阶跃。误拒率约 `1.3%~4.7%`，均值约 `3.2%`，是 T-Drive 真实轨迹中少量合法大跨度移动带来的固有代价。
 
 **论文可用性：** ✅ 可直接用于 Security Evaluation 章节，与 Synthetic 结果互为补充。
+
+#### 实验 6.5：A3 渐进式偏移攻击（服务器初版，2026-04-07）
+
+**配置（远程 CPU-only 服务器）：**
+- `ATTACK_TYPE=gradual_drift`
+- `CLIENT_TRAJ_SOURCE=synthetic`
+- `FIXED_SYNTHETIC_SEEDS=1`
+- `EXPERIMENT_SEED_BASE=20260407`
+- `TSIP_USER_SCOPE=stable`
+- `MALICIOUS_SCOPE=stable`
+- `WARMUP_ROUNDS=1`
+- `ROUNDS=30`
+- `CLIENT_TOTAL=50`
+- `MALICIOUS_RATE=0.1`
+- `SHUFFLER_TSIP_ENABLE=1`
+- `CLIENT_TSIP_ENABLE=1`
+- `SHUFFLER_ZK_STEP_ENABLE=0`
+- `CLIENT_ZK_STEP_ENABLE=0`
+- 由于服务器镜像拉取超时，本轮使用 `TSIP_PROVER=snarkjs`、`ZK_STEP_PROVER=snarkjs`
+
+**结果（`experiments/a3_drift_fixed_bias*.log`）：**
+
+| Bias Ratio | avg_malicious_reject_rate | avg_false_reject_rate | gradual_drift_offset_avg_m | gradual_drift_offset_max_m |
+|-----------|---------------------------|-----------------------|----------------------------|----------------------------|
+| 0.30 | 0.0000 | 0.0000 | 2635.20 | 3959.80 |
+| 0.60 | 0.0000 | 0.0000 | 2708.96 | 3959.80 |
+| 0.90 | 0.0000 | 0.0000 | 2573.30 | 3959.80 |
+
+**当前可得结论：**
+- `gradual_drift` 在服务器上可稳定绕过 TSIP 的单步连续性检查；
+- 三档 bias 均实现 `0%` 恶意拒绝与 `0%` 误拒；
+- 平均累计偏移处于 `2.57-2.71km` 量级，足以说明 slow-drift 攻击可在不触发 TSIP 的前提下造成显著偏移；
+- 但三档 bias 的平均偏移尚未形成干净单调趋势，因此本轮结果适合写入 **Discussion / Limitation**，不宜直接写成“强度响应曲线”。
 
 ### 🟢 P2：锦上添花
 
@@ -170,7 +218,7 @@ bash script/run_scale_sweep.sh
 - A4 Sybil 攻击（展示 DP 层的防御价值）
 
 **讨论即可（P2）**：
-- A3 渐进式偏移攻击（作为 limitation 诚实讨论）
+- A3 渐进式偏移攻击的强度响应曲线（当前服务器初版已足够支撑 limitation 讨论，但若要画 bias-response curve 仍需补低噪声终态偏移实验）
 
 ---
 
