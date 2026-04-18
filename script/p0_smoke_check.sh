@@ -5,6 +5,11 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
 BUILD_SERVICES="${BUILD_SERVICES:-1}"
+TSIP_USER_SCOPE_SMOKE="${TSIP_USER_SCOPE_SMOKE:-stable}"
+CLIENT_TOTAL_SMOKE="${CLIENT_TOTAL_SMOKE:-10}"
+MALICIOUS_RATE_SMOKE="${MALICIOUS_RATE_SMOKE:-0.0}"
+CLIENT_TRAJ_SOURCE_SMOKE="${CLIENT_TRAJ_SOURCE_SMOKE:-synthetic}"
+TSIP_MAX_GAP_WINDOWS_SMOKE="${TSIP_MAX_GAP_WINDOWS_SMOKE:-12}"
 
 echo "== P0 smoke check =="
 echo "1) ensure services are up"
@@ -15,11 +20,33 @@ else
 fi
 
 echo "2) generate one round reports"
-docker compose exec -T client_sim python client.py >/tmp/p0_client_run.log
-tail -n 5 /tmp/p0_client_run.log
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-8}"
+ROUND_OK=0
+for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+  echo "   run client attempt ${attempt}/${MAX_ATTEMPTS}"
+  docker compose exec -T \
+    -e TSIP_USER_SCOPE="${TSIP_USER_SCOPE_SMOKE}" \
+    -e CLIENT_TOTAL="${CLIENT_TOTAL_SMOKE}" \
+    -e MALICIOUS_RATE="${MALICIOUS_RATE_SMOKE}" \
+    -e CLIENT_TRAJ_SOURCE="${CLIENT_TRAJ_SOURCE_SMOKE}" \
+    -e TSIP_MAX_GAP_WINDOWS="${TSIP_MAX_GAP_WINDOWS_SMOKE}" \
+    client_sim python client.py >/tmp/p0_client_run.log
+  tail -n 5 /tmp/p0_client_run.log
+
+  STATUS_JSON="$(curl -s http://localhost:8002/status_latest)"
+  if [[ "$(echo "$STATUS_JSON" | jq -r '.ok // false')" == "true" ]]; then
+    ROUND_OK=1
+    break
+  fi
+  echo "   no reconstructable round yet (likely TSIP warmup hold), continue..."
+done
+if [[ "$ROUND_OK" != "1" ]]; then
+  echo "error: no reconstructable round after ${MAX_ATTEMPTS} attempts" >&2
+  curl -s http://localhost:8001/health | jq . >&2 || true
+  exit 1
+fi
 
 echo "3) fetch latest status"
-STATUS_JSON="$(curl -s http://localhost:8002/status_latest)"
 echo "$STATUS_JSON" | jq .
 
 RID="$(echo "$STATUS_JSON" | jq -r '.round_id')"
