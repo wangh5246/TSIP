@@ -4,8 +4,17 @@ from typing import List, Dict, Set, Optional
 import os, time, random, threading, math, subprocess, tempfile, shutil, json, hashlib
 import requests
 from fastapi import HTTPException
+from common.ea import parse_kid_pubkeys, verify_attestation
 from common.utils import chi2_ppf, seed_from_round, gaussian_vectors
-from common.tsip import commitment_to_field, compute_chain_commitment
+from common.tsip import (
+    commitment_to_field,
+    compute_chain_commitment,
+    compute_policy_cap_sq,
+    compute_payload_digest,
+    compute_payload_commitment_field,
+    compute_tier_anchor_cap_sq,
+    default_adwc_window_k,
+)
 app = FastAPI()
 
 def _first_existing_path(candidates: list[str]) -> str:
@@ -17,9 +26,16 @@ def _first_existing_path(candidates: list[str]) -> str:
 
 def _normalize_tsip_verify_mode(name: str, value: str) -> str:
     mode = (value or "full").strip().lower()
-    if mode not in {"full", "commitment_only"}:
+    if mode not in {"full"}:
         raise RuntimeError(f"invalid {name}: {value}")
     return mode
+
+
+def _normalize_tsip_circuit_profile(value: str) -> str:
+    p = (value or "k6").strip().lower()
+    if p not in {"k6", "k30"}:
+        return "k6"
+    return p
 
 
 
@@ -55,13 +71,16 @@ ZK_STEP_VERIFY_TIMEOUT_SEC = int(os.getenv("ZK_STEP_VERIFY_TIMEOUT_SEC", "30"))
 TSIP_ENABLE = os.getenv("TSIP_ENABLE", "0") == "1"
 TSIP_VERIFY_MODE = _normalize_tsip_verify_mode("TSIP_VERIFY_MODE", os.getenv("TSIP_VERIFY_MODE", "full"))
 TSIP_SNARKJS = os.getenv("TSIP_SNARKJS", "snarkjs")
+TSIP_CIRCUIT_PROFILE = _normalize_tsip_circuit_profile(
+    os.getenv("TSIP_CIRCUIT_PROFILE", os.getenv("TSIP_ADWC_PROFILE", "k6"))
+)
 TSIP_VKEY = os.getenv(
     "TSIP_VKEY",
     _first_existing_path(
         [
-            "/app/zk/tsip_main/verification_key.json",
-            "/Users/wanghao/Desktop/risefl_mvp/zk/tsip_main/verification_key.json",
-            "zk/tsip_main/verification_key.json",
+            f"/app/zk/tsip_main_v3_{TSIP_CIRCUIT_PROFILE}/verification_key.json",
+            f"/Users/wanghao/Desktop/risefl_mvp/zk/tsip_main_v3_{TSIP_CIRCUIT_PROFILE}/verification_key.json",
+            f"zk/tsip_main_v3_{TSIP_CIRCUIT_PROFILE}/verification_key.json",
         ]
     ),
 )
@@ -71,6 +90,39 @@ TSIP_MAX_GAP_WINDOWS = int(os.getenv("TSIP_MAX_GAP_WINDOWS", "2"))
 TSIP_BLACKLIST_THRESHOLD = int(os.getenv("TSIP_BLACKLIST_THRESHOLD", "3"))
 TSIP_DEBUG = os.getenv("TSIP_DEBUG", "0") == "1"
 TSIP_BOOTSTRAP_POLICY = os.getenv("TSIP_BOOTSTRAP_POLICY", "legacy_accept").strip().lower()
+
+# ── C6: Anchor-Distance Window Continuity (ADWC) ────────────────────────────
+TSIP_ADWC_PROFILE = os.getenv("TSIP_ADWC_PROFILE", "k6").strip().lower()
+TSIP_ADWC_WINDOW_K: int = int(os.getenv("TSIP_ADWC_WINDOW_K", str(default_adwc_window_k(TSIP_ADWC_PROFILE))))
+TSIP_POLICY_CAP_RATIO: float = float(os.getenv("TSIP_POLICY_CAP_RATIO", "0.5"))
+# ── P1: Enrollment Warmup ───────────────────────────────────────────────────
+# New users' submissions are held from aggregation for this many accepted
+# rounds while the commitment chain is being established.
+# TSIP v3 fixed rule: N_warm = max(K, 2) for enrollment and re-enrollment.
+TSIP_WARMUP_ROUNDS: int = max(int(TSIP_ADWC_WINDOW_K), 2)
+if TSIP_ENABLE and TSIP_VERIFY_MODE != "full":
+    raise RuntimeError("TSIP_VERIFY_MODE must be 'full' in TSIP v3 mode")
+if TSIP_POLICY_CAP_RATIO <= 0:
+    raise RuntimeError("TSIP_POLICY_CAP_RATIO must be > 0")
+
+# ── Operator-attested enrollment (EA) ────────────────────────────────────────
+TSIP_EA_REQUIRE = os.getenv("TSIP_EA_REQUIRE", "1") == "1"
+TSIP_EA_PUBKEYS_RAW = os.getenv("TSIP_EA_PUBKEYS", "")
+TSIP_EA_PUBKEYS = parse_kid_pubkeys(TSIP_EA_PUBKEYS_RAW)
+TSIP_EA_ALLOW_EXPIRED_SEC = int(os.getenv("TSIP_EA_ALLOW_EXPIRED_SEC", "0"))
+if TSIP_ENABLE and TSIP_EA_REQUIRE and not TSIP_EA_PUBKEYS:
+    raise RuntimeError("TSIP_EA_REQUIRE=1 but TSIP_EA_PUBKEYS is empty")
+
+# ── P3: Server Trust Model ──────────────────────────────────────────────────
+# Minimum number of *distinct* aggregator replicas that must accept a report
+# before it counts toward the final tally.  With the current 2-aggregator
+# design, setting this to 2 prevents a single compromised aggregator from
+# poisoning the output; however full collusion still degrades privacy to DP-
+# only (the aggregated output is still DP-protected).
+# NOTE: Enforced only at the shuffler level via committee signatures;
+# inter-aggregator cross-validation or TEE/MPC is left as future work.
+TSIP_MIN_AGGREGATORS: int = int(os.getenv("TSIP_MIN_AGGREGATORS", "1"))
+
 TSIP_VERIFY_DP_ENABLE = os.getenv("TSIP_VERIFY_DP_ENABLE", "0") == "1"
 TSIP_VERIFY_EPSILON = float(os.getenv("TSIP_VERIFY_EPSILON", "0.2"))
 TSIP_VERIFY_NOISY_THRESHOLD = float(os.getenv("TSIP_VERIFY_NOISY_THRESHOLD", "0.5"))
@@ -107,6 +159,10 @@ tsip_rejected_submission_keys: Set[tuple[int, str]] = set()
 tsip_verify_dp_decision_by_submission: Dict[tuple[int, str], Dict[str, object]] = {}
 tsip_verify_dp_usage_by_round: Dict[int, Dict[str, float]] = {}
 tsip_bootstrap_held_by_round: Dict[int, int] = {}
+
+# P5: secret commitment registered at enrollment; verified on subsequent rounds
+tsip_secret_commitment_by_user: Dict[str, str] = {}
+tsip_secret_commitment_field_by_user: Dict[str, str] = {}
 
 class Proof(BaseModel):
     s: float
@@ -413,10 +469,134 @@ def _tsip_verify_dp_decision(r: Report, verify_ok: bool) -> tuple[bool, Dict[str
     return accept, out
 
 
+def _tsip_expected_chain(
+    prev_chain: str,
+    curr_loc: str,
+    timestamp: int,
+    window_id: int,
+    payload_digest: str,
+    secret_commitment: str,
+) -> str:
+    """Compute expected TSIP v3 chain commitment (payload+secret always bound)."""
+    return compute_chain_commitment(
+        prev_chain_commitment=prev_chain,
+        location_commitment=curr_loc,
+        timestamp=timestamp,
+        window_id=window_id,
+        payload_digest=payload_digest,
+        secret_commitment=secret_commitment,
+    )
+
+
+def _is_enrollment_payload(tsip: dict) -> bool:
+    prev_loc_commitment = str(tsip.get("prev_loc_commitment", "")).strip()
+    prev_chain_commitment = str(tsip.get("prev_chain_commitment", "")).strip()
+    return (not prev_loc_commitment) and (not prev_chain_commitment)
+
+
+def _validate_ea_attestation(
+    tsip: dict,
+    user_id: str,
+    declared_tier_vmax_sq: int,
+    declared_sc_field: str,
+    declared_modeset_commitment: str,
+) -> dict:
+    att = tsip.get("ea_attestation")
+    if not isinstance(att, dict):
+        raise HTTPException(status_code=400, detail="missing tsip ea_attestation")
+    if TSIP_EA_REQUIRE:
+        ok, err = verify_attestation(
+            attestation=att,
+            pubkeys_by_kid=TSIP_EA_PUBKEYS,
+            now_ts=(int(time.time()) - int(TSIP_EA_ALLOW_EXPIRED_SEC)),
+        )
+        if not ok:
+            raise HTTPException(status_code=400, detail=f"invalid ea_attestation: {err[:180]}")
+
+    uid = str(att.get("uid", "")).strip()
+    if uid != user_id:
+        raise HTTPException(status_code=400, detail="ea_attestation uid mismatch")
+    try:
+        att_tier = int(att.get("tier_vmax_sq", 0) or 0)
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid ea_attestation tier_vmax_sq")
+    if att_tier != int(declared_tier_vmax_sq):
+        raise HTTPException(status_code=400, detail="ea_attestation tier_vmax_sq mismatch")
+
+    att_sec = str(att.get("com_sec", "")).strip()
+    if att_sec != str(declared_sc_field):
+        raise HTTPException(status_code=400, detail="ea_attestation com_sec mismatch")
+    att_modeset = str(att.get("com_modeset", "")).strip()
+    if att_modeset != str(declared_modeset_commitment):
+        raise HTTPException(status_code=400, detail="ea_attestation com_modeset mismatch")
+    return att
+
+
+def _normalize_adwc_history(prev_state: dict) -> list[dict]:
+    out: list[dict] = []
+    if not isinstance(prev_state, dict) or not prev_state:
+        return out
+    raw = prev_state.get("adwc_history", [])
+    if isinstance(raw, list):
+        for it in raw:
+            if not isinstance(it, dict):
+                continue
+            try:
+                out.append({"idx": int(it["idx"]), "loc_commitment": str(it["loc_commitment"])})
+            except Exception:
+                continue
+    if out:
+        out.sort(key=lambda z: int(z["idx"]))
+        dedup: Dict[int, dict] = {}
+        for it in out:
+            dedup[int(it["idx"])] = it
+        out = [dedup[k] for k in sorted(dedup.keys())]
+        return out
+    loc = str(prev_state.get("loc_commitment", "")).strip()
+    if not loc:
+        return out
+    accepted_count = max(1, int(prev_state.get("accepted_count", 1)))
+    return [{"idx": max(0, accepted_count - 1), "loc_commitment": loc}]
+
+
+def _expected_anchor_from_state(prev_state: dict) -> tuple[str, int, int]:
+    history = _normalize_adwc_history(prev_state)
+    accepted_count = max(1, int(prev_state.get("accepted_count", len(history) if history else 1)))
+    current_i = accepted_count
+    anchor_i = max(0, current_i - max(1, int(TSIP_ADWC_WINDOW_K)))
+    for it in history:
+        if int(it.get("idx", -1)) == anchor_i:
+            return str(it.get("loc_commitment", "")), anchor_i, current_i
+    if anchor_i == 0 and history:
+        return str(history[0].get("loc_commitment", "")), 0, current_i
+    raise HTTPException(
+        status_code=400,
+        detail=f"tsip missing anchor state idx={anchor_i} history_len={len(history)} (require keep >=K+1)",
+    )
+
+
+def _next_adwc_history(prev_state: dict, curr_loc_commitment: str) -> tuple[list[dict], int]:
+    history = _normalize_adwc_history(prev_state)
+    accepted_count = int(prev_state.get("accepted_count", len(history)))
+    if accepted_count < 0:
+        accepted_count = 0
+    current_i = accepted_count
+    history.append({"idx": int(current_i), "loc_commitment": str(curr_loc_commitment)})
+    history.sort(key=lambda z: int(z["idx"]))
+    keep = max(2, int(TSIP_ADWC_WINDOW_K) + 1)
+    if len(history) > keep:
+        history = history[-keep:]
+    return history, int(current_i + 1)
+
+
 def validate_tsip_report(r: Report):
     if r.tsip is None:
         raise HTTPException(status_code=400, detail="missing tsip payload")
     tsip = r.tsip
+    version = str(tsip.get("version", "")).strip().lower()
+    if version != "v3":
+        raise HTTPException(status_code=400, detail="tsip version must be v3")
+
     user_id = str(tsip.get("user_id", "")).strip()
     prev_loc_commitment = str(tsip.get("prev_loc_commitment", "")).strip()
     curr_loc_commitment = str(tsip.get("curr_loc_commitment", "")).strip()
@@ -424,6 +604,33 @@ def validate_tsip_report(r: Report):
     curr_chain_commitment = str(tsip.get("curr_chain_commitment", "")).strip()
     timestamp = int(tsip.get("timestamp", 0) or 0)
     window_id = int(tsip.get("window_id", 0) or 0)
+
+    # ── P4/P5 fields ─────────────────────────────────────────────────────────
+    payload_digest = str(tsip.get("payload_digest", "")).strip()
+    if not payload_digest:
+        raise HTTPException(status_code=400, detail="missing tsip payload_digest")
+    expected_payload_digest = compute_payload_digest(r.idx)
+    if payload_digest != expected_payload_digest:
+        raise HTTPException(status_code=400, detail="tsip payload_digest mismatch with idx")
+    secret_commitment_recv = str(tsip.get("secret_commitment", "")).strip()
+    if not secret_commitment_recv:
+        raise HTTPException(status_code=400, detail="missing tsip secret_commitment")
+    declared_sc_field = str(tsip.get("secret_commitment_field", "")).strip()
+    if not declared_sc_field:
+        raise HTTPException(status_code=400, detail="missing tsip secret_commitment_field")
+    declared_modeset_commitment = str(tsip.get("modeset_commitment", "")).strip()
+    if not declared_modeset_commitment:
+        raise HTTPException(status_code=400, detail="missing tsip modeset_commitment")
+    declared_mode_tag = str(tsip.get("mode_tag", "")).strip()
+    if not declared_mode_tag:
+        raise HTTPException(status_code=400, detail="missing tsip mode_tag")
+    try:
+        declared_tier_vmax_sq = int(tsip.get("tier_vmax_sq", 0) or 0)
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid tsip tier_vmax_sq")
+    if declared_tier_vmax_sq <= 0:
+        raise HTTPException(status_code=400, detail="invalid tsip tier_vmax_sq")
+
     if not user_id:
         raise HTTPException(status_code=400, detail="invalid tsip user_id")
     if not curr_loc_commitment or not curr_chain_commitment:
@@ -431,15 +638,42 @@ def validate_tsip_report(r: Report):
     if timestamp <= 0:
         raise HTTPException(status_code=400, detail="invalid tsip timestamp")
 
+    _validate_ea_attestation(
+        tsip=tsip,
+        user_id=user_id,
+        declared_tier_vmax_sq=declared_tier_vmax_sq,
+        declared_sc_field=declared_sc_field,
+        declared_modeset_commitment=declared_modeset_commitment,
+    )
+
+    is_enroll = _is_enrollment_payload(tsip)
     prev_state = tsip_state_by_user.get(user_id)
-    if prev_state is None:
-        if prev_loc_commitment or prev_chain_commitment:
-            raise HTTPException(status_code=400, detail="unexpected previous tsip commitment for first submission")
-        expected_chain = compute_chain_commitment("", curr_loc_commitment, timestamp, window_id)
+    if prev_state is None and not is_enroll:
+        raise HTTPException(status_code=400, detail="missing enrollment for tsip follow-up")
+
+    if is_enroll:
+        if prev_state is not None:
+            prev_tier = int(prev_state.get("tier_vmax_sq", 0) or 0)
+            prev_modeset = str(prev_state.get("modeset_commitment", "")).strip()
+            prev_mode_tag = str(prev_state.get("mode_tag", "")).strip()
+            if declared_tier_vmax_sq == prev_tier and declared_modeset_commitment == prev_modeset:
+                # mode-only re-enrollment: modeset remains, tag must rotate.
+                if declared_mode_tag == prev_mode_tag:
+                    raise HTTPException(status_code=400, detail="mode-only re-enrollment must update mode_tag")
+
+        expected_chain = _tsip_expected_chain(
+            "",
+            curr_loc_commitment,
+            timestamp,
+            window_id,
+            payload_digest,
+            secret_commitment_recv,
+        )
         if curr_chain_commitment != expected_chain:
-            raise HTTPException(status_code=400, detail="invalid initial tsip chain commitment")
+            raise HTTPException(status_code=400, detail="invalid tsip enrollment chain commitment")
         return
 
+    # ── Subsequent submission ───────────────────────────────────────────────
     expected_prev_loc = str(prev_state["loc_commitment"])
     expected_prev_chain = str(prev_state["chain_commitment"])
     if TSIP_DEBUG:
@@ -469,29 +703,45 @@ def validate_tsip_report(r: Report):
     if timestamp - prev_timestamp > max_gap:
         raise HTTPException(status_code=400, detail="tsip time gap too large")
 
-    expected_chain = compute_chain_commitment(prev_chain_commitment, curr_loc_commitment, timestamp, window_id)
+    # ── P5: secret commitment continuity ─────────────────────────────────────
+    stored_sc = tsip_secret_commitment_by_user.get(user_id, "")
+    stored_sc_field = tsip_secret_commitment_field_by_user.get(user_id, "")
+    if stored_sc and secret_commitment_recv != stored_sc:
+        raise HTTPException(status_code=400, detail="tsip secret_commitment mismatch (P5)")
+    if stored_sc_field and declared_sc_field != stored_sc_field:
+        raise HTTPException(status_code=400, detail="tsip secret_commitment_field mismatch (P5)")
+    if not stored_sc:
+        tsip_secret_commitment_by_user[user_id] = secret_commitment_recv
+    if not stored_sc_field:
+        tsip_secret_commitment_field_by_user[user_id] = declared_sc_field
+
+    # ── C6: Anchor-distance window continuity anchor binding ────────────────
+    anchor_loc_commitment = str(tsip.get("anchor_loc_commitment", "")).strip()
+    if not anchor_loc_commitment:
+        raise HTTPException(status_code=400, detail="missing tsip anchor_loc_commitment (C6)")
+    expected_anchor_loc, anchor_i, current_i = _expected_anchor_from_state(prev_state)
+    if anchor_loc_commitment != expected_anchor_loc:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"tsip anchor_loc_commitment mismatch (C6): "
+                f"expected_idx={anchor_i} expected={expected_anchor_loc[:20]}... "
+                f"got={anchor_loc_commitment[:20]}..."
+            ),
+        )
+
+    expected_chain = _tsip_expected_chain(
+        prev_chain_commitment, curr_loc_commitment, timestamp, window_id,
+        payload_digest, secret_commitment_recv,
+    )
     if curr_chain_commitment != expected_chain:
         raise HTTPException(status_code=400, detail="invalid tsip chain commitment")
-    if TSIP_VERIFY_MODE == "commitment_only":
-        if TSIP_DEBUG:
-            print(
-                "[TSIP_DEBUG] commitment_only accepted_curr_loc=",
-                curr_loc_commitment,
-                "user_id=",
-                user_id,
-                "submission_id=",
-                r.submission_id,
-                "round_id=",
-                r.round_id,
-                flush=True,
-            )
-        return
 
     proof_obj = tsip.get("proof")
     public_signals = tsip.get("public_signals")
     if not isinstance(proof_obj, dict):
         raise HTTPException(status_code=400, detail="missing tsip proof")
-    if not isinstance(public_signals, list) or len(public_signals) < 3:
+    if not isinstance(public_signals, list) or len(public_signals) < 11:
         raise HTTPException(status_code=400, detail="invalid tsip public_signals")
 
     expected_prev_field = str(commitment_to_field(prev_loc_commitment))
@@ -500,6 +750,86 @@ def validate_tsip_report(r: Report):
         raise HTTPException(status_code=400, detail="tsip public hash_prev mismatch")
     if str(public_signals[1]) != expected_curr_field:
         raise HTTPException(status_code=400, detail="tsip public hash_curr mismatch")
+
+    expected_anchor_field = str(commitment_to_field(anchor_loc_commitment))
+    if str(public_signals[2]) != expected_anchor_field:
+        raise HTTPException(status_code=400, detail="tsip anchor hash public signal mismatch (C6)")
+
+    step_dt = max(1, int(timestamp - prev_timestamp))
+    expected_step_dt_sq = int(step_dt * step_dt)
+    declared_step_dt_sq = int(tsip.get("step_dt_sq", 0) or 0)
+    if declared_step_dt_sq != expected_step_dt_sq:
+        raise HTTPException(
+            status_code=400,
+            detail=f"tsip step_dt_sq mismatch: declared={declared_step_dt_sq} expected={expected_step_dt_sq}",
+        )
+    if str(public_signals[3]) != str(declared_step_dt_sq):
+        raise HTTPException(status_code=400, detail="tsip step_dt_sq public signal mismatch")
+
+    stored_tier = int(prev_state.get("tier_vmax_sq", 0) or 0)
+    if declared_tier_vmax_sq != stored_tier:
+        raise HTTPException(status_code=400, detail="tsip tier_vmax_sq changed without re-enrollment")
+    if str(public_signals[4]) != str(declared_tier_vmax_sq):
+        raise HTTPException(status_code=400, detail="tsip tier_vmax_sq public signal mismatch")
+
+    declared_tier_anchor_cap_sq = int(tsip.get("tier_anchor_cap_sq", 0) or 0)
+    expected_tier_anchor_cap_sq = int(
+        compute_tier_anchor_cap_sq(declared_tier_vmax_sq, TSIP_ADWC_WINDOW_K, declared_step_dt_sq)
+    )
+    if declared_tier_anchor_cap_sq != expected_tier_anchor_cap_sq:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"tsip tier_anchor_cap_sq mismatch: "
+                f"declared={declared_tier_anchor_cap_sq} expected={expected_tier_anchor_cap_sq}"
+            ),
+        )
+    if str(public_signals[5]) != str(declared_tier_anchor_cap_sq):
+        raise HTTPException(status_code=400, detail="tsip tier_anchor_cap_sq public signal mismatch")
+
+    declared_cap_policy_sq = int(tsip.get("cap_policy_sq", 0) or 0)
+    expected_cap_policy_sq = int(compute_policy_cap_sq(declared_tier_anchor_cap_sq, TSIP_POLICY_CAP_RATIO))
+    if declared_cap_policy_sq != expected_cap_policy_sq:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"tsip cap_policy_sq mismatch: "
+                f"declared={declared_cap_policy_sq} expected={expected_cap_policy_sq}"
+            ),
+        )
+    if declared_cap_policy_sq > declared_tier_anchor_cap_sq:
+        raise HTTPException(status_code=400, detail="tsip cap_policy_sq exceeds tier_anchor_cap_sq")
+    if str(public_signals[6]) != str(declared_cap_policy_sq):
+        raise HTTPException(status_code=400, detail="tsip cap_policy_sq public signal mismatch (C6)")
+
+    declared_pc_field = str(tsip.get("payload_commitment_field", "")).strip()
+    if not declared_pc_field:
+        raise HTTPException(status_code=400, detail="missing tsip payload_commitment_field (P4)")
+    expected_pc_field = str(compute_payload_commitment_field(payload_digest))
+    if declared_pc_field != expected_pc_field:
+        raise HTTPException(
+            status_code=400,
+            detail=f"tsip payload_commitment_field mismatch: declared={declared_pc_field[:20]} expected={expected_pc_field[:20]}",
+        )
+
+    if str(public_signals[7]) != declared_pc_field:
+        raise HTTPException(status_code=400, detail="tsip payload_commitment public signal mismatch (P4)")
+
+    if str(public_signals[8]) != declared_sc_field:
+        raise HTTPException(status_code=400, detail="tsip secret_commitment public signal mismatch (P5)")
+
+    stored_modeset = str(prev_state.get("modeset_commitment", "")).strip()
+    if stored_modeset and declared_modeset_commitment != stored_modeset:
+        raise HTTPException(status_code=400, detail="tsip modeset_commitment changed without re-enrollment")
+    if str(public_signals[9]) != declared_modeset_commitment:
+        raise HTTPException(status_code=400, detail="tsip modeset_commitment public signal mismatch")
+
+    stored_mode_tag = str(prev_state.get("mode_tag", "")).strip()
+    if stored_mode_tag and declared_mode_tag != stored_mode_tag:
+        raise HTTPException(status_code=400, detail="tsip mode_tag changed without re-enrollment")
+    if str(public_signals[10]) != declared_mode_tag:
+        raise HTTPException(status_code=400, detail="tsip mode_tag public signal mismatch")
+
     ok, err = verify_tsip_proof(proof_obj, public_signals)
     if (not ok) and _is_tsip_verify_runtime_error(err):
         raise HTTPException(status_code=400, detail=f"tsip verifier runtime error: {err[:180]}")
@@ -553,6 +883,33 @@ def _is_bootstrap_submission(r: Report) -> bool:
     if not user_id:
         return False
     return tsip_state_by_user.get(user_id) is None
+
+
+def _is_warmup_submission(r: Report) -> bool:
+    """P1: Return True when the user is still within the warmup period.
+
+    During warmup the chain is being established (depth < TSIP_WARMUP_ROUNDS).
+    Submissions are validated and stored but NOT forwarded to aggregators,
+    preventing a fresh account with a fully-fabricated first position from
+    immediately influencing the aggregate.  This is the enrollment-trust
+    assumption mitigation described in the paper.
+    """
+    if TSIP_WARMUP_ROUNDS <= 0:
+        return False
+    if not TSIP_ENABLE or r.tsip is None:
+        return False
+    user_id = _tsip_user_id(r)
+    if not user_id:
+        return False
+    st = tsip_state_by_user.get(user_id)
+    if st is None:
+        # First enrollment submission is warmup-held.
+        return True
+    if _is_enrollment_payload(r.tsip):
+        # Any re-enrollment restarts warmup from scratch.
+        return True
+    count = int(st.get("warmup_count", st.get("accepted_count", 0) or 0))
+    return count < TSIP_WARMUP_ROUNDS
 
 
 def _committee_channel(channel: str) -> str:
@@ -679,6 +1036,12 @@ def register_tsip_submission(r: Report, channel: str):
     curr_chain_commitment = str(tsip.get("curr_chain_commitment", "")).strip()
     timestamp = int(tsip.get("timestamp", 0) or 0)
     window_id = int(tsip.get("window_id", 0) or 0)
+    is_enroll = _is_enrollment_payload(tsip)
+    tier_vmax_sq = int(tsip.get("tier_vmax_sq", 0) or 0)
+    modeset_commitment = str(tsip.get("modeset_commitment", "")).strip()
+    mode_tag = str(tsip.get("mode_tag", "")).strip()
+    secret_commitment = str(tsip.get("secret_commitment", "")).strip()
+    secret_commitment_field = str(tsip.get("secret_commitment_field", "")).strip()
     key = (int(r.round_id), str(r.submission_id))
     pending = pending_tsip_by_submission.setdefault(
         key,
@@ -689,23 +1052,61 @@ def register_tsip_submission(r: Report, channel: str):
             "curr_chain_commitment": curr_chain_commitment,
             "timestamp": timestamp,
             "window_id": window_id,
+            "is_enroll": bool(is_enroll),
+            "tier_vmax_sq": int(tier_vmax_sq),
+            "modeset_commitment": modeset_commitment,
+            "mode_tag": mode_tag,
+            "secret_commitment": secret_commitment,
+            "secret_commitment_field": secret_commitment_field,
         },
     )
     if (
         pending["user_id"] != user_id
         or pending["curr_loc_commitment"] != curr_loc_commitment
         or pending["curr_chain_commitment"] != curr_chain_commitment
+        or bool(pending["is_enroll"]) != bool(is_enroll)
+        or int(pending["tier_vmax_sq"]) != int(tier_vmax_sq)
+        or str(pending["modeset_commitment"]) != str(modeset_commitment)
+        or str(pending["mode_tag"]) != str(mode_tag)
     ):
         raise HTTPException(status_code=400, detail="tsip payload mismatch across A/R")
     channels = pending["channels"]
     channels.add(channel)
     if channels == {"A", "R"}:
-        tsip_state_by_user[user_id] = {
-            "loc_commitment": curr_loc_commitment,
-            "chain_commitment": curr_chain_commitment,
-            "timestamp": timestamp,
-            "window_id": window_id,
-        }
+        prev_state = tsip_state_by_user.get(user_id, {})
+        if bool(is_enroll):
+            epoch = int(prev_state.get("enrollment_epoch", 0) or 0) + 1
+            tsip_state_by_user[user_id] = {
+                "loc_commitment": curr_loc_commitment,
+                "chain_commitment": curr_chain_commitment,
+                "timestamp": timestamp,
+                "window_id": window_id,
+                "accepted_count": 1,
+                "adwc_history": [{"idx": 0, "loc_commitment": str(curr_loc_commitment)}],
+                "warmup_count": 1,
+                "enrollment_epoch": int(epoch),
+                "tier_vmax_sq": int(tier_vmax_sq),
+                "modeset_commitment": str(modeset_commitment),
+                "mode_tag": str(mode_tag),
+            }
+        else:
+            adwc_history, next_count = _next_adwc_history(prev_state, curr_loc_commitment)
+            prev_warm = int(prev_state.get("warmup_count", 0) or 0)
+            tsip_state_by_user[user_id] = {
+                "loc_commitment": curr_loc_commitment,
+                "chain_commitment": curr_chain_commitment,
+                "timestamp": timestamp,
+                "window_id": window_id,
+                "accepted_count": int(next_count),
+                "adwc_history": adwc_history,
+                "warmup_count": int(prev_warm + 1),
+                "enrollment_epoch": int(prev_state.get("enrollment_epoch", 1) or 1),
+                "tier_vmax_sq": int(tier_vmax_sq),
+                "modeset_commitment": str(modeset_commitment),
+                "mode_tag": str(mode_tag),
+            }
+        tsip_secret_commitment_by_user[user_id] = str(secret_commitment)
+        tsip_secret_commitment_field_by_user[user_id] = str(secret_commitment_field)
         clear_tsip_rejection_streak(user_id)
         pending_tsip_by_submission.pop(key, None)
         tsip_verify_dp_decision_by_submission.pop(key, None)
@@ -825,10 +1226,12 @@ def ingestA(r: Report):
         if r.submission_id in seenA:
             raise HTTPException(status_code=400, detail="duplicate submission_id in A for this round")
         bootstrap_hold = _is_bootstrap_submission(r)
+        # P1: check warmup hold *before* registering (count not yet incremented)
+        warmup_hold = _is_warmup_submission(r)
         _apply_committee_gate("A", r)
         seenA.add(r.submission_id)
         register_tsip_submission(r, "A")
-        if TSIP_BOOTSTRAP_POLICY == "enroll_only" and bootstrap_hold:
+        if (TSIP_BOOTSTRAP_POLICY == "enroll_only" and bootstrap_hold) or warmup_hold:
             rid = int(current_round_id)
             tsip_bootstrap_held_by_round[rid] = tsip_bootstrap_held_by_round.get(rid, 0) + 1
         else:
@@ -839,6 +1242,7 @@ def ingestA(r: Report):
         "queuedA": qlen,
         "round_id": current_round_id,
         "bootstrap_held": bool(TSIP_BOOTSTRAP_POLICY == "enroll_only" and bootstrap_hold),
+        "warmup_held": bool(warmup_hold),
     }
 
 @app.post("/ingestR")
@@ -857,10 +1261,12 @@ def ingestR(r: Report):
         if r.submission_id in seenR:
             raise HTTPException(status_code=400, detail="duplicate submission_id in R for this round")
         bootstrap_hold = _is_bootstrap_submission(r)
+        # P1: check warmup hold *before* registering (count not yet incremented)
+        warmup_hold = _is_warmup_submission(r)
         _apply_committee_gate("R", r)
         seenR.add(r.submission_id)
         register_tsip_submission(r, "R")
-        if TSIP_BOOTSTRAP_POLICY == "enroll_only" and bootstrap_hold:
+        if (TSIP_BOOTSTRAP_POLICY == "enroll_only" and bootstrap_hold) or warmup_hold:
             rid = int(current_round_id)
             tsip_bootstrap_held_by_round[rid] = tsip_bootstrap_held_by_round.get(rid, 0) + 1
         else:
@@ -871,6 +1277,7 @@ def ingestR(r: Report):
         "queuedR": qlen,
         "round_id": current_round_id,
         "bootstrap_held": bool(TSIP_BOOTSTRAP_POLICY == "enroll_only" and bootstrap_hold),
+        "warmup_held": bool(warmup_hold),
     }
 
 def flush_one(url: str, batch: List[Report]):
@@ -905,6 +1312,37 @@ def startup():
     t = threading.Thread(target=flusher_loop, daemon=True)
     t.start()
 
+
+@app.get("/tsip/state")
+def tsip_state(user_id: str):
+    uid = str(user_id or "").strip()
+    if not uid:
+        raise HTTPException(status_code=400, detail="missing user_id")
+    with lock:
+        st = tsip_state_by_user.get(uid)
+        if not st:
+            return {"ok": True, "exists": False, "user_id": uid}
+        hist = _normalize_adwc_history(st)
+        return {
+            "ok": True,
+            "exists": True,
+            "user_id": uid,
+            "accepted_count": int(st.get("accepted_count", len(hist))),
+            "warmup_count": int(st.get("warmup_count", 0) or 0),
+            "enrollment_epoch": int(st.get("enrollment_epoch", 0) or 0),
+            "loc_commitment": str(st.get("loc_commitment", "")),
+            "chain_commitment": str(st.get("chain_commitment", "")),
+            "timestamp": int(st.get("timestamp", 0) or 0),
+            "window_id": int(st.get("window_id", 0) or 0),
+            "tier_vmax_sq": int(st.get("tier_vmax_sq", 0) or 0),
+            "modeset_commitment": str(st.get("modeset_commitment", "")),
+            "mode_tag": str(st.get("mode_tag", "")),
+            "adwc_history": hist,
+            "adwc_window_k": int(TSIP_ADWC_WINDOW_K),
+            "policy_cap_ratio": float(TSIP_POLICY_CAP_RATIO),
+        }
+
+
 @app.get("/health")
 def health():
     with lock:
@@ -927,7 +1365,11 @@ def health():
             "aggR_url": AGG_R_URL,
             "tsip_enable": TSIP_ENABLE,
             "tsip_verify_mode": TSIP_VERIFY_MODE,
+            "tsip_circuit_profile": TSIP_CIRCUIT_PROFILE,
             "tsip_users": len(tsip_state_by_user),
+            "tsip_adwc_profile": TSIP_ADWC_PROFILE,
+            "tsip_adwc_window_k": TSIP_ADWC_WINDOW_K,
+            "tsip_policy_cap_ratio": TSIP_POLICY_CAP_RATIO,
             "tsip_blacklisted_users": len(tsip_blacklist_by_user),
             "tsip_blacklist_threshold": TSIP_BLACKLIST_THRESHOLD,
             "tsip_verify_dp_enable": TSIP_VERIFY_DP_ENABLE,
@@ -935,6 +1377,8 @@ def health():
             "tsip_verify_noisy_threshold": TSIP_VERIFY_NOISY_THRESHOLD,
             "tsip_verify_calls": int(usage["calls"]),
             "tsip_verify_spent": usage["spent"],
+            "tsip_ea_require": TSIP_EA_REQUIRE,
+            "tsip_ea_kids": sorted(TSIP_EA_PUBKEYS.keys()),
             "committee_enable": SHUFFLER_COMMITTEE_ENABLE,
             "committee_id": SHUFFLER_COMMITTEE_ID,
             "committee_threshold": SHUFFLER_COMMITTEE_THRESHOLD,
