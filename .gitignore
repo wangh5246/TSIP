@@ -10,7 +10,17 @@ __pycache__/
 # Build artifacts
 build/
 zk/hello/
+zk/settlement_period_v5_k6/*.r1cs
+zk/settlement_period_v5_k6/*.sym
+zk/settlement_period_v5_k6/*.zkey
+zk/settlement_period_v5_k6/*_js/
+!zk/settlement_period_v5_k6/verification_key.json
 
 # Local experiment logs
 *.log
 .env
+
+# Local OSM vector extracts
+dataset/osm/*.pbf
+dataset/osm/*.part
+dataset/osm/*.complete

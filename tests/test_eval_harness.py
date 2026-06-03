@@ -15,7 +15,9 @@ from common.eval_harness import (
     check_constraints,
     compute_bill,
     e1_ablation_row,
+    e1_forensic_rows,
     relay_allowed_cells_by_fix,
+    write_e1_forensic_csv,
 )
 from common.settlement import ReceiverFix, TariffTable
 
@@ -193,3 +195,26 @@ def test_e1_row_uses_fast_odometer_relaxation_and_relay_candidates_are_local():
     assert row["no_odometer"] == 1
     assert "no_max_dt" in row
     assert relay[0] == {0, 1, 2}
+
+
+def test_e1_forensic_rows_record_claim_length_savings_and_skip_reason(tmp_path: Path):
+    params = HarnessParams(cadence_sec=120, max_dt_sec=120, tier_vmax_mps=33, cell_size_m=100, distance_bucket_m=100)
+    fixes = [_fix(0, 0, 0, 2, 0), _fix(1, 60, 100, 1, 0)]
+
+    rows = e1_forensic_rows(fixes, _tariff(), params, dataset="unit")
+    by_branch = {str(row["branch"]): row for row in rows}
+
+    assert by_branch["no_odometer"]["savings_ratio"] == 1.0
+    assert by_branch["no_odometer"]["len_claimed_fixes"] == 2
+    assert by_branch["no_continuity"]["savings_ratio"] == 0.0
+    assert by_branch["no_continuity_osnma_lifted"]["savings_ratio"] > 0.0
+    assert by_branch["no_max_dt"]["skip_reason"] == ""
+
+    skip_rows = e1_forensic_rows(fixes[:1], _tariff(), params, dataset="unit")
+    assert skip_rows[0]["skip_reason"] == "at least two fixes are required"
+
+    output = tmp_path / "e1_forensic.csv"
+    assert write_e1_forensic_csv(rows, output) == 6
+    assert output.read_text(encoding="utf-8").splitlines()[0] == (
+        "branch,dataset,len_claimed_fixes,savings_ratio,skip_reason"
+    )

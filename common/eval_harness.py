@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import csv
 import heapq
 import math
 from dataclasses import dataclass, replace
 from enum import StrEnum
+from pathlib import Path
 from typing import Callable, Iterable
 
 from common.settlement import ReceiverFix, TariffTable, fee_for_period
@@ -309,6 +311,74 @@ def e1_ablation_row(
             params=params,
         ).savings_ratio,
     }
+
+
+def e1_forensic_rows(
+    true_fixes: list[ReceiverFix],
+    tariff: TariffTable,
+    params: HarnessParams,
+    *,
+    dataset: str,
+) -> list[dict[str, str | int | float]]:
+    """Return per-branch E1 forensic rows for desk-reject root-cause audits."""
+
+    branches: list[tuple[str, frozenset[Constraint], list[set[int]] | None]] = [
+        ("all_on", ALL_CONSTRAINTS, None),
+        ("no_odometer", ALL_CONSTRAINTS - {Constraint.ODOMETER}, None),
+        ("no_continuity", ALL_CONSTRAINTS - {Constraint.CONTINUITY}, None),
+        ("no_continuity_osnma_lifted", ALL_CONSTRAINTS - {Constraint.CONTINUITY}, _all_cells_by_fix(true_fixes, tariff)),
+        ("no_cadence", ALL_CONSTRAINTS - {Constraint.CADENCE}, None),
+        ("no_max_dt", ALL_CONSTRAINTS - {Constraint.MAX_DT}, None),
+    ]
+    rows: list[dict[str, str | int | float]] = []
+    for branch, enabled, allowed_cells_by_fix in branches:
+        try:
+            result = adversary_min_fee(
+                true_fixes,
+                tariff,
+                enabled=enabled,
+                params=params,
+                allowed_cells_by_fix=allowed_cells_by_fix,
+            )
+            rows.append(
+                {
+                    "branch": branch,
+                    "dataset": str(dataset),
+                    "len_claimed_fixes": len(result.claimed_fixes),
+                    "savings_ratio": result.savings_ratio,
+                    "skip_reason": "",
+                }
+            )
+        except ValueError as exc:
+            rows.append(
+                {
+                    "branch": branch,
+                    "dataset": str(dataset),
+                    "len_claimed_fixes": 0,
+                    "savings_ratio": 0.0,
+                    "skip_reason": str(exc),
+                }
+            )
+    return rows
+
+
+def _all_cells_by_fix(true_fixes: list[ReceiverFix], tariff: TariffTable) -> list[set[int]]:
+    cells = set(int(cell) for cell in tariff.cell_zones)
+    return [set(cells) for _ in true_fixes]
+
+
+def write_e1_forensic_csv(rows: Iterable[dict[str, str | int | float]], path: Path) -> int:
+    """Write E1 forensic rows with a stable schema and return row count."""
+
+    fieldnames = ["branch", "dataset", "len_claimed_fixes", "savings_ratio", "skip_reason"]
+    materialized = list(rows)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in materialized:
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+    return len(materialized)
 
 
 def relay_allowed_cells_by_fix(
