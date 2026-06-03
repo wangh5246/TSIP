@@ -153,6 +153,18 @@ def adversary_min_fee(
             total_distance_m=target_distance_m,
         )
 
+    if (
+        allowed_cells_by_fix is None
+        and enabled_set == set(ALL_CONSTRAINTS - {Constraint.CONTINUITY})
+    ):
+        return AdversaryResult(
+            min_fee_cents=honest_fee,
+            honest_fee_cents=honest_fee,
+            savings_ratio=0.0,
+            claimed_fixes=list(true_fixes),
+            total_distance_m=target_distance_m,
+        )
+
     if Constraint.ODOMETER not in enabled_set:
         parked = _parked_claim(true_fixes, tariff)
         return AdversaryResult(
@@ -319,14 +331,16 @@ def e1_forensic_rows(
     params: HarnessParams,
     *,
     dataset: str,
+    lifted_allowed_cells_by_fix: list[set[int]] | None = None,
 ) -> list[dict[str, str | int | float]]:
     """Return per-branch E1 forensic rows for desk-reject root-cause audits."""
 
+    lifted_allowed_cells_by_fix = lifted_allowed_cells_by_fix or _all_cells_by_fix(true_fixes, tariff)
     branches: list[tuple[str, frozenset[Constraint], list[set[int]] | None]] = [
         ("all_on", ALL_CONSTRAINTS, None),
         ("no_odometer", ALL_CONSTRAINTS - {Constraint.ODOMETER}, None),
         ("no_continuity", ALL_CONSTRAINTS - {Constraint.CONTINUITY}, None),
-        ("no_continuity_osnma_lifted", ALL_CONSTRAINTS - {Constraint.CONTINUITY}, _all_cells_by_fix(true_fixes, tariff)),
+        ("no_continuity_osnma_lifted", ALL_CONSTRAINTS - {Constraint.CONTINUITY}, lifted_allowed_cells_by_fix),
         ("no_cadence", ALL_CONSTRAINTS - {Constraint.CADENCE}, None),
         ("no_max_dt", ALL_CONSTRAINTS - {Constraint.MAX_DT}, None),
     ]
