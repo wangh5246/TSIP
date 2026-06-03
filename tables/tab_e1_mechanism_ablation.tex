@@ -1,0 +1,16 @@
+\begin{table}[t]
+\centering
+\caption{E1 mechanism ablation on proof-compatible GeoLife periods. Savings is the fractional bill reduction available to the adversary after removing the named defense, using the same real tariff table and paired periods. Odometer tampering is excluded from this circuit-layer table because it is a submission-layer attestation boundary: without receiver-signature validation the bill can be collapsed, and with validation the charger rejects the tamper. Cadence is also excluded from the main rows because cleaned trips leave only 2/14 feasible cadence-removal cases; gap-preserving cadence evaluation is reported separately.}
+\label{tab:e1-mechanism-ablation}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccccp{0.42\columnwidth}}
+\toprule
+Removed defense & Periods & Mean & Median & P95 & Interpretation \\
+\midrule
+Zone/rate binding & 14 & 0.270 & 0.276 & 0.400 & Rate-forge attack: high-rate intervals are charged at the lowest real tariff rate. \\
+Continuity, OSNMA pinned & 14 & 0.000 & 0.000 & 0.000 & OSNMA cell pinning alone prevents cell relocation, so removing continuity has no marginal economic effect. \\
+Continuity, OSNMA lifted & 14 & 0.084 & 0.085 & 0.142 & After upstream pinning is relaxed to authenticated neighbor cells, continuity blocks residual path/rate optimization. \\
+\bottomrule
+\end{tabular}
+\end{table}

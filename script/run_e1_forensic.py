@@ -14,7 +14,15 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from common.eval_harness import HarnessParams, e1_forensic_rows, write_e1_forensic_csv
+from common.eval_harness import (
+    ALL_CONSTRAINTS,
+    Constraint,
+    HarnessParams,
+    adversary_min_fee,
+    compute_bill,
+    e1_forensic_rows,
+    write_e1_forensic_csv,
+)
 from common.settlement import ReceiverFix, TariffTable
 
 
@@ -40,7 +48,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-dt-sec", type=int, default=600)
     parser.add_argument("--tier-vmax-mps", type=int, default=33)
     parser.add_argument("--cell-size-m", type=int, default=100)
+    parser.add_argument("--distance-bucket-m", type=int, default=None)
     parser.add_argument("--neighbor-radius-cells", type=int, default=2)
+    parser.add_argument("--audit-output", type=Path, default=None)
+    parser.add_argument("--audit-top-k", type=int, default=3)
+    parser.add_argument("--branches", default=None, help="Comma-separated branch filter; default runs all branches.")
     return parser.parse_args()
 
 
@@ -51,30 +63,48 @@ def main() -> int:
         max_dt_sec=args.max_dt_sec,
         tier_vmax_mps=args.tier_vmax_mps,
         cell_size_m=args.cell_size_m,
-        distance_bucket_m=args.cell_size_m,
+        distance_bucket_m=args.distance_bucket_m or args.cell_size_m,
     )
+    branch_names = _parse_branches(args.branches)
     rows: list[dict[str, str | int | float]] = []
+    audit_rows: list[dict[str, Any]] = []
     for path in args.inputs:
         dataset = _dataset_name(path)
+        input_tariff = _load_input_tariff(path)
         for record in _load_records(path, args.max_users):
             periods = _periods_from_record(record, periods_per_user=args.periods_per_user, max_dt_sec=args.max_dt_sec)
             for period_idx, fixes in enumerate(periods):
-                tariff, lifted = _local_tariff_and_lifted_cells(
-                    fixes,
-                    radius_cells=args.neighbor_radius_cells,
-                    cell_size_m=args.cell_size_m,
-                )
-                label = f"{dataset}:{record.get('user_id', record.get('vehicle_id', 'unknown'))}:p{period_idx}"
+                if input_tariff is not None:
+                    tariff = input_tariff
+                    lifted = _lifted_cells_from_tariff(
+                        fixes,
+                        tariff,
+                        radius_cells=args.neighbor_radius_cells,
+                        cell_size_m=args.cell_size_m,
+                    )
+                else:
+                    tariff, lifted = _record_tariff_and_lifted_cells(
+                        record,
+                        fixes,
+                        radius_cells=args.neighbor_radius_cells,
+                        cell_size_m=args.cell_size_m,
+                    )
+                label = _period_label(dataset, record, period_idx)
                 period_rows = e1_forensic_rows(
                     fixes,
                     tariff,
                     params,
                     dataset=label,
                     lifted_allowed_cells_by_fix=lifted,
+                    branch_names=branch_names,
                 )
                 rows.extend(row for row in period_rows if row["branch"] != "no_max_dt")
+                if args.audit_output is not None:
+                    audit_rows.extend(_audit_continuity_pair(label, fixes, tariff, params, lifted))
     count = write_e1_forensic_csv(rows, args.output)
     _write_summary(rows, args.summary)
+    if args.audit_output is not None:
+        _write_audit(audit_rows, args.audit_output, top_k=args.audit_top_k)
     print(json.dumps({"rows": count, "output": str(args.output), "summary": str(args.summary)}, indent=2))
     return 0
 
@@ -92,6 +122,22 @@ def _load_records(path: Path, max_users: int) -> Iterable[dict[str, Any]]:
 
 
 def _periods_from_record(record: dict[str, Any], *, periods_per_user: int, max_dt_sec: int) -> list[list[ReceiverFix]]:
+    if "fixes" in record:
+        fixes = [ReceiverFix.from_dict(row) for row in record["fixes"]]
+        periods: list[list[ReceiverFix]] = []
+        current: list[ReceiverFix] = []
+        for fix in fixes:
+            if current:
+                dt = int(fix.auth_gnss_time) - int(current[-1].auth_gnss_time)
+                if dt <= 0 or dt > int(max_dt_sec):
+                    current = []
+            current.append(fix)
+            if len(current) == N_FIXES:
+                periods.append(list(current))
+                if periods_per_user > 0 and len(periods) >= periods_per_user:
+                    return periods
+                current = current[-1:]
+        return periods
     windows = sorted(record.get("windows", []), key=lambda row: int(row["timestamp"]))
     periods: list[list[ReceiverFix]] = []
     current: list[dict[str, Any]] = []
@@ -135,14 +181,14 @@ def _fixes_from_windows(record: dict[str, Any], windows: list[dict[str, Any]]) -
     return fixes
 
 
-def _local_tariff_and_lifted_cells(
+def _record_tariff_and_lifted_cells(
+    record: dict[str, Any],
     fixes: list[ReceiverFix],
     *,
     radius_cells: int,
     cell_size_m: int,
 ) -> tuple[TariffTable, list[set[int]]]:
-    max_x = max(int(fix.cell_x) for fix in fixes) + int(radius_cells) + 1
-    grid_w = max(1, max_x + 1)
+    grid_w = max(1, int(record.get("grid_w") or 100))
     candidate_cells: set[int] = set()
     lifted: list[set[int]] = []
     for fix in fixes:
@@ -152,6 +198,8 @@ def _local_tariff_and_lifted_cells(
                 x = int(fix.cell_x) + dx
                 y = int(fix.cell_y) + dy
                 if x < 0 or y < 0:
+                    continue
+                if x >= grid_w or y >= grid_w:
                     continue
                 if math.hypot(dx, dy) * int(cell_size_m) > int(radius_cells) * int(cell_size_m):
                     continue
@@ -169,6 +217,50 @@ def _local_tariff_and_lifted_cells(
         ),
         lifted,
     )
+
+
+def _lifted_cells_from_tariff(
+    fixes: list[ReceiverFix],
+    tariff: TariffTable,
+    *,
+    radius_cells: int,
+    cell_size_m: int,
+) -> list[set[int]]:
+    lifted: list[set[int]] = []
+    for fix in fixes:
+        allowed: set[int] = set()
+        for dy in range(-int(radius_cells), int(radius_cells) + 1):
+            for dx in range(-int(radius_cells), int(radius_cells) + 1):
+                x = int(fix.cell_x) + dx
+                y = int(fix.cell_y) + dy
+                if x < 0 or y < 0:
+                    continue
+                if math.hypot(dx, dy) * int(cell_size_m) > int(radius_cells) * int(cell_size_m):
+                    continue
+                cell = tariff.cell_index(x, y)
+                if cell in tariff.cell_zones:
+                    allowed.add(cell)
+        lifted.append(allowed)
+    return lifted
+
+
+def _load_input_tariff(path: Path) -> TariffTable | None:
+    candidates = [
+        path.parent / "tariff_block.json",
+        path.parent.parent / "tariff_block.json",
+    ]
+    for candidate in candidates:
+        if not candidate.exists():
+            continue
+        payload = json.loads(candidate.read_text(encoding="utf-8"))
+        tariff = payload.get("tariff", payload)
+        return TariffTable(
+            tariff_version=int(tariff["tariff_version"]),
+            grid_w=int(tariff["grid_w"]),
+            cell_zones={int(k): int(v) for k, v in tariff["cell_zones"].items()},
+            zone_rates_cents_per_m={int(k): int(v) for k, v in tariff["zone_rates_cents_per_m"].items()},
+        )
+    return None
 
 
 def _zone_for_cell(cell: int, grid_w: int) -> int:
@@ -192,7 +284,16 @@ def _write_summary(rows: list[dict[str, str | int | float]], path: Path) -> None
     with path.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(
             fh,
-            fieldnames=["dataset", "branch", "n", "skip_count", "mean_savings", "median_savings", "p95_savings"],
+            fieldnames=[
+                "dataset",
+                "branch",
+                "n",
+                "skip_count",
+                "min_savings",
+                "mean_savings",
+                "median_savings",
+                "p95_savings",
+            ],
         )
         writer.writeheader()
         for key in sorted(set(grouped) | set(skip_counts)):
@@ -203,6 +304,7 @@ def _write_summary(rows: list[dict[str, str | int | float]], path: Path) -> None
                     "branch": key[1],
                     "n": len(values),
                     "skip_count": skip_counts.get(key, 0),
+                    "min_savings": min(values) if values else "",
                     "mean_savings": statistics.fmean(values) if values else "",
                     "median_savings": statistics.median(values) if values else "",
                     "p95_savings": _percentile(values, 95) if values else "",
@@ -225,6 +327,123 @@ def _dataset_name(path: Path) -> str:
     if "tdrive" in name or "t-drive" in name:
         return "tdrive"
     return path.stem
+
+
+def _parse_branches(raw: str | None) -> set[str] | None:
+    if raw is None or not str(raw).strip():
+        return None
+    return {part.strip() for part in str(raw).split(",") if part.strip()}
+
+
+def _period_label(dataset: str, record: dict[str, Any], period_idx: int) -> str:
+    if record.get("period_id"):
+        return str(record["period_id"])
+    subject = record.get("user_id", record.get("vehicle_id", record.get("device_id", "unknown")))
+    trip = record.get("trip_id")
+    if trip:
+        return f"{dataset}:{subject}:{trip}:p{period_idx}"
+    return f"{dataset}:{subject}:p{period_idx}"
+
+
+def _audit_continuity_pair(
+    label: str,
+    fixes: list[ReceiverFix],
+    tariff: TariffTable,
+    params: HarnessParams,
+    lifted_allowed_cells_by_fix: list[set[int]],
+) -> list[dict[str, Any]]:
+    branches = [
+        ("no_continuity", ALL_CONSTRAINTS - {Constraint.CONTINUITY}, None),
+        ("no_continuity_osnma_lifted", ALL_CONSTRAINTS - {Constraint.CONTINUITY}, lifted_allowed_cells_by_fix),
+    ]
+    out: list[dict[str, Any]] = []
+    for branch, enabled, allowed in branches:
+        try:
+            result = adversary_min_fee(
+                fixes,
+                tariff,
+                enabled=enabled,
+                params=params,
+                allowed_cells_by_fix=allowed,
+            )
+            honest_bill = compute_bill(fixes, tariff, params)
+            attack_bill = compute_bill(result.claimed_fixes, tariff, params)
+            out.append(
+                {
+                    "dataset": label,
+                    "branch": branch,
+                    "honest_fee_cents": int(honest_bill["total_fee_cents"]),
+                    "attack_fee_cents": int(attack_bill["total_fee_cents"]),
+                    "savings_ratio": float(result.savings_ratio),
+                    "honest_distance_m": int(honest_bill["total_distance_m"]),
+                    "attack_distance_m": int(attack_bill["total_distance_m"]),
+                    "honest_private_zone_distance_m": honest_bill["private_zone_distance_m"],
+                    "attack_private_zone_distance_m": attack_bill["private_zone_distance_m"],
+                    "honest_edges": _edge_audit(fixes, tariff, params),
+                    "attack_edges": _edge_audit(result.claimed_fixes, tariff, params),
+                }
+            )
+        except ValueError as exc:
+            out.append({"dataset": label, "branch": branch, "skip_reason": str(exc)})
+    return out
+
+
+def _edge_audit(fixes: list[ReceiverFix], tariff: TariffTable, params: HarnessParams) -> list[dict[str, Any]]:
+    edges: list[dict[str, Any]] = []
+    for prev, curr in zip(fixes, fixes[1:]):
+        dt = int(curr.auth_gnss_time) - int(prev.auth_gnss_time)
+        odo_delta = int(curr.odometer_reading_m) - int(prev.odometer_reading_m)
+        cell_idx = tariff.cell_index(prev.cell_x, prev.cell_y)
+        zone_id = tariff.zone_for_cell(cell_idx)
+        zone_rate = tariff.rate_for_zone(zone_id)
+        fallback = dt > int(params.cadence_sec)
+        charged_distance = int(math.ceil(dt * int(params.tier_vmax_mps))) if fallback else odo_delta
+        fee = charged_distance * (tariff.max_zone_rate_cents_per_m if fallback else zone_rate)
+        edges.append(
+            {
+                "prev_seq": int(prev.fix_seq),
+                "curr_seq": int(curr.fix_seq),
+                "prev_cell": int(cell_idx),
+                "prev_x": int(prev.cell_x),
+                "prev_y": int(prev.cell_y),
+                "curr_x": int(curr.cell_x),
+                "curr_y": int(curr.cell_y),
+                "dt_sec": int(dt),
+                "odo_delta_m": int(odo_delta),
+                "zone_id": int(zone_id),
+                "rate_cents_per_m": int(zone_rate),
+                "fallback": bool(fallback),
+                "charged_distance_m": int(charged_distance),
+                "fee_cents": int(fee),
+            }
+        )
+    return edges
+
+
+def _write_audit(rows: list[dict[str, Any]], path: Path, *, top_k: int) -> None:
+    complete = [row for row in rows if not row.get("skip_reason")]
+    top = sorted(
+        (row for row in complete if row["branch"] == "no_continuity_osnma_lifted"),
+        key=lambda row: (float(row["savings_ratio"]), int(row["honest_fee_cents"])),
+        reverse=True,
+    )[: max(0, int(top_k))]
+    payload = {
+        "rows": rows,
+        "top_lifted_savings": top,
+        "savings_dotplot": [
+            {
+                "dataset": row["dataset"],
+                "branch": row["branch"],
+                "honest_fee_cents": row.get("honest_fee_cents"),
+                "attack_fee_cents": row.get("attack_fee_cents"),
+                "savings_ratio": row.get("savings_ratio"),
+            }
+            for row in complete
+            if row["branch"] in {"no_continuity", "no_continuity_osnma_lifted"}
+        ],
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
 if __name__ == "__main__":

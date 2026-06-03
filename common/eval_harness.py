@@ -266,6 +266,44 @@ def adversary_min_fee(
     )
 
 
+def zone_binding_min_fee(
+    true_fixes: list[ReceiverFix],
+    tariff: TariffTable,
+    params: HarnessParams,
+) -> AdversaryResult:
+    """Evaluate a rate/zone-binding bypass while preserving the true trajectory."""
+
+    if len(true_fixes) < 2:
+        raise ValueError("at least two fixes are required")
+    honest = compute_bill(true_fixes, tariff, params)
+    honest_fee = int(honest["total_fee_cents"])
+    min_rate = min(int(tariff.rate_for_zone(zone)) for zone in tariff.cell_zones.values())
+    attack_fee = 0
+    for prev, curr in zip(true_fixes, true_fixes[1:]):
+        dt = int(curr.auth_gnss_time) - int(prev.auth_gnss_time)
+        if dt <= 0:
+            raise ValueError("non-positive authenticated time delta")
+        if dt > int(params.max_dt_sec):
+            raise ValueError("authenticated time delta exceeds maximum")
+        odo_delta = int(curr.odometer_reading_m) - int(prev.odometer_reading_m)
+        if odo_delta < 0:
+            raise ValueError("negative odometer delta")
+        if odo_delta > dt * int(params.tier_vmax_mps):
+            raise ValueError("odometer delta exceeds tier speed budget")
+        if dt > int(params.cadence_sec):
+            attack_fee += int(math.ceil(dt * int(params.tier_vmax_mps))) * tariff.max_zone_rate_cents_per_m
+        else:
+            attack_fee += odo_delta * min_rate
+    savings = 0.0 if honest_fee <= 0 else max(0.0, (honest_fee - attack_fee) / honest_fee)
+    return AdversaryResult(
+        min_fee_cents=int(attack_fee),
+        honest_fee_cents=honest_fee,
+        savings_ratio=savings,
+        claimed_fixes=list(true_fixes),
+        total_distance_m=total_odometer_distance(true_fixes),
+    )
+
+
 def cross_check_against_circuit(
     honest_trajectories: Iterable[list[ReceiverFix]],
     tariff: TariffTable,
@@ -332,6 +370,7 @@ def e1_forensic_rows(
     *,
     dataset: str,
     lifted_allowed_cells_by_fix: list[set[int]] | None = None,
+    branch_names: set[str] | None = None,
 ) -> list[dict[str, str | int | float]]:
     """Return per-branch E1 forensic rows for desk-reject root-cause audits."""
 
@@ -339,21 +378,27 @@ def e1_forensic_rows(
     branches: list[tuple[str, frozenset[Constraint], list[set[int]] | None]] = [
         ("all_on", ALL_CONSTRAINTS, None),
         ("no_odometer", ALL_CONSTRAINTS - {Constraint.ODOMETER}, None),
+        ("no_zone_binding", ALL_CONSTRAINTS, None),
         ("no_continuity", ALL_CONSTRAINTS - {Constraint.CONTINUITY}, None),
         ("no_continuity_osnma_lifted", ALL_CONSTRAINTS - {Constraint.CONTINUITY}, lifted_allowed_cells_by_fix),
         ("no_cadence", ALL_CONSTRAINTS - {Constraint.CADENCE}, None),
         ("no_max_dt", ALL_CONSTRAINTS - {Constraint.MAX_DT}, None),
     ]
+    if branch_names is not None:
+        branches = [branch for branch in branches if branch[0] in branch_names]
     rows: list[dict[str, str | int | float]] = []
     for branch, enabled, allowed_cells_by_fix in branches:
         try:
-            result = adversary_min_fee(
-                true_fixes,
-                tariff,
-                enabled=enabled,
-                params=params,
-                allowed_cells_by_fix=allowed_cells_by_fix,
-            )
+            if branch == "no_zone_binding":
+                result = zone_binding_min_fee(true_fixes, tariff, params)
+            else:
+                result = adversary_min_fee(
+                    true_fixes,
+                    tariff,
+                    enabled=enabled,
+                    params=params,
+                    allowed_cells_by_fix=allowed_cells_by_fix,
+                )
             rows.append(
                 {
                     "branch": branch,
@@ -503,7 +548,7 @@ def _parked_claim(
     *,
     preserve_odometer: bool = False,
 ) -> list[ReceiverFix]:
-    min_rate = min(int(rate) for rate in tariff.zone_rates_cents_per_m.values())
+    min_rate = min(int(tariff.rate_for_zone(zone)) for zone in tariff.cell_zones.values())
     cell = next(
         int(cell)
         for cell, zone in sorted(tariff.cell_zones.items())

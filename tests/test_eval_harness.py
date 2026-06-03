@@ -206,6 +206,7 @@ def test_e1_forensic_rows_record_claim_length_savings_and_skip_reason(tmp_path: 
 
     assert by_branch["no_odometer"]["savings_ratio"] == 1.0
     assert by_branch["no_odometer"]["len_claimed_fixes"] == 2
+    assert by_branch["no_zone_binding"]["savings_ratio"] > 0.0
     assert by_branch["no_continuity"]["savings_ratio"] == 0.0
     assert by_branch["no_continuity_osnma_lifted"]["savings_ratio"] > 0.0
     assert by_branch["no_max_dt"]["skip_reason"] == ""
@@ -214,7 +215,7 @@ def test_e1_forensic_rows_record_claim_length_savings_and_skip_reason(tmp_path: 
     assert skip_rows[0]["skip_reason"] == "at least two fixes are required"
 
     output = tmp_path / "e1_forensic.csv"
-    assert write_e1_forensic_csv(rows, output) == 6
+    assert write_e1_forensic_csv(rows, output) == 7
     assert output.read_text(encoding="utf-8").splitlines()[0] == (
         "branch,dataset,len_claimed_fixes,savings_ratio,skip_reason"
     )
