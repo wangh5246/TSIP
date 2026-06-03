@@ -1,0 +1,4 @@
+target_soc,profile,single_proof_wallclock_ms,cpu_cycles_proxy,avg_power_w_proxy,energy_mj_proxy,notes
+Cortex-A78-class (Snapdragon 888 / A14 proxy),v2,1801.192,5115385280,2.800,5043.338,Proxy-only; no DVFS/thermal model.
+Cortex-A78-class (Snapdragon 888 / A14 proxy),v3-k6,1794.546,5096510640,2.800,5024.729,Proxy-only; no DVFS/thermal model.
+Cortex-A78-class (Snapdragon 888 / A14 proxy),v3-k30,1719.512,4883414080,2.800,4814.634,Proxy-only; no DVFS/thermal model.

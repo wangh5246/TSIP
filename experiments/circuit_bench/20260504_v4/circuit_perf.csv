@@ -1,0 +1,6 @@
+profile,n_constraints,public_inputs,private_inputs,prover_time_ms,verifier_time_ms,pk_bytes,vk_bytes,proof_object_bytes,proof_json_bytes,public_json_bytes,ptau_bytes,setup_time_ms,setup_notes
+v2,1588,8,10,2865.839,1992.906,937702,4206,128,805,449,4720039,8199.906,"Groth16(BN254), circuit-specific phase2; legacy v2 artifact."
+v3-k6,3077,13,24,1966.726,1290.803,1886421,5131,128,803,782,4720039,10775.385,"Groth16(BN254), K compile-time constant (k6 artifact)."
+v3-k30,3077,13,24,2175.583,1253.959,1886422,5128,128,807,784,4720039,10359.456,"Groth16(BN254), K compile-time constant (k30 artifact)."
+v4-k6,3056,14,23,1824.143,1197.587,1864773,5302,128,807,862,4720039,9816.135,"Groth16(BN254), Route-B binder-aware artifact (k6)."
+v4-k30,3056,14,23,1644.61,1082.907,1864774,5302,128,806,862,4720039,9627.043,"Groth16(BN254), Route-B binder-aware artifact (k30)."

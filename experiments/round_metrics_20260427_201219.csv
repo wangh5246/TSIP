@@ -1,0 +1,2 @@
+round_idx,round_id,total,valid_clients,rejected,malicious_total,malicious_reject_rate,false_reject_rate,received_A,received_R,cells_final,dp_ok,cells_kept_post,dp_error,gradual_drift_offset_avg_m,gradual_drift_offset_max_m,gradual_drift_terminal_offset_avg_m,gradual_drift_terminal_offset_max_m
+1,1292398769,50,41,9,6,1.0,0.0682,23,23,2011,true,87,"",10263.88,12725.73,10263.88,12725.73

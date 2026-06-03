@@ -1,0 +1,2 @@
+path,iterations,mean_ms,std_ms,p99_proxy_ms,notes
+snarkjs_node_cli,10,1048.567,92.082,1297.845,"Includes Node.js process startup, JSON parsing, and snarkjs verifier path; no native verifier CLI available in artifact."

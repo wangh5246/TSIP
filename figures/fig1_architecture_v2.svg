@@ -1,0 +1,228 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 540" font-family="'Times New Roman','DejaVu Serif',serif" font-size="11">
+<defs>
+  <marker id="ah" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#333"/></marker>
+  <marker id="ar" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#B71C1C"/></marker>
+  <marker id="ap" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#6A1B9A"/></marker>
+  <style>
+    .hdr   { font-weight:bold; fill:white; font-size:12px; }
+    .body  { fill:#222; font-size:10.5px; }
+    .sm    { fill:#555; font-size:9.5px; }
+    .lbl   { fill:#444; font-size:9.5px; font-style:italic; }
+    .title { font-weight:bold; fill:#111; font-size:14px; }
+    .zone  { fill:#666; font-size:10px; font-weight:bold; letter-spacing:0.5px; }
+    .attn  { fill:#B71C1C; font-size:9.5px; font-weight:bold; }
+    .new   { fill:#1565C0; font-size:9px; }
+    .step  { fill:#333; font-size:10.5px; }
+  </style>
+</defs>
+
+<!-- white background -->
+<rect width="1020" height="540" fill="white"/>
+
+<!-- ════════════════ Title ════════════════ -->
+<text x="510" y="23" text-anchor="middle" class="title">Fig. 1.  TSIP System Architecture for Privacy-Preserving Location Aggregation</text>
+
+<!-- ════════════════ Zone Outlines ════════════════ -->
+<!-- Client Side -->
+<rect x="8" y="32" width="172" height="498" rx="6" fill="#F3F6FF" stroke="#90A4AE" stroke-width="1" stroke-dasharray="6,3"/>
+<text x="94" y="47" text-anchor="middle" class="zone" fill="#546E7A">CLIENT  SIDE</text>
+
+<!-- Server Side -->
+<rect x="188" y="32" width="823" height="498" rx="6" fill="#F1FBF1" stroke="#90A4AE" stroke-width="1" stroke-dasharray="6,3"/>
+<text x="600" y="47" text-anchor="middle" class="zone" fill="#546E7A">SERVER  SIDE</text>
+
+<!-- ════════════════ CLIENT C_i ════════════════ -->
+<rect x="16" y="56" width="155" height="220" rx="5" fill="white" stroke="#1565C0" stroke-width="1.5"/>
+<!-- header -->
+<rect x="16" y="56" width="155" height="26" rx="5" fill="#1565C0"/>
+<rect x="16" y="73" width="155" height="9" fill="#1565C0"/>
+<text x="93" y="74" text-anchor="middle" class="hdr">Client C<tspan font-size="8" dy="2">i</tspan><tspan dy="-2">  (N=200)</tspan></text>
+
+<!-- Client body -->
+<text x="26" y="100" class="body" font-style="italic">Input:</text>
+<text x="26" y="116" class="body">loc<tspan font-size="8" dy="2">t</tspan><tspan dy="-2"> = (x</tspan><tspan font-size="8" dy="2">t</tspan><tspan dy="-2">, y</tspan><tspan font-size="8" dy="2">t</tspan><tspan dy="-2">)  from GPS</tspan></text>
+
+<text x="26" y="138" class="body" font-style="italic">Commitment:</text>
+<text x="26" y="154" class="body">H<tspan font-size="8" dy="2">t</tspan><tspan dy="-2"> = Poseidon2(x</tspan><tspan font-size="8" dy="2">t</tspan><tspan dy="-2">, y</tspan><tspan font-size="8" dy="2">t</tspan><tspan dy="-2">)</tspan></text>
+<text x="26" y="170" class="body">chain<tspan font-size="8" dy="2">t</tspan><tspan dy="-2"> = MiMC7(H</tspan><tspan font-size="8" dy="2">t</tspan><tspan dy="-2">, chain</tspan><tspan font-size="8" dy="2">t-1</tspan><tspan dy="-2">)</tspan></text>
+
+<text x="26" y="192" class="body" font-style="italic">ZK prove  (rapidsnark):</text>
+<text x="26" y="208" class="body">&#x03C0; = Groth16.prove(w, pk)</text>
+
+<!-- P4/P5 badge -->
+<rect x="20" y="216" width="145" height="50" rx="3" fill="#EDE7F6" stroke="#9C27B0" stroke-width="0.8" stroke-dasharray="3,2"/>
+<text x="93" y="229" text-anchor="middle" class="sm" fill="#6A1B9A" font-weight="bold">Security Bindings</text>
+<text x="26" y="244" class="sm" fill="#4527A0">P4: payload_digest &#x2192; chain</text>
+<text x="26" y="258" class="sm" fill="#4527A0">P5: user_secret commitment</text>
+
+<!-- ════════════════ ZK Circuits box ════════════════ -->
+<rect x="16" y="290" width="155" height="228" rx="5" fill="white" stroke="#78909C" stroke-width="1" stroke-dasharray="4,2"/>
+<text x="93" y="308" text-anchor="middle" font-size="11" fill="#37474F" font-weight="bold">ZK Circuits (Groth16/BN254)</text>
+<line x1="26" y1="314" x2="160" y2="314" stroke="#ccc" stroke-width="0.6"/>
+
+<!-- tsip_step -->
+<text x="26" y="330" class="body" font-weight="bold">tsip_step</text>
+<text x="26" y="345" class="sm">70 constraints</text>
+<text x="26" y="360" class="sm">&#x394;x&#x00B2;+&#x394;y&#x00B2; &#x2264; (v&#x00B7;&#x394;t)&#x00B2;</text>
+<text x="26" y="375" class="sm">prove time: 308 ms</text>
+<line x1="26" y1="384" x2="160" y2="384" stroke="#ccc" stroke-width="0.6"/>
+
+<!-- tsip_main -->
+<text x="26" y="400" class="body" font-weight="bold">tsip_main</text>
+<text x="26" y="415" class="sm">674 constraints</text>
+<text x="26" y="430" class="sm">Poseidon2 commitment</text>
+<text x="26" y="445" class="sm">+ distance check</text>
+<text x="26" y="460" class="sm">prove time: 409 ms</text>
+<line x1="26" y1="468" x2="160" y2="468" stroke="#ccc" stroke-width="0.6"/>
+
+<!-- proof size -->
+<text x="93" y="484" text-anchor="middle" class="sm">Proof size: 706–805 B (const.)</text>
+<text x="93" y="500" text-anchor="middle" class="sm">Verify: ~1050 ms (snarkjs)</text>
+
+<!-- ════════════════ SHUFFLER ════════════════ -->
+<rect x="198" y="56" width="188" height="370" rx="5" fill="white" stroke="#6A1B9A" stroke-width="1.5"/>
+<!-- header -->
+<rect x="198" y="56" width="188" height="26" rx="5" fill="#6A1B9A"/>
+<rect x="198" y="73" width="188" height="9" fill="#6A1B9A"/>
+<text x="292" y="74" text-anchor="middle" class="hdr">Shuffler</text>
+
+<!-- 6-layer verification list -->
+<text x="208" y="102" class="step">(1) Verify ZK proof &#x03C0;</text>
+<text x="220" y="116" class="sm">tsip_step + tsip_main (snarkjs)</text>
+
+<line x1="208" y1="124" x2="378" y2="124" stroke="#E0D7F5" stroke-width="0.5"/>
+<text x="208" y="140" class="step">(2) Commitment chain check</text>
+<text x="220" y="155" class="sm">H<tspan font-size="7.5" dy="2">t&#x2212;1</tspan><tspan dy="-2" font-size="9.5"> stored</tspan> =? H<tspan font-size="7.5" dy="2">t&#x2212;1</tspan><tspan dy="-2" font-size="9.5"> recv</tspan></text>
+<text x="220" y="170" class="sm">window_id continuity</text>
+
+<line x1="208" y1="178" x2="378" y2="178" stroke="#E0D7F5" stroke-width="0.5"/>
+<text x="208" y="194" class="step">(3) Payload-digest binding  </text>
+<text x="220" y="208" class="sm" fill="#4527A0">SHA256(payload) &#x2192; chain (P4)</text>
+<text x="220" y="222" class="sm" fill="#4527A0">secret_commitment check  (P5)</text>
+
+<line x1="208" y1="230" x2="378" y2="230" stroke="#E0D7F5" stroke-width="0.5"/>
+<text x="208" y="246" class="step">(4) Sliding window check  (P2)</text>
+<text x="220" y="261" class="sm">&#x2211; dist over last W rounds</text>
+<text x="220" y="276" class="sm">time-to-poison elevation</text>
+
+<line x1="208" y1="283" x2="378" y2="283" stroke="#E0D7F5" stroke-width="0.5"/>
+<text x="208" y="299" class="step">(5) Blacklist + DP budget</text>
+<text x="220" y="314" class="sm">reject_streak &#x2265; 3 &#x2192; ban</text>
+<text x="220" y="328" class="sm">&#x03B5;-budget gate (SVT)</text>
+
+<line x1="208" y1="336" x2="378" y2="336" stroke="#E0D7F5" stroke-width="0.5"/>
+<text x="208" y="352" class="step">(6) Committee attest  (P3)</text>
+<text x="220" y="367" class="sm">ATT = H(chain|payload_digest</text>
+<text x="220" y="382" class="sm">|proof_digest) ; &#x2265; thresh</text>
+<text x="208" y="400" class="step" fill="#2E7D32">(7) Forward &#x2192; Agg A / R</text>
+<text x="220" y="414" class="sm">ingestA / ingestR</text>
+
+<!-- Reject box -->
+<rect x="215" y="448" width="158" height="68" rx="4" fill="#FFEBEE" stroke="#B71C1C" stroke-width="1.2"/>
+<text x="294" y="470" text-anchor="middle" font-size="12" fill="#B71C1C" font-weight="bold">&#x2715; Reject</text>
+<text x="294" y="487" text-anchor="middle" class="sm" fill="#B71C1C">streak++ / blacklist</text>
+<text x="294" y="502" text-anchor="middle" class="sm" fill="#B71C1C">Defends: A1 A2 A3 A5</text>
+
+<!-- arrow Shuffler to reject -->
+<line x1="292" y1="426" x2="292" y2="446" stroke="#B71C1C" stroke-width="1.2" stroke-dasharray="4,2" marker-end="url(#ar)"/>
+
+<!-- ════════════════ AGG A ════════════════ -->
+<rect x="408" y="56" width="165" height="170" rx="5" fill="white" stroke="#BF360C" stroke-width="1.5"/>
+<!-- header -->
+<rect x="408" y="56" width="165" height="26" rx="5" fill="#BF360C"/>
+<rect x="408" y="73" width="165" height="9" fill="#BF360C"/>
+<text x="490" y="74" text-anchor="middle" class="hdr">Aggregator A</text>
+
+<text x="418" y="100" class="body">PRP(k<tspan font-size="8" dy="2">A</tspan><tspan dy="-2">) permutation</tspan></text>
+<text x="418" y="116" class="body">Accumulate  &#x3A3; val</text>
+<text x="418" y="132" class="body">MiMC7 masking</text>
+<text x="418" y="148" class="body">commit(Share<tspan font-size="8" dy="2">A</tspan><tspan dy="-2">)</tspan></text>
+<text x="418" y="172" class="sm">&#x2192; send Share<tspan font-size="7.5" dy="2">A</tspan><tspan dy="-2"> to Decoder</tspan></text>
+<text x="418" y="188" class="sm" font-style="italic">Grid: 10,000 cells</text>
+<text x="418" y="204" class="sm" font-style="italic">Agg time: ~200 ms/round</text>
+
+<!-- ════════════════ AGG R ════════════════ -->
+<rect x="408" y="248" width="165" height="170" rx="5" fill="white" stroke="#1B5E20" stroke-width="1.5"/>
+<!-- header -->
+<rect x="408" y="248" width="165" height="26" rx="5" fill="#1B5E20"/>
+<rect x="408" y="265" width="165" height="9" fill="#1B5E20"/>
+<text x="490" y="266" text-anchor="middle" class="hdr">Aggregator R</text>
+
+<text x="418" y="292" class="body">PRP<tspan font-size="9" dy="1">&#x207B;&#x00B9;</tspan><tspan dy="-1">(k</tspan><tspan font-size="8" dy="2">R</tspan><tspan dy="-2">) inverse perm.</tspan></text>
+<text x="418" y="308" class="body">Recover original index</text>
+<text x="418" y="324" class="body">DP seed generation</text>
+<text x="418" y="340" class="body">commit(Share<tspan font-size="8" dy="2">R</tspan><tspan dy="-2">)</tspan></text>
+<text x="418" y="364" class="sm">&#x2192; send Share<tspan font-size="7.5" dy="2">R</tspan><tspan dy="-2"> to Decoder</tspan></text>
+<text x="418" y="380" class="sm" font-style="italic">(&#x03B5;, &#x03B4;)-DP seed: Gaussian</text>
+<text x="418" y="396" class="sm" font-style="italic">&#x03C3; calibrated to sensitivity</text>
+
+<!-- ════════════════ DECODER ════════════════ -->
+<rect x="600" y="120" width="158" height="220" rx="5" fill="white" stroke="#880E4F" stroke-width="1.5"/>
+<!-- header -->
+<rect x="600" y="120" width="158" height="26" rx="5" fill="#880E4F"/>
+<rect x="600" y="137" width="158" height="9" fill="#880E4F"/>
+<text x="679" y="138" text-anchor="middle" class="hdr">Decoder</text>
+
+<text x="610" y="165" class="body">Share<tspan font-size="8" dy="2">A</tspan><tspan dy="-2"> &#x2295; Share</tspan><tspan font-size="8" dy="2">R</tspan></text>
+<text x="610" y="181" class="body">= true cell counts</text>
+<line x1="610" y1="190" x2="748" y2="190" stroke="#F8BBD0" stroke-width="0.6"/>
+<text x="610" y="206" class="body">+ Gaussian(&#x03C3;) noise</text>
+<text x="610" y="222" class="body">Threshold filtering</text>
+<text x="610" y="238" class="body">Clamp &#x2264; max_count</text>
+<line x1="610" y1="247" x2="748" y2="247" stroke="#F8BBD0" stroke-width="0.6"/>
+<text x="679" y="265" text-anchor="middle" class="body" font-weight="bold">Output: DP heat-map</text>
+<text x="679" y="283" text-anchor="middle" class="sm">(&#x03B5;, &#x03B4;)-differential privacy</text>
+<text x="679" y="299" text-anchor="middle" class="sm">&#x03B5; = &#x03B5;<tspan font-size="7.5" dy="2">SVT</tspan><tspan dy="-2"> + &#x03B5;</tspan><tspan font-size="7.5" dy="2">value</tspan><tspan dy="-2"> = 0.3 + 0.7 = 1.0</tspan></text>
+<text x="679" y="325" text-anchor="middle" class="sm">public-output DP only</text>
+
+<!-- ════════════════ HEAT-MAP OUTPUT ════════════════ -->
+<rect x="792" y="183" width="106" height="124" rx="5" fill="#FAFAFA" stroke="#546E7A" stroke-width="1"/>
+<text x="845" y="207" text-anchor="middle" font-size="12" fill="#37474F" font-weight="bold">City</text>
+<text x="845" y="223" text-anchor="middle" font-size="12" fill="#37474F" font-weight="bold">Heat-Map</text>
+<line x1="800" y1="232" x2="890" y2="232" stroke="#ccc" stroke-width="0.5"/>
+<text x="845" y="248" text-anchor="middle" class="sm">~8,200 cells</text>
+<text x="845" y="264" text-anchor="middle" class="sm">per round</text>
+<text x="845" y="280" text-anchor="middle" class="sm">FRR = 0.17%</text>
+<text x="845" y="296" text-anchor="middle" class="sm">MRR = 100%</text>
+
+<!-- ════════════════ ARROWS ════════════════ -->
+<!-- Client → Shuffler -->
+<line x1="171" y1="155" x2="196" y2="155" stroke="#333" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="183" y="149" text-anchor="middle" class="lbl">(&#x03C0;, H, chain)</text>
+
+<!-- Shuffler → Agg A -->
+<line x1="386" y1="118" x2="406" y2="118" stroke="#6A1B9A" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="396" y="111" text-anchor="middle" class="lbl" fill="#6A1B9A">ingestA</text>
+
+<!-- Shuffler → Agg R -->
+<line x1="386" y1="320" x2="406" y2="320" stroke="#6A1B9A" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="396" y="313" text-anchor="middle" class="lbl" fill="#6A1B9A">ingestR</text>
+
+<!-- Agg A → Decoder -->
+<line x1="573" y1="162" x2="598" y2="195" stroke="#BF360C" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="574" y="173" class="lbl" fill="#BF360C">Share<tspan font-size="7.5" dy="2">A</tspan></text>
+
+<!-- Agg R → Decoder -->
+<line x1="573" y1="298" x2="598" y2="268" stroke="#1B5E20" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="574" y="291" class="lbl" fill="#1B5E20">Share<tspan font-size="7.5" dy="2">R</tspan></text>
+
+<!-- Decoder → Heat-Map -->
+<line x1="758" y1="245" x2="790" y2="245" stroke="#880E4F" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="774" y="239" text-anchor="middle" class="lbl" fill="#880E4F">DP</text>
+
+<!-- Warm-up annotation -->
+<text x="292" y="460" text-anchor="middle" class="sm" fill="#37474F" font-style="italic">Warm-up rounds: enroll_only (P1)</text>
+
+<!-- ════════════════ COMMITMENT CHAIN ════════════════ -->
+<!-- bottom strip showing chain structure -->
+<rect x="8" y="516" width="1004" height="18" rx="3" fill="#EDE7F6" stroke="#B39DDB" stroke-width="0.5"/>
+<text x="514" y="528" text-anchor="middle" font-size="9.5" fill="#4527A0" font-weight="bold">Commitment Chain:  chain</text>
+<text x="514" y="528" text-anchor="middle" font-size="9.5" fill="#4527A0" font-weight="bold">&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;&#xA0;t</text>
+
+<!-- Better commitment chain at bottom -->
+<rect x="8" y="510" width="1004" height="25" rx="3" fill="#EDE7F6" stroke="#B39DDB" stroke-width="0.5"/>
+<text x="514" y="526" text-anchor="middle" font-size="9.5" fill="#4527A0">
+  Commitment chain: chain<tspan font-size="7" dy="2">t</tspan><tspan dy="-2"> = MiMC7(H</tspan><tspan font-size="7" dy="2">t</tspan><tspan dy="-2">, chain</tspan><tspan font-size="7" dy="2">t&#x2212;1</tspan><tspan dy="-2">, t, window_id)   binds  loc &#x2192; time &#x2192; round;   broken chain &#x21D2; reject (A1 teleport / A2 identity-swap / A5 replay blocked)</tspan>
+</text>
+
+</svg>

@@ -1,0 +1,8 @@
+scheme_key,scheme_label,client_compute_ms,server_verify_ms,comm_bytes_per_client_round,comm_time_ms,e2e_ms,comm_profile,bandwidth_mbps,prover,zk_benchmark_csv
+full,TSIP (Full),2621.576580197323,1066.181839541453,5614,4.4912,3692.249619738776,system,10.0,rapidsnark,experiments/zk_benchmark_20260504_174640.csv
+commit_only,Commit-Only,2104.907580197323,0.22183954145293683,3860,3.088,2108.2174197387762,system,10.0,rapidsnark,experiments/zk_benchmark_20260504_174640.csv
+no_integ,No-Integrity,8.74623124836944,0.012775833485648036,2700,2.16,10.919007081855089,system,10.0,rapidsnark,experiments/zk_benchmark_20260504_174640.csv
+risefl,RiseFL,9.466719787451439,0.003168000024743378,2772,2.2176,11.687487787476183,system,10.0,rapidsnark,experiments/zk_benchmark_20260504_174640.csv
+nebula,Nebula,8.997851048479788,0.0005718000046908855,2700,2.16,11.158422848484479,system,10.0,rapidsnark,experiments/zk_benchmark_20260504_174640.csv
+ldp,Pure LDP,8.80994531325996,0.000528370002284646,2700,2.16,10.970473683262243,system,10.0,rapidsnark,experiments/zk_benchmark_20260504_174640.csv
+eiffel,EIFFeL-style,8.775629685260355,0.00011235394049435854,2700,2.16,10.93574203920085,system,10.0,rapidsnark,experiments/zk_benchmark_20260504_174640.csv

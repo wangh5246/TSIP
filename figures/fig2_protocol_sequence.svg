@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" font-family="'Times New Roman','DejaVu Serif',serif" font-size="11">
+<defs>
+  <marker id="a1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#333"/></marker>
+  <marker id="a2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#b22"/></marker>
+  <style>
+    .hdr   { font-weight:bold; font-size:12px; }
+    .step  { fill:#333; font-size:10.5px; }
+    .sm    { fill:#666; font-size:10px; font-style:italic; }
+    .title { font-weight:bold; fill:#111; font-size:14px; }
+  </style>
+</defs>
+
+<rect width="800" height="520" fill="white"/>
+<text x="400" y="20" text-anchor="middle" class="title">Fig. 2.  TSIP Protocol Sequence (Round t ≥ 1)</text>
+
+<!-- ── Participant headers ── -->
+<rect x="30" y="32" width="100" height="24" rx="3" fill="#eef3fa" stroke="#2166ac" stroke-width="1"/>
+<text x="80"  y="49" text-anchor="middle" class="hdr" fill="#2166ac">Client C<tspan font-size="8" dy="2">i</tspan></text>
+
+<rect x="200" y="32" width="100" height="24" rx="3" fill="#f3eef8" stroke="#5e3c99" stroke-width="1"/>
+<text x="250" y="49" text-anchor="middle" class="hdr" fill="#5e3c99">Shuffler</text>
+
+<rect x="380" y="32" width="80" height="24" rx="3" fill="#faf3e8" stroke="#8c6d31" stroke-width="1"/>
+<text x="420" y="49" text-anchor="middle" class="hdr" fill="#8c6d31">Agg A</text>
+
+<rect x="520" y="32" width="80" height="24" rx="3" fill="#eef7ee" stroke="#1b7837" stroke-width="1"/>
+<text x="560" y="49" text-anchor="middle" class="hdr" fill="#1b7837">Agg R</text>
+
+<rect x="670" y="32" width="90" height="24" rx="3" fill="#f7eef2" stroke="#993366" stroke-width="1"/>
+<text x="715" y="49" text-anchor="middle" class="hdr" fill="#993366">Decoder</text>
+
+<!-- ── Lifelines ── -->
+<line x1="80"  y1="56" x2="80"  y2="510" stroke="#ccc" stroke-width="0.7" stroke-dasharray="5,3"/>
+<line x1="250" y1="56" x2="250" y2="510" stroke="#ccc" stroke-width="0.7" stroke-dasharray="5,3"/>
+<line x1="420" y1="56" x2="420" y2="510" stroke="#ccc" stroke-width="0.7" stroke-dasharray="5,3"/>
+<line x1="560" y1="56" x2="560" y2="510" stroke="#ccc" stroke-width="0.7" stroke-dasharray="5,3"/>
+<line x1="715" y1="56" x2="715" y2="510" stroke="#ccc" stroke-width="0.7" stroke-dasharray="5,3"/>
+
+<!-- ══ Step 1: Local computation ══ -->
+<rect x="18" y="70" width="124" height="66" rx="3" fill="white" stroke="#2166ac" stroke-width="0.8"/>
+<text x="26" y="86"  class="step" fill="#2166ac" font-weight="bold">(1) Local computation</text>
+<text x="26" y="101" class="step">loc<tspan font-size="8" dy="-3">t</tspan><tspan dy="3"> = (x</tspan><tspan font-size="8" dy="-3">t</tspan><tspan dy="3">, y</tspan><tspan font-size="8" dy="-3">t</tspan><tspan dy="3">)</tspan></text>
+<text x="26" y="116" class="step">H<tspan font-size="8" dy="-3">t</tspan><tspan dy="3"> = Poseidon2(x, y)</tspan></text>
+<text x="26" y="131" class="step">chain<tspan font-size="8" dy="-3">t</tspan><tspan dy="3"> = MiMC7(chain</tspan><tspan font-size="8" dy="-3">t-1</tspan><tspan dy="3">, H</tspan><tspan font-size="8" dy="-3">t</tspan><tspan dy="3">)</tspan></text>
+
+<!-- ══ Step 2: ZK prove ══ -->
+<rect x="18" y="148" width="124" height="50" rx="3" fill="white" stroke="#2166ac" stroke-width="0.8"/>
+<text x="26" y="165" class="step" fill="#2166ac" font-weight="bold">(2) ZK proof generation</text>
+<text x="26" y="180" class="step">rapidsnark fullprove</text>
+<text x="26" y="193" class="step">π = (π<tspan font-size="8" dy="-3">a</tspan><tspan dy="3">, π</tspan><tspan font-size="8" dy="-3">b</tspan><tspan dy="3">, π</tspan><tspan font-size="8" dy="-3">c</tspan><tspan dy="3">)  ~0.4s</tspan></text>
+
+<!-- ══ Step 3: Submit ══ -->
+<line x1="80" y1="218" x2="248" y2="218" stroke="#2166ac" stroke-width="1.1" marker-end="url(#a1)"/>
+<text x="164" y="213" text-anchor="middle" class="sm" fill="#2166ac">(3) Report(idx, val, H<tspan font-size="8" dy="-3">t</tspan><tspan dy="3">, chain</tspan><tspan font-size="8" dy="-3">t</tspan><tspan dy="3">, π)</tspan></text>
+
+<!-- ══ Step 4: Shuffler verify ══ -->
+<rect x="190" y="232" width="120" height="90" rx="3" fill="white" stroke="#5e3c99" stroke-width="0.8"/>
+<text x="198" y="248" class="step" fill="#5e3c99" font-weight="bold">(4) Multi-layer verify</text>
+<text x="198" y="264" class="step">• verify(vkey, π)</text>
+<text x="198" y="280" class="step">• H<tspan font-size="8" dy="-3">t-1</tspan><tspan dy="3"> chain match?</tspan></text>
+<text x="198" y="296" class="step">• reject_streak &lt; 3?</text>
+<text x="198" y="312" class="step">• DP budget ok?</text>
+
+<!-- ── Reject path (dashed) ── -->
+<line x1="248" y1="340" x2="82" y2="340" stroke="#b22" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#a2)"/>
+<text x="164" y="335" text-anchor="middle" class="sm" fill="#b22">reject (streak++)</text>
+
+<!-- ── Accept → Agg A ── -->
+<line x1="250" y1="360" x2="418" y2="360" stroke="#8c6d31" stroke-width="1.1" marker-end="url(#a1)"/>
+<text x="334" y="355" text-anchor="middle" class="sm" fill="#8c6d31">(pass) ingestA</text>
+
+<!-- ── Accept → Agg R ── -->
+<line x1="250" y1="380" x2="558" y2="380" stroke="#1b7837" stroke-width="1.1" marker-end="url(#a1)"/>
+<text x="404" y="375" text-anchor="middle" class="sm" fill="#1b7837">(pass) ingestR</text>
+
+<!-- ══ Step 5: Agg A ══ -->
+<rect x="370" y="395" width="100" height="42" rx="3" fill="white" stroke="#8c6d31" stroke-width="0.8"/>
+<text x="378" y="411" class="step" fill="#8c6d31" font-weight="bold">(5a) PRP(k<tspan font-size="8" dy="-3">A</tspan><tspan dy="3">) → Σ val</tspan></text>
+<text x="378" y="427" class="step">→ commit(Share<tspan font-size="8" dy="-3">A</tspan><tspan dy="3">)</tspan></text>
+
+<!-- ══ Step 5: Agg R ══ -->
+<rect x="510" y="395" width="100" height="42" rx="3" fill="white" stroke="#1b7837" stroke-width="0.8"/>
+<text x="518" y="411" class="step" fill="#1b7837" font-weight="bold">(5b) PRP⁻¹(k<tspan font-size="8" dy="-3">R</tspan><tspan dy="3">)</tspan></text>
+<text x="518" y="427" class="step">→ commit(Share<tspan font-size="8" dy="-3">R</tspan><tspan dy="3">)</tspan></text>
+
+<!-- ── Agg A → Decoder ── -->
+<line x1="470" y1="450" x2="713" y2="450" stroke="#8c6d31" stroke-width="1" marker-end="url(#a1)"/>
+<text x="590" y="445" text-anchor="middle" class="sm" fill="#8c6d31">Share<tspan font-size="8" dy="-3">A</tspan></text>
+
+<!-- ── Agg R → Decoder ── -->
+<line x1="610" y1="465" x2="713" y2="465" stroke="#1b7837" stroke-width="1" marker-end="url(#a1)"/>
+<text x="662" y="460" text-anchor="middle" class="sm" fill="#1b7837">Share<tspan font-size="8" dy="-3">R</tspan></text>
+
+<!-- ══ Step 6: Decoder ══ -->
+<rect x="665" y="475" width="100" height="30" rx="3" fill="white" stroke="#993366" stroke-width="0.8"/>
+<text x="673" y="492" class="step" fill="#993366" font-weight="bold">(6) A ⊕ R + DP noise</text>
+<text x="715" y="510" text-anchor="middle" class="sm" fill="#993366">→ (ε,δ)-DP heat-map</text>
+
+<!-- time arrow -->
+<line x1="6" y1="56" x2="6" y2="505" stroke="#aaa" stroke-width="0.8" marker-end="url(#a1)"/>
+<text x="6" y="515" text-anchor="middle" font-size="10" fill="#999" font-style="italic">time</text>
+</svg>

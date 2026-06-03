@@ -1,0 +1,11 @@
+mode,malicious_rate,round_idx,round_id,total,valid_clients,rejected,malicious_total,malicious_reject_rate,false_reject_rate,dump_file,cells_kept_pre,cells_kept_post
+no_integ,0.1,1,1963786349,50,50,0,6,0.0,0.0,/Users/wanghao/Desktop/risefl_mvp/experiments/utility_dumps/20260505_144807/no_integ_mal0.1_r1.json,2,2
+no_integ,0.1,2,1963799995,50,50,0,6,0.0,0.0,/Users/wanghao/Desktop/risefl_mvp/experiments/utility_dumps/20260505_144807/no_integ_mal0.1_r2.json,2,1
+no_integ,0.1,3,1963812795,50,50,0,6,0.0,0.0,/Users/wanghao/Desktop/risefl_mvp/experiments/utility_dumps/20260505_144807/no_integ_mal0.1_r3.json,2,1
+no_integ,0.1,4,1963826528,50,50,0,6,0.0,0.0,/Users/wanghao/Desktop/risefl_mvp/experiments/utility_dumps/20260505_144807/no_integ_mal0.1_r4.json,2,1
+no_integ,0.1,5,1963843727,50,50,0,6,0.0,0.0,/Users/wanghao/Desktop/risefl_mvp/experiments/utility_dumps/20260505_144807/no_integ_mal0.1_r5.json,2,1
+no_integ,0.1,6,1963856641,50,50,0,6,0.0,0.0,/Users/wanghao/Desktop/risefl_mvp/experiments/utility_dumps/20260505_144807/no_integ_mal0.1_r6.json,2,2
+no_integ,0.1,7,1963868117,50,50,0,6,0.0,0.0,/Users/wanghao/Desktop/risefl_mvp/experiments/utility_dumps/20260505_144807/no_integ_mal0.1_r7.json,2,1
+no_integ,0.1,8,1963880058,50,50,0,6,0.0,0.0,/Users/wanghao/Desktop/risefl_mvp/experiments/utility_dumps/20260505_144807/no_integ_mal0.1_r8.json,2,2
+no_integ,0.1,9,1963892390,50,50,0,6,0.0,0.0,/Users/wanghao/Desktop/risefl_mvp/experiments/utility_dumps/20260505_144807/no_integ_mal0.1_r9.json,2,1
+no_integ,0.1,10,1963905418,50,50,0,6,0.0,0.0,/Users/wanghao/Desktop/risefl_mvp/experiments/utility_dumps/20260505_144807/no_integ_mal0.1_r10.json,2,2

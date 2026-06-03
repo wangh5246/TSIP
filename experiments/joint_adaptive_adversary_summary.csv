@@ -1,0 +1,6 @@
+scenario,strategy,k,cap_policy_m,dt_min_s,gap_s,rounds,users,malicious_users,attempted_malicious_cell_rounds,accepted_malicious_cell_rounds,successful_polluted_cell_rounds,total_malicious_cell_rounds,attack_rejection_rate,pollution_fraction_of_all_malicious,distinct_polluted_cells,terminal_offset_m,best_dt_s,best_modes
+random_payload_swap,random coordinate with independent payload cell,6,3300,1,1800,50,100,10,500,10,0,500,0.980000,0.000000,0,0.00,mixed,3 seeds; polluted std=0.00
+random_valid_payload,random coordinate with matching payload cell,6,3300,1,1800,50,100,10,500,53,43,500,0.894000,0.086000,4,2421.71,mixed,3 seeds; polluted std=12.47
+joint_adaptive_grid_search,"payload-bound radial saturation, step=0.75, anchor=0.25",6,3300,1,1800,50,100,10,500,500,490,500,0.000000,0.980000,49,6615.00,60,"walk,walk,walk,walk,walk,walk,walk,walk..."
+mode_switch_timing_saturation,"fastest enrolled mode, dt chosen to saturate 0.99x ADWC cap",6,3300,1,1800,50,100,10,500,500,490,500,0.000000,0.980000,2,4999.00,82,"transit,transit,transit,transit,transit,transit,transit,transit..."
+above_boundary_probe,payload-bound coordinate at 1.01x ADWC cap,6,3300,1,1800,50,100,10,500,0,0,500,1.000000,0.000000,0,3333.00,60,"transit,transit,transit,transit,transit,transit,transit,transit..."

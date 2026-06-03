@@ -1,0 +1,2 @@
+path,iterations,mean_us,std_us,p50_us,p99_us,min_us,max_us,mean_ms,notes
+ark_groth16_bn254,100,2127.12,509.50,1880.21,3811.38,1575.88,3811.38,2.1271,"ark-groth16 0.4 native Rust; BN254; parallel feature; release build"

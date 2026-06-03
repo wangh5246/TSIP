@@ -51,6 +51,9 @@ from .utils import (
     inject_attack,
 )
 
+# Communication cost used by the simulation baseline (bytes/client/round).
+NEBULA_COMM_BYTES_PER_CLIENT = 2_700  # ~= 2.7 KB
+
 
 # ── client ────────────────────────────────────────────────────────────────────
 
@@ -187,6 +190,7 @@ def run_nebula_experiment(
             "n_malicious":          n_mal,
             "malicious_reject_rate": 0.0,   # Nebula cannot detect attacks
             "false_reject_rate":    0.0,
+            "comm_bytes_per_client": NEBULA_COMM_BYTES_PER_CLIENT,
             **metrics,
         })
 

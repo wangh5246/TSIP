@@ -24,3 +24,14 @@ zk/settlement_period_v5_k6/*_js/
 dataset/osm/*.pbf
 dataset/osm/*.part
 dataset/osm/*.complete
+
+# Virtual environments
+.venv/
+venv/
+
+# Claude Code agent worktrees / local state
+.claude/worktrees/
+
+# Rust build artifacts (vendored baselines / external benches)
+target/
+**/target/

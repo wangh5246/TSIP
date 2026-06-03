@@ -1,0 +1,3 @@
+predicate,cap_m,below_distance_m,above_distance_m,below_reject_rate,above_reject_rate,source
+per_step_vehicle,1980,1980,2050,0.000,1.000,experiments/figures/per_step_scurve_points.csv
+adwc_k6_policy_boundary,6600,6534,6666,0.000,1.000,experiments/figures/fig_boundary_scurve_7pts_points.csv

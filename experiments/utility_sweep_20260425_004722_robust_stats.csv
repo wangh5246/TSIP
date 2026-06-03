@@ -1,0 +1,3 @@
+mode,malicious_rate,n_samples,mrr_median,frr_median,jaccard_median,jaccard_iqr,jaccard_bootstrap_ci,rmse_median,rmse_iqr,rmse_bootstrap_ci,pearson_median,pearson_iqr,pearson_bootstrap_ci
+full,0.1,10,1.0000,0.0909,0.3846,0.3846--0.4211,0.2414--0.5000,4.4138,3.9504--4.6589,4.2366--4.8440,0.8624,0.8543--0.8736,0.7965--0.9060
+no_integ,0.1,10,0.0000,0.0000,0.4211,0.4211--0.4499,0.2857--0.5789,5.6560,5.6503--5.6639,5.3654--6.0262,0.8765,0.8755--0.8770,0.8067--0.9085

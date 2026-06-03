@@ -1,0 +1,2 @@
+path,available,role,command_output,conclusion
+/usr/local/bin/rapidsnark,true,prover-only,"Usage: prover <circuit.zkey> <witness.wtns> <proof.json> <public.json>","No C++ rapidsnark verifier binary is present in the artifact/container; native verifier timing cannot be reported without adding a separate verifier implementation."

@@ -61,6 +61,10 @@ from experiments.baselines.utils import (
 from experiments.baselines.nebula_baseline   import run_nebula_experiment
 from experiments.baselines.pure_ldp_baseline import run_ldp_experiment
 from experiments.baselines.eiffel_baseline   import run_eiffel_experiment
+from experiments.baselines.risefl_baseline   import run_risefl_experiment
+from experiments.baselines.prio3_baseline    import run_prio3_experiment
+from experiments.baselines.rofl_baseline     import run_rofl_experiment
+from experiments.baselines.corgi_baseline    import run_corgi_experiment
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -99,12 +103,20 @@ BASELINE_MAP = {
     "nebula": run_nebula_experiment,
     "ldp":    run_ldp_experiment,
     "eiffel": run_eiffel_experiment,
+    "risefl": run_risefl_experiment,
+    "prio3":  run_prio3_experiment,
+    "rofl":   run_rofl_experiment,
+    "corgi":  run_corgi_experiment,
 }
 
 BASELINE_LABELS = {
     "nebula": "Nebula (ESA)",
     "ldp":    "Pure LDP (GRR)",
     "eiffel": "EIFFeL-style",
+    "risefl": "RiseFL-style",
+    "prio3":  "Prio3 (SNIP)",
+    "rofl":   "RoFL (Bulletproofs)",
+    "corgi":  "CORGI (Geo-Ind)",
 }
 
 
@@ -132,6 +144,8 @@ def run_one_condition(
         seed               = seed,
     )
 
+    kw_no_eps = {k: v for k, v in common_kwargs.items() if k != "epsilon"}
+
     if baseline == "nebula":
         rows = run_nebula_experiment(
             epsilon   = epsilon,
@@ -144,12 +158,21 @@ def run_one_condition(
             **common_kwargs,
         )
     elif baseline == "eiffel":
-        # EIFFeL does not have its own DP mechanism; epsilon parameter unused
         rows = run_eiffel_experiment(
-            norm_bound = 1e9,   # effectively disable norm check (range-only)
-            **{k: v for k, v in common_kwargs.items()
-               if k not in ("epsilon",)},
+            norm_bound = 1e9,
+            **kw_no_eps,
         )
+    elif baseline == "risefl":
+        rows = run_risefl_experiment(
+            m=8, alpha=0.05, norm_bound=2.5,
+            **kw_no_eps,
+        )
+    elif baseline == "prio3":
+        rows = run_prio3_experiment(**kw_no_eps)
+    elif baseline == "rofl":
+        rows = run_rofl_experiment(v_max_cells=5, **kw_no_eps)
+    elif baseline == "corgi":
+        rows = run_corgi_experiment(epsilon=epsilon, **kw_no_eps)
     else:
         raise ValueError(f"unknown baseline: {baseline}")
 
@@ -170,6 +193,7 @@ FIELDNAMES = [
     "round", "n_users", "n_malicious",
     "malicious_reject_rate", "false_reject_rate",
     "jaccard", "rmse", "relative_error",
+    "prover_ms", "verifier_ms", "proof_bytes",
 ]
 
 SUMMARY_FIELDNAMES = [
@@ -178,6 +202,7 @@ SUMMARY_FIELDNAMES = [
     "avg_malicious_reject_rate", "avg_false_reject_rate",
     "avg_jaccard", "avg_rmse", "avg_relative_error",
     "std_jaccard", "std_rmse",
+    "prover_ms", "verifier_ms", "proof_bytes",
 ]
 
 
@@ -189,6 +214,10 @@ def write_rows(rows: List[Dict], writer: csv.DictWriter):
 def write_summary_row(rows: List[Dict], condition: Dict, writer: csv.DictWriter):
     vals = {k: [r[k] for r in rows if k in r] for k in
             ["malicious_reject_rate", "false_reject_rate", "jaccard", "rmse", "relative_error"]}
+    # Primitive costs are constant per system – take first non-zero value.
+    prover_ms   = next((r.get("prover_ms", "")   for r in rows if r.get("prover_ms") is not None), "")
+    verifier_ms = next((r.get("verifier_ms", "") for r in rows if r.get("verifier_ms") is not None), "")
+    proof_bytes = next((r.get("proof_bytes", "") for r in rows if r.get("proof_bytes") is not None), "")
     writer.writerow({
         "baseline":                  condition["baseline"],
         "epsilon":                   condition["epsilon"],
@@ -203,6 +232,9 @@ def write_summary_row(rows: List[Dict], condition: Dict, writer: csv.DictWriter)
         "avg_relative_error":        np.mean(vals["relative_error"]),
         "std_jaccard":               np.std(vals["jaccard"]),
         "std_rmse":                  np.std(vals["rmse"]),
+        "prover_ms":   prover_ms,
+        "verifier_ms": verifier_ms,
+        "proof_bytes": proof_bytes,
     })
 
 
@@ -222,14 +254,18 @@ def parse_args():
     p.add_argument("--baselines", nargs="+",
                    choices=list(BASELINE_MAP.keys()) + ["all"],
                    default=["all"],
-                   help="Which baselines to run.")
+                   help="Which baselines to run. "
+                        "New: prio3, rofl, corgi (TSIP-comparable baselines).")
     p.add_argument("--epsilons", nargs="+", type=float, default=[1.0],
                    help="Privacy budget values to sweep.")
     p.add_argument("--malicious-rates", nargs="+", type=float, default=[0.0, 0.1, 0.3],
                    help="Malicious user fractions to sweep.")
-    p.add_argument("--attack-type", default="random",
-                   choices=["random", "targeted", "boundary"],
-                   help="Attack injection strategy for malicious clients.")
+    p.add_argument("--attack-type", default="A1",
+                   choices=["random", "targeted", "boundary",
+                            "A1", "A2a", "A3", "A5", "A6"],
+                   help="Attack injection strategy for malicious clients. "
+                        "TSIP taxonomy: A1=teleport, A2a=replay, A3=drift, "
+                        "A5=sybil, A6=malleability.")
     p.add_argument("--teleport-jump-cells", type=int, default=72,
                    help="For 'boundary' attack: how many cells to jump (default 72 ≈ 7200m / 100m).")
     p.add_argument("--out", default="experiments/baseline_results.csv",
@@ -246,11 +282,11 @@ def main():
 
     # Quick mode overrides
     if args.mode == "quick":
-        args.n_users        = 20
-        args.rounds         = 3
-        args.epsilons       = [1.0]
+        args.n_users         = 20
+        args.rounds          = 3
+        args.epsilons        = [1.0]
         args.malicious_rates = [0.0, 0.1]
-        args.baselines      = ["nebula", "ldp", "eiffel"]
+        args.baselines       = ["nebula", "ldp", "eiffel", "risefl", "prio3", "rofl", "corgi"]
         print("[quick mode] n_users=20, rounds=3, epsilons=[1.0], mal_rates=[0.0,0.1]")
 
     baselines = list(BASELINE_MAP.keys()) if "all" in args.baselines else args.baselines

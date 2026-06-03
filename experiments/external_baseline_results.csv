@@ -1,0 +1,11 @@
+baseline,scenario,detect_rate,class
+PRIO3-BASELINE,A1,0.0,external fidelity-exact
+PRIO3-BASELINE,A2a,0.0,external fidelity-exact
+PRIO3-BASELINE,A3,0.0,external fidelity-exact
+PRIO3-BASELINE,A5,0.0,external fidelity-exact
+PRIO3-BASELINE,A6,1.0,external fidelity-exact
+ROFL-ANALOGUE,A1,0.9,external fidelity-exact analogue
+ROFL-ANALOGUE,A2a,0.0,external fidelity-exact analogue
+ROFL-ANALOGUE,A3,0.0,external fidelity-exact analogue
+ROFL-ANALOGUE,A5,0.0,external fidelity-exact analogue
+ROFL-ANALOGUE,A6,1.0,external fidelity-exact analogue

@@ -1,0 +1,2 @@
+profile,k,policy_cap_m,drift_bias_ratio,malicious_rate,avg_tpr,avg_frr,avg_drift_offset_m,round_csv,run_log
+k6,6,3300,0.20,0.1,1.000000,1.000000,3953.840000,experiments/round_metrics_20260417_210240.csv,/Users/wanghao/Desktop/risefl_mvp/experiments/adwc_sweeps/20260417_210239/drift_k6_k6_cap3300_bias0.20_m0.1.log

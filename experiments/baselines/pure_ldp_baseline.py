@@ -48,6 +48,9 @@ from .utils import (
     inject_attack,
 )
 
+# Communication cost used by the simulation baseline (bytes/client/round).
+PURE_LDP_COMM_BYTES_PER_CLIENT = 10  # ~= 0.01 KB
+
 
 # ── client ────────────────────────────────────────────────────────────────────
 
@@ -149,6 +152,7 @@ def run_ldp_experiment(
             "n_malicious":          n_mal,
             "malicious_reject_rate": 0.0,   # LDP server cannot detect attacks
             "false_reject_rate":    0.0,
+            "comm_bytes_per_client": PURE_LDP_COMM_BYTES_PER_CLIENT,
             **metrics,
         })
 

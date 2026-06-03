@@ -1,0 +1,5 @@
+config,target_cell,target_gt_count,target_pred_count,target_count_lift,target_gt_rank,target_pred_rank,target_rank_lift,time_to_target_rounds,accepted_malicious_reports,total_malicious_reports,accepted_malicious_mass,behavioral_tpr,benign_frr,bias_l1,base_bias_l1
+no_integrity,2,0,360,360,2,2,0,1,360,360,1.0,0.0,0.0,720.0,0.0
+tsip_only,2,0,360,360,2,2,0,1,360,360,1.0,0.0,0.0,720.0,0.0
+external_only,2,0,0,0,2,2,0,,225,360,0.625,0.375,0.07192982456140351,217.0,0.0
+tsip_external,2,0,0,0,2,2,0,,225,360,0.625,0.375,0.07192982456140351,217.0,0.0

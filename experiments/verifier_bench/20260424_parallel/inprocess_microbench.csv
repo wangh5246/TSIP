@@ -1,0 +1,2 @@
+path,iterations,mean_ms,std_ms,p50_ms,p99_ms,notes
+snarkjs_inprocess_api,60,24.15,,,,In-process snarkjs.groth16.verify() via Node.js fork; pure BN254 pairing; no startup overhead

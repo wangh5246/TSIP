@@ -37,20 +37,13 @@ import argparse
 import csv
 import json
 import sys
+import math
+import hashlib
 from collections import defaultdict
 from pathlib import Path
+from typing import Dict, List
 
-import numpy as np
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from experiments.baselines.utils import (
-    DOMAIN_SIZE,
-    load_trajectory_jsonl,
-    extract_cell_sequence,
-    compute_ground_truth,
-    compute_metrics,
-    summarize_results,
-)
+DOMAIN_SIZE = 10_000
 
 FIELDNAMES = [
     "mode", "malicious_rate", "round_idx",
@@ -68,16 +61,77 @@ SUMMARY_FIELDNAMES = [
 ]
 
 
+# ── tiny numeric helpers (no numpy dependency) ───────────────────────────────
+
+def _mean(vals: List[float]) -> float:
+    return float(sum(vals) / len(vals)) if vals else 0.0
+
+
+def _std(vals: List[float]) -> float:
+    if not vals:
+        return 0.0
+    m = _mean(vals)
+    return math.sqrt(sum((v - m) ** 2 for v in vals) / len(vals))
+
+
+def _safe_float(v, default: float = 0.0) -> float:
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return default
+
+
+def _safe_int(v, default: int = 0) -> int:
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return default
+
+
+# ── data loading / normalization (local, no baseline utils import) ───────────
+
+def _normalize_cell_id(cell_id, domain: int = DOMAIN_SIZE) -> int:
+    if isinstance(cell_id, int):
+        return cell_id % domain
+    parts = str(cell_id).split(":")
+    if len(parts) == 2:
+        try:
+            cx, cy = int(parts[0]), int(parts[1])
+            return (cx * 9973 + cy) % domain
+        except ValueError:
+            pass
+    h = int(hashlib.md5(str(cell_id).encode("utf-8")).hexdigest(), 16)
+    return h % domain
+
+
+def load_trajectory_jsonl(path: str, max_users: int) -> List[Dict]:
+    records: List[Dict] = []
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            records.append(json.loads(line))
+            if len(records) >= max_users:
+                break
+    return records
+
+
+def extract_cell_sequence(record: Dict, domain: int) -> List[int]:
+    return [_normalize_cell_id(w.get("cell_id"), domain)
+            for w in record.get("windows", [])]
+
+
 # ── dump JSON loading ─────────────────────────────────────────────────────────
 
-def load_dump(dump_file: str, domain: int = DOMAIN_SIZE) -> np.ndarray:
+def load_dump(dump_file: str, domain: int = DOMAIN_SIZE) -> List[float]:
     """
     Parse a dump_latest_dp JSON and return a frequency histogram.
 
     Uses top_tokens (raw PRP-off tokens = original cell_ids when PRP_ENABLE=0).
     Falls back to top_cells if top_tokens is absent.
     """
-    hist = np.zeros(domain, dtype=float)
+    hist = [0.0] * domain
     try:
         with open(dump_file, encoding="utf-8") as f:
             data = json.load(f)
@@ -105,7 +159,7 @@ def load_dump(dump_file: str, domain: int = DOMAIN_SIZE) -> np.ndarray:
 # ── ground truth ──────────────────────────────────────────────────────────────
 
 def build_ground_truth(traj_path: str, n_users: int, n_rounds: int,
-                       domain: int = DOMAIN_SIZE) -> np.ndarray:
+                       domain: int = DOMAIN_SIZE) -> List[float]:
     """
     Load real trajectory data and compute the expected frequency histogram.
 
@@ -115,12 +169,18 @@ def build_ground_truth(traj_path: str, n_users: int, n_rounds: int,
     For T-Drive the field is a string "x:y" which we hash into [0, domain).
     """
     records = load_trajectory_jsonl(traj_path, max_users=n_users)
-    # Use extract_cell_sequence which applies _normalize_cell_id (handles both
-    # integer GeoLife cell_ids and string T-Drive cell_ids consistently)
-    seqs    = [extract_cell_sequence(r, domain) for r in records]
-    gt      = compute_ground_truth(seqs, n_rounds, domain)
-    print(f"[gt] {len(records)} users, {int((gt > 0).sum())} hot cells, "
-          f"total visits = {gt.sum():.0f}")
+    seqs = [extract_cell_sequence(r, domain) for r in records]
+    gt = [0.0] * domain
+    for seq in seqs:
+        if not seq:
+            continue
+        m = len(seq)
+        for ridx in range(n_rounds):
+            gt[seq[ridx % m]] += 1.0
+    hot_cells = sum(1 for x in gt if x > 0)
+    total_visits = sum(gt)
+    print(f"[gt] {len(records)} users, {hot_cells} hot cells, "
+          f"total visits = {total_visits:.0f}")
     return gt
 
 
@@ -133,6 +193,53 @@ def load_sweep_csv(path: str):
         for row in csv.DictReader(f):
             rows.append(row)
     return rows
+
+
+# ── metrics (pure python) ─────────────────────────────────────────────────────
+
+def _top_k_cells(hist: List[float], k: int) -> set:
+    if k <= 0:
+        return set()
+    nz = [(i, v) for i, v in enumerate(hist) if v > 0.0]
+    if not nz:
+        return set()
+    nz.sort(key=lambda t: t[1], reverse=True)
+    return {i for i, _ in nz[:k]}
+
+
+def _jaccard(pred: List[float], gt: List[float], top_k: int = 50) -> float:
+    gt_nz = sum(1 for v in gt if v > 0.0)
+    pred_nz = sum(1 for v in pred if v > 0.0)
+    k = min(top_k, gt_nz, pred_nz)
+    if k == 0:
+        return 1.0 if (sum(pred) == 0.0 and sum(gt) == 0.0) else 0.0
+    a = _top_k_cells(pred, k)
+    b = _top_k_cells(gt, k)
+    u = a | b
+    return (len(a & b) / len(u)) if u else 1.0
+
+
+def _rmse(pred: List[float], gt: List[float]) -> float:
+    if not gt:
+        return 0.0
+    mse = sum((p - g) ** 2 for p, g in zip(pred, gt)) / len(gt)
+    return math.sqrt(mse)
+
+
+def _relative_error(pred: List[float], gt: List[float], eps: float = 1e-9) -> float:
+    vals = []
+    for p, g in zip(pred, gt):
+        if g > 0.0:
+            vals.append(abs(p - g) / (g + eps))
+    return _mean(vals) if vals else 0.0
+
+
+def compute_metrics(pred: List[float], gt: List[float], top_k: int = 50) -> Dict[str, float]:
+    return {
+        "jaccard": _jaccard(pred, gt, top_k=top_k),
+        "rmse": _rmse(pred, gt),
+        "relative_error": _relative_error(pred, gt),
+    }
 
 
 # ── main ──────────────────────────────────────────────────────────────────────
@@ -186,9 +293,9 @@ def main():
             mal_rate    = row.get("malicious_rate", "")
             round_idx   = row.get("round_idx", "")
             dump_file   = row.get("dump_file", "")
-            mrr         = float(row.get("malicious_reject_rate", 0) or 0)
-            frr         = float(row.get("false_reject_rate",     0) or 0)
-            kept_post   = int(row.get("cells_kept_post", 0) or 0)
+            mrr         = _safe_float(row.get("malicious_reject_rate", 0), 0.0)
+            frr         = _safe_float(row.get("false_reject_rate", 0), 0.0)
+            kept_post   = _safe_int(row.get("cells_kept_post", 0), 0)
 
             # Load predicted histogram from dump
             pred    = load_dump(dump_file, args.domain)
@@ -223,16 +330,16 @@ def main():
             summary_row = {
                 "mode":                      mode,
                 "malicious_rate":            mal_rate,
-                "avg_malicious_reject_rate": np.mean(vals["malicious_reject_rate"]),
-                "avg_false_reject_rate":     np.mean(vals["false_reject_rate"]),
-                "avg_jaccard":               np.mean(vals["jaccard"]),
-                "std_jaccard":               np.std(vals["jaccard"]),
-                "avg_rmse":                  np.mean(vals["rmse"]),
-                "std_rmse":                  np.std(vals["rmse"]),
-                "avg_cells_kept_post":       np.mean(vals["cells_kept_post"]),
+                "avg_malicious_reject_rate": _mean(vals["malicious_reject_rate"]),
+                "avg_false_reject_rate":     _mean(vals["false_reject_rate"]),
+                "avg_jaccard":               _mean(vals["jaccard"]),
+                "std_jaccard":               _std(vals["jaccard"]),
+                "avg_rmse":                  _mean(vals["rmse"]),
+                "std_rmse":                  _std(vals["rmse"]),
+                "avg_cells_kept_post":       _mean(vals["cells_kept_post"]),
             }
             swriter.writerow(summary_row)
-            print(f"  {mode:<14} {float(mal_rate):>8.0%}  "
+            print(f"  {mode:<14} {_safe_float(mal_rate, 0.0):>8.0%}  "
                   f"{summary_row['avg_malicious_reject_rate']:>5.2f}  "
                   f"{summary_row['avg_jaccard']:>8.4f}  "
                   f"±{summary_row['std_jaccard']:.4f}  "

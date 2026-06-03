@@ -1,0 +1,71 @@
+path,profile,iteration,ms,notes
+client_proof_generation_k6,k6,1,1519.2567909834906,snarkjs/WASM fullprove
+shuffler_groth16_verify_k6,k6,1,959.2340840026736,"snarkjs groth16 verify, proof only"
+client_proof_generation_k6,k6,2,1448.571249959059,snarkjs/WASM fullprove
+shuffler_groth16_verify_k6,k6,2,946.094167069532,"snarkjs groth16 verify, proof only"
+client_proof_generation_k6,k6,3,1688.3884579874575,snarkjs/WASM fullprove
+shuffler_groth16_verify_k6,k6,3,1019.9664579704404,"snarkjs groth16 verify, proof only"
+client_proof_generation_k6,k6,4,1648.8872920162976,snarkjs/WASM fullprove
+shuffler_groth16_verify_k6,k6,4,1007.0662919897586,"snarkjs groth16 verify, proof only"
+client_proof_generation_k6,k6,5,1819.2220829660073,snarkjs/WASM fullprove
+shuffler_groth16_verify_k6,k6,5,981.5923749702051,"snarkjs groth16 verify, proof only"
+client_proof_generation_k6,k6,6,1643.604457960464,snarkjs/WASM fullprove
+shuffler_groth16_verify_k6,k6,6,1023.1492500752211,"snarkjs groth16 verify, proof only"
+client_proof_generation_k6,k6,7,1841.179957962595,snarkjs/WASM fullprove
+shuffler_groth16_verify_k6,k6,7,1099.556416971609,"snarkjs groth16 verify, proof only"
+client_proof_generation_k6,k6,8,1496.3719170773402,snarkjs/WASM fullprove
+shuffler_groth16_verify_k6,k6,8,967.6873749122024,"snarkjs groth16 verify, proof only"
+client_proof_generation_k6,k6,9,1432.4310419615358,snarkjs/WASM fullprove
+shuffler_groth16_verify_k6,k6,9,1347.014999948442,"snarkjs groth16 verify, proof only"
+client_proof_generation_k6,k6,10,1973.885374958627,snarkjs/WASM fullprove
+shuffler_groth16_verify_k6,k6,10,1182.4269589269534,"snarkjs groth16 verify, proof only"
+client_proof_generation_k30,k30,1,1577.858250006102,snarkjs/WASM fullprove
+shuffler_groth16_verify_k30,k30,1,948.9034169819206,"snarkjs groth16 verify, proof only"
+client_proof_generation_k30,k30,2,1556.5287079662085,snarkjs/WASM fullprove
+shuffler_groth16_verify_k30,k30,2,973.6576250288635,"snarkjs groth16 verify, proof only"
+client_proof_generation_k30,k30,3,1533.902374911122,snarkjs/WASM fullprove
+shuffler_groth16_verify_k30,k30,3,965.3804170666263,"snarkjs groth16 verify, proof only"
+client_proof_generation_k30,k30,4,1448.1937089003623,snarkjs/WASM fullprove
+shuffler_groth16_verify_k30,k30,4,931.7580830538645,"snarkjs groth16 verify, proof only"
+client_proof_generation_k30,k30,5,1509.4284999649972,snarkjs/WASM fullprove
+shuffler_groth16_verify_k30,k30,5,932.4614590732381,"snarkjs groth16 verify, proof only"
+client_proof_generation_k30,k30,6,1439.778707921505,snarkjs/WASM fullprove
+shuffler_groth16_verify_k30,k30,6,1094.4892090046778,"snarkjs groth16 verify, proof only"
+client_proof_generation_k30,k30,7,1466.3410000503063,snarkjs/WASM fullprove
+shuffler_groth16_verify_k30,k30,7,929.3301668949425,"snarkjs groth16 verify, proof only"
+client_proof_generation_k30,k30,8,1441.9660409912467,snarkjs/WASM fullprove
+shuffler_groth16_verify_k30,k30,8,934.8980840295553,"snarkjs groth16 verify, proof only"
+client_proof_generation_k30,k30,9,1786.0311660915613,snarkjs/WASM fullprove
+shuffler_groth16_verify_k30,k30,9,1030.42366693262,"snarkjs groth16 verify, proof only"
+client_proof_generation_k30,k30,10,1418.1823330000043,snarkjs/WASM fullprove
+shuffler_groth16_verify_k30,k30,10,953.6623749881983,"snarkjs groth16 verify, proof only"
+shuffler_full_accept_path,k6,1,950.7112500723451,proof verify + public/commitment checks + ciphertext routing
+shuffler_full_accept_path,k6,2,921.5957499109209,proof verify + public/commitment checks + ciphertext routing
+shuffler_full_accept_path,k6,3,957.9717500600964,proof verify + public/commitment checks + ciphertext routing
+shuffler_full_accept_path,k6,4,918.8806660240516,proof verify + public/commitment checks + ciphertext routing
+shuffler_full_accept_path,k6,5,1356.9439579732716,proof verify + public/commitment checks + ciphertext routing
+shuffler_full_accept_path,k6,6,967.9552499437705,proof verify + public/commitment checks + ciphertext routing
+shuffler_full_accept_path,k6,7,1201.4927919954062,proof verify + public/commitment checks + ciphertext routing
+shuffler_full_accept_path,k6,8,1127.3863340029493,proof verify + public/commitment checks + ciphertext routing
+shuffler_full_accept_path,k6,9,1059.3306249938905,proof verify + public/commitment checks + ciphertext routing
+shuffler_full_accept_path,k6,10,1019.8715409496799,proof verify + public/commitment checks + ciphertext routing
+aggregator_share_validation,k6,1,1.7415840411558747,dense/VDAF-style share validation + aggregate into u32 vector
+aggregator_share_validation,k6,2,1.862292061559856,dense/VDAF-style share validation + aggregate into u32 vector
+aggregator_share_validation,k6,3,1.7632079543545842,dense/VDAF-style share validation + aggregate into u32 vector
+aggregator_share_validation,k6,4,1.9760000286623836,dense/VDAF-style share validation + aggregate into u32 vector
+aggregator_share_validation,k6,5,1.9708750769495964,dense/VDAF-style share validation + aggregate into u32 vector
+aggregator_share_validation,k6,6,1.959166955202818,dense/VDAF-style share validation + aggregate into u32 vector
+aggregator_share_validation,k6,7,1.937124994583428,dense/VDAF-style share validation + aggregate into u32 vector
+aggregator_share_validation,k6,8,2.0120410481467843,dense/VDAF-style share validation + aggregate into u32 vector
+aggregator_share_validation,k6,9,1.79087498690933,dense/VDAF-style share validation + aggregate into u32 vector
+aggregator_share_validation,k6,10,1.7990409396588802,dense/VDAF-style share validation + aggregate into u32 vector
+decoder_aggregation_dp_release,k6,1,8.455749950371683,dense aggregate reconstruction + SVT/Laplace DP release
+decoder_aggregation_dp_release,k6,2,4.718624986708164,dense aggregate reconstruction + SVT/Laplace DP release
+decoder_aggregation_dp_release,k6,3,7.166084018535912,dense aggregate reconstruction + SVT/Laplace DP release
+decoder_aggregation_dp_release,k6,4,7.6836670050397515,dense aggregate reconstruction + SVT/Laplace DP release
+decoder_aggregation_dp_release,k6,5,6.446458981372416,dense aggregate reconstruction + SVT/Laplace DP release
+decoder_aggregation_dp_release,k6,6,7.940500043332577,dense aggregate reconstruction + SVT/Laplace DP release
+decoder_aggregation_dp_release,k6,7,8.21474997792393,dense aggregate reconstruction + SVT/Laplace DP release
+decoder_aggregation_dp_release,k6,8,8.294208091683686,dense aggregate reconstruction + SVT/Laplace DP release
+decoder_aggregation_dp_release,k6,9,4.744166973978281,dense aggregate reconstruction + SVT/Laplace DP release
+decoder_aggregation_dp_release,k6,10,7.1862919721752405,dense aggregate reconstruction + SVT/Laplace DP release

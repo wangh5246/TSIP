@@ -1,0 +1,11 @@
+mode,malicious_rate,round_idx,malicious_reject_rate,false_reject_rate,jaccard,rmse,relative_error,cells_kept_post,dump_file
+no_integ,0.1,1,0.0,0.0,1.0,2.1028746719400804,0.982721897957645,2,no_integ_mal0.1_r1.json
+no_integ,0.1,2,0.0,0.0,1.0,2.463363720532052,0.9985143806146057,1,no_integ_mal0.1_r2.json
+no_integ,0.1,3,0.0,0.0,1.0,2.1926418541710007,0.9941636233685734,1,no_integ_mal0.1_r3.json
+no_integ,0.1,4,0.0,0.0,1.0,2.2715107233126917,0.9954376144212693,1,no_integ_mal0.1_r4.json
+no_integ,0.1,5,0.0,0.0,1.0,2.101950145746496,0.9926907611647281,1,no_integ_mal0.1_r5.json
+no_integ,0.1,6,0.0,0.0,1.0,2.272066105751103,0.9885388352068868,2,no_integ_mal0.1_r6.json
+no_integ,0.1,7,0.0,0.0,1.0,2.262486143642985,0.9952921353964811,1,no_integ_mal0.1_r7.json
+no_integ,0.1,8,0.0,0.0,1.0,2.2830474089453854,0.9933231004171168,2,no_integ_mal0.1_r8.json
+no_integ,0.1,9,0.0,0.0,1.0,2.227165204872255,0.994722024468748,1,no_integ_mal0.1_r9.json
+no_integ,0.1,10,0.0,0.0,1.0,2.2373416053386364,0.98581909970303,2,no_integ_mal0.1_r10.json

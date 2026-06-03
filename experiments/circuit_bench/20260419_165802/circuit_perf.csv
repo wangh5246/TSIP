@@ -1,0 +1,4 @@
+profile,n_constraints,prover_time_ms,verifier_time_ms,pk_bytes,vk_bytes,proof_bytes,setup_notes
+v2,1588,335.116,177.954,937702,4206,807,"Groth16(BN254), circuit-specific phase2; legacy v2 artifact."
+v3-k6,2340,339.724,192.824,1451741,4754,807,"Groth16(BN254), K compile-time constant (k6 artifact)."
+v3-k30,2340,357.844,177.178,1451742,4757,806,"Groth16(BN254), K compile-time constant (k30 artifact)."

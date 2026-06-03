@@ -1,0 +1,11 @@
+profile,k,policy_cap_m,drift_bias_ratio,malicious_rate,avg_tpr,avg_frr,avg_drift_offset_m,round_csv,run_log
+k6,6,3300,0.20,0.10,1.000000,0.169690,11890.140000,experiments/round_metrics_20260417_225953.csv,/home/wang/risefl_mvp/experiments/adwc_sweeps/20260417_225953/drift_k6_k6_cap3300_bias0.20_m0.10.log
+k6,6,3300,0.40,0.10,1.000000,0.165270,11941.863000,experiments/round_metrics_20260417_235643.csv,/home/wang/risefl_mvp/experiments/adwc_sweeps/20260417_225953/drift_k6_k6_cap3300_bias0.40_m0.10.log
+k6,6,3300,0.60,0.10,1.000000,0.162870,12240.503000,experiments/round_metrics_20260418_005313.csv,/home/wang/risefl_mvp/experiments/adwc_sweeps/20260417_225953/drift_k6_k6_cap3300_bias0.60_m0.10.log
+k6,6,3300,0.80,0.10,1.000000,0.162090,12283.042000,experiments/round_metrics_20260418_014915.csv,/home/wang/risefl_mvp/experiments/adwc_sweeps/20260417_225953/drift_k6_k6_cap3300_bias0.80_m0.10.log
+k6,6,3300,1.00,0.10,1.000000,0.165060,12020.876000,experiments/round_metrics_20260418_024514.csv,/home/wang/risefl_mvp/experiments/adwc_sweeps/20260417_225953/drift_k6_k6_cap3300_bias1.00_m0.10.log
+k30,30,16500,0.20,0.10,0.798100,0.487790,12428.410000,experiments/round_metrics_20260418_034144.csv,/home/wang/risefl_mvp/experiments/adwc_sweeps/20260417_225953/drift_k30_k30_cap16500_bias0.20_m0.10.log
+k30,30,16500,0.40,0.10,0.942380,0.519960,12252.496000,experiments/round_metrics_20260418_054742.csv,/home/wang/risefl_mvp/experiments/adwc_sweeps/20260417_225953/drift_k30_k30_cap16500_bias0.40_m0.10.log
+k30,30,16500,0.60,0.10,0.866670,0.514490,12591.924000,experiments/round_metrics_20260418_075305.csv,/home/wang/risefl_mvp/experiments/adwc_sweeps/20260417_225953/drift_k30_k30_cap16500_bias0.60_m0.10.log
+k30,30,16500,0.80,0.10,0.913330,0.513190,11977.818000,experiments/round_metrics_20260418_095702.csv,/home/wang/risefl_mvp/experiments/adwc_sweeps/20260417_225953/drift_k30_k30_cap16500_bias0.80_m0.10.log
+k30,30,16500,1.00,0.10,0.925000,0.588650,12486.394000,experiments/round_metrics_20260418_120143.csv,/home/wang/risefl_mvp/experiments/adwc_sweeps/20260417_225953/drift_k30_k30_cap16500_bias1.00_m0.10.log

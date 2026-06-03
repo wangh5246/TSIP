@@ -1,0 +1,1 @@
+profile,k,policy_cap_m,drift_bias_ratio,malicious_rate,n_seeds,avg_tpr,std_tpr,ci95_tpr,avg_frr,std_frr,ci95_frr,frr_a3_circuit,std_frr_a3_circuit,ci95_frr_a3_circuit,frr_session_timing,std_frr_session_timing,ci95_frr_session_timing,avg_drift_offset_m,std_drift_offset_m,ci95_drift_offset_m

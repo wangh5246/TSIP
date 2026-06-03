@@ -1,0 +1,2 @@
+device,os,browser,toolchain,circuit,warmup_runs,timed_runs,mean_ms,std_ms,energy_mj_est,notes
+iPhone A-series,iOS 26.4,Safari,snarkjs 0.7.4 WASM,TSIP-K6,1,5,278.6,2.2,780,"On-device measurement supplied 2026-04-24; energy estimated as wallclock_ms * 2.80 W."

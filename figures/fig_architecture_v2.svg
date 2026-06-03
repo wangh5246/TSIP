@@ -1,0 +1,276 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="640" viewBox="0 0 1100 640" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <!-- Arrow markers -->
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#333"/>
+    </marker>
+    <marker id="arr-red" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#c0392b"/>
+    </marker>
+    <marker id="arr-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#27ae60"/>
+    </marker>
+    <marker id="arr-gray" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#7f8c8d"/>
+    </marker>
+    <!-- Drop shadow -->
+    <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- White background -->
+  <rect width="1100" height="640" fill="white"/>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  TITLE                                                  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <text x="550" y="30" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a1a2e">TSIP System Architecture: Privacy-Preserving Location Aggregation</text>
+  <text x="550" y="48" text-anchor="middle" font-size="11" fill="#555" font-style="italic">Groth16/BN254 · Poseidon2 · MiMC7 · PRP (Feistel) · Differential Privacy</text>
+  <line x1="40" y1="56" x2="1060" y2="56" stroke="#ccc" stroke-width="1"/>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  CLIENT SIDE PANEL                                      -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- outer frame -->
+  <rect x="20" y="64" width="220" height="555" rx="8" fill="#eaf0fb" stroke="#2980b9" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="20" y="64" width="220" height="26" rx="8" fill="#2980b9"/>
+  <text x="130" y="81" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Client Side</text>
+
+  <!-- Client app box -->
+  <rect x="30" y="97" width="200" height="155" rx="6" fill="white" stroke="#2980b9" stroke-width="1.2" filter="url(#shadow)"/>
+  <rect x="30" y="97" width="200" height="22" rx="6" fill="#3498db"/>
+  <text x="130" y="112" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Client App (Simulator)</text>
+  <text x="40" y="132" font-size="9.5" fill="#333">GPS trajectory data</text>
+  <text x="40" y="146" font-size="9.5" fill="#333">loc&#x209C; = (x&#x209C;, y&#x209C;)  per window</text>
+  <text x="40" y="160" font-size="9.5" fill="#333">H&#x209C; = Poseidon2(x&#x209C;, y&#x209C;)</text>
+  <text x="40" y="174" font-size="9.5" fill="#333">chain&#x209C; = MiMC7(loc, H&#x209C;&#x208B;&#x2081;, t)</text>
+  <text x="40" y="188" font-size="9.5" fill="#555" font-style="italic">N = 200 clients (default)</text>
+  <text x="40" y="202" font-size="9.5" fill="#555" font-style="italic">~10% malicious in eval</text>
+  <text x="40" y="216" font-size="9.5" fill="#555" font-style="italic">Submit report each window</text>
+
+  <!-- ZK Circuits box -->
+  <rect x="30" y="262" width="200" height="210" rx="6" fill="white" stroke="#8e44ad" stroke-width="1.2" filter="url(#shadow)"/>
+  <rect x="30" y="262" width="200" height="22" rx="6" fill="#8e44ad"/>
+  <text x="130" y="277" text-anchor="middle" font-size="11" font-weight="bold" fill="white">ZK Circuits (Circom)</text>
+  <text x="40" y="297" font-size="9" fill="#555" font-weight="bold">Framework: Groth16 / BN254</text>
+
+  <rect x="38" y="305" width="184" height="68" rx="4" fill="#f5eef8" stroke="#8e44ad" stroke-width="0.8"/>
+  <text x="130" y="319" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#6c3483">tsip_step</text>
+  <text x="46" y="332" font-size="8.5" fill="#333">Constraints:  70</text>
+  <text x="46" y="344" font-size="8.5" fill="#333">Checks: &#x394;x&#xB2;+&#x394;y&#xB2; &#x2264; (v&#x2098;&#x2090;&#x2093;&#xB7;&#x394;t)&#xB2;</text>
+  <text x="46" y="356" font-size="8.5" fill="#333">Speed-only gate (fast path)</text>
+  <text x="46" y="368" font-size="8.5" fill="#555" font-style="italic">Prove: 308ms (rapidsnark)</text>
+
+  <rect x="38" y="381" width="184" height="82" rx="4" fill="#f5eef8" stroke="#8e44ad" stroke-width="0.8"/>
+  <text x="130" y="395" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#6c3483">tsip_main</text>
+  <text x="46" y="408" font-size="8.5" fill="#333">Constraints:  674</text>
+  <text x="46" y="420" font-size="8.5" fill="#333">Poseidon2 commitment check</text>
+  <text x="46" y="432" font-size="8.5" fill="#333">Distance &#x2264; v&#x2098;&#x2090;&#x2093;&#xB7;&#x394;t  (ZK)</text>
+  <text x="46" y="444" font-size="8.5" fill="#333">5 public inputs</text>
+  <text x="46" y="456" font-size="8.5" fill="#555" font-style="italic">Prove: 409ms / Verify: 1064ms</text>
+
+  <!-- proof size note -->
+  <text x="130" y="482" text-anchor="middle" font-size="8.5" fill="#555" font-style="italic">Proof size: 706–805 B (constant)</text>
+
+  <!-- local state box -->
+  <rect x="30" y="490" width="200" height="118" rx="6" fill="white" stroke="#2c3e50" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="30" y="490" width="200" height="22" rx="6" fill="#2c3e50"/>
+  <text x="130" y="505" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Local State (per user)</text>
+  <text x="40" y="523" font-size="9" fill="#333">prev_loc:  (x&#x209C;&#x208B;&#x2081;, y&#x209C;&#x208B;&#x2081;)</text>
+  <text x="40" y="537" font-size="9" fill="#333">H&#x209C;&#x208B;&#x2081;:  stored Poseidon2 hash</text>
+  <text x="40" y="551" font-size="9" fill="#333">chain&#x209C;&#x208B;&#x2081;:  MiMC7 chain commit</text>
+  <text x="40" y="565" font-size="9" fill="#333">round_id / window_id</text>
+  <text x="40" y="580" font-size="9" fill="#555" font-style="italic">State reset on rejection</text>
+  <text x="40" y="595" font-size="9" fill="#555" font-style="italic">New user: warm-up (t=0) first</text>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SUBMIT ARROW (client → shuffler)                       -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <line x1="242" y1="255" x2="318" y2="255" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="245" y="230" width="72" height="22" rx="3" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="0.8"/>
+  <text x="281" y="244" text-anchor="middle" font-size="8" fill="#333">Report(id, val, H,</text>
+  <text x="281" y="254" text-anchor="middle" font-size="8" fill="#333">chain, &#x3C0;)</text>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SHUFFLER                                               -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <rect x="320" y="64" width="218" height="375" rx="8" fill="#fef9f0" stroke="#e67e22" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="320" y="64" width="218" height="26" rx="8" fill="#e67e22"/>
+  <text x="429" y="81" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Shuffler</text>
+
+  <!-- verify ZK -->
+  <rect x="330" y="97" width="198" height="54" rx="5" fill="white" stroke="#e67e22" stroke-width="0.9"/>
+  <text x="429" y="113" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#d35400">① ZK Proof Verification</text>
+  <text x="340" y="128" font-size="8.5" fill="#333">snarkjs.groth16.verify(vk, pub, &#x3C0;)</text>
+  <text x="340" y="140" font-size="8.5" fill="#555" font-style="italic">Verify time: ~1041ms (tsip_step)</text>
+
+  <!-- commitment chain check -->
+  <rect x="330" y="158" width="198" height="66" rx="5" fill="white" stroke="#e67e22" stroke-width="0.9"/>
+  <text x="429" y="174" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#d35400">② Commitment Chain Check</text>
+  <text x="340" y="189" font-size="8.5" fill="#333">H&#x209C;&#x208B;&#x2081;&#x207F;&#x1D49;&#x02B3;  ==  H&#x209C;&#x208B;&#x2081;&#x02E2;&#x1D57;&#x1D52;&#x02B3;&#x1D49; ?</text>
+  <text x="340" y="202" font-size="8.5" fill="#333">chain continuity: MiMC7 check</text>
+  <text x="340" y="215" font-size="8.5" fill="#555" font-style="italic">Prevents identity-swap attacks</text>
+
+  <!-- blacklist -->
+  <rect x="330" y="231" width="198" height="64" rx="5" fill="white" stroke="#e67e22" stroke-width="0.9"/>
+  <text x="429" y="247" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#d35400">③ Blacklist Management</text>
+  <text x="340" y="262" font-size="8.5" fill="#333">reject_streak&#x2265;3  &#x21D2;  permanent ban</text>
+  <text x="340" y="275" font-size="8.5" fill="#333">reset on valid submission</text>
+  <text x="340" y="286" font-size="8.5" fill="#555" font-style="italic">MRR=1.0 over 30 rounds</text>
+
+  <!-- DP budget -->
+  <rect x="330" y="302" width="198" height="52" rx="5" fill="white" stroke="#e67e22" stroke-width="0.9"/>
+  <text x="429" y="318" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#d35400">④ DP Budget Gate</text>
+  <text x="340" y="333" font-size="8.5" fill="#333">Per-round privacy budget check</text>
+  <text x="340" y="345" font-size="8.5" fill="#555" font-style="italic">Pass &#x21D2; forward to Agg A / R</text>
+
+  <!-- reject path -->
+  <rect x="350" y="390" width="158" height="40" rx="5" fill="#fdedec" stroke="#c0392b" stroke-width="1.2"/>
+  <text x="429" y="408" text-anchor="middle" font-size="10" font-weight="bold" fill="#c0392b">&#x2715; Reject</text>
+  <text x="429" y="422" text-anchor="middle" font-size="8.5" fill="#c0392b">streak++ / blacklist</text>
+  <!-- vertical line from DP gate to reject -->
+  <line x1="429" y1="354" x2="429" y2="390" stroke="#c0392b" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#arr-red)"/>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  ARROWS: Shuffler → Agg A / R                           -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- to Agg A -->
+  <line x1="538" y1="185" x2="618" y2="185" stroke="#27ae60" stroke-width="1.5" marker-end="url(#arr-green)"/>
+  <text x="578" y="178" text-anchor="middle" font-size="8" fill="#27ae60">ingestA</text>
+  <!-- to Agg R -->
+  <line x1="538" y1="300" x2="618" y2="300" stroke="#27ae60" stroke-width="1.5" marker-end="url(#arr-green)"/>
+  <text x="578" y="293" text-anchor="middle" font-size="8" fill="#27ae60">ingestR</text>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  AGGREGATOR A                                           -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <rect x="620" y="64" width="210" height="245" rx="8" fill="#eafaf1" stroke="#27ae60" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="620" y="64" width="210" height="26" rx="8" fill="#27ae60"/>
+  <text x="725" y="81" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Aggregator A</text>
+
+  <text x="630" y="104" font-size="9" fill="#555" font-weight="bold">PRP (Feistel-based permutation)</text>
+  <rect x="630" y="110" width="190" height="44" rx="4" fill="white" stroke="#27ae60" stroke-width="0.8"/>
+  <text x="725" y="126" text-anchor="middle" font-size="9" fill="#1e8449">PRP&#x207F;(k&#x1D2C;) forward permutation</text>
+  <text x="640" y="141" font-size="8.5" fill="#333">cell_id &#x21A6; permuted_index</text>
+  <text x="640" y="152" font-size="8.5" fill="#555" font-style="italic">Privacy: hides cell location</text>
+
+  <rect x="630" y="162" width="190" height="44" rx="4" fill="white" stroke="#27ae60" stroke-width="0.8"/>
+  <text x="725" y="178" text-anchor="middle" font-size="9" fill="#1e8449">Accumulate &#x3A3; val</text>
+  <text x="640" y="192" font-size="8.5" fill="#333">Sum counts per permuted cell</text>
+  <text x="640" y="204" font-size="8.5" fill="#555" font-style="italic">~8200 active cells/round</text>
+
+  <rect x="630" y="214" width="190" height="42" rx="4" fill="white" stroke="#27ae60" stroke-width="0.8"/>
+  <text x="725" y="230" text-anchor="middle" font-size="9" fill="#1e8449">MiMC7 masking</text>
+  <text x="640" y="244" font-size="8.5" fill="#333">commit(Share&#x1D2C;)  &#x21D2;  send Decoder</text>
+  <text x="640" y="254" font-size="8.5" fill="#555" font-style="italic">XOR-based secret sharing</text>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  AGGREGATOR R                                           -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <rect x="620" y="325" width="210" height="218" rx="8" fill="#fef5e7" stroke="#f39c12" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="620" y="325" width="210" height="26" rx="8" fill="#f39c12"/>
+  <text x="725" y="342" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Aggregator R</text>
+
+  <text x="630" y="362" font-size="9" fill="#555" font-weight="bold">PRP inverse path</text>
+  <rect x="630" y="368" width="190" height="44" rx="4" fill="white" stroke="#f39c12" stroke-width="0.8"/>
+  <text x="725" y="384" text-anchor="middle" font-size="9" fill="#9a6700">PRP&#x207F;&#x207B;&#xB9;(k&#x1D2C;) inverse perm.</text>
+  <text x="640" y="399" font-size="8.5" fill="#333">Recover original cell indices</text>
+  <text x="640" y="409" font-size="8.5" fill="#555" font-style="italic">Feistel-based bijection</text>
+
+  <rect x="630" y="420" width="190" height="44" rx="4" fill="white" stroke="#f39c12" stroke-width="0.8"/>
+  <text x="725" y="436" text-anchor="middle" font-size="9" fill="#9a6700">DP seed generation</text>
+  <text x="640" y="451" font-size="8.5" fill="#333">Per-round Gaussian seed</text>
+  <text x="640" y="463" font-size="8.5" fill="#555" font-style="italic">commit(Share&#x1D30;) &#x21D2; send Decoder</text>
+
+  <rect x="630" y="472" width="190" height="63" rx="4" fill="white" stroke="#f39c12" stroke-width="0.8"/>
+  <text x="640" y="488" font-size="8.5" fill="#333">Share&#x1D2C; &#x2295; Share&#x1D30; = true counts</text>
+  <text x="640" y="500" font-size="8.5" fill="#333">Neither party sees plaintext</text>
+  <text x="640" y="512" font-size="8.5" fill="#555" font-style="italic">2-party XOR secret sharing</text>
+  <text x="640" y="524" font-size="8.5" fill="#555" font-style="italic">&#x3B5;-DP guarantee (&#x3B5;=1.0)</text>
+
+  <!-- Agg A → Decoder -->
+  <line x1="830" y1="200" x2="878" y2="200" stroke="#333" stroke-width="1.4" marker-end="url(#arr)"/>
+  <text x="854" y="193" text-anchor="middle" font-size="8" fill="#555">Share&#x1D2C;</text>
+  <!-- Agg R → Decoder -->
+  <line x1="830" y1="435" x2="878" y2="435" stroke="#333" stroke-width="1.4" marker-end="url(#arr)"/>
+  <text x="854" y="428" text-anchor="middle" font-size="8" fill="#555">Share&#x1D30;</text>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  DECODER                                                -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <rect x="880" y="120" width="200" height="355" rx="8" fill="#fdf2f8" stroke="#8e44ad" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="880" y="120" width="200" height="26" rx="8" fill="#8e44ad"/>
+  <text x="980" y="137" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Decoder</text>
+
+  <rect x="890" y="153" width="180" height="52" rx="4" fill="white" stroke="#8e44ad" stroke-width="0.8"/>
+  <text x="980" y="168" text-anchor="middle" font-size="9" fill="#6c3483" font-weight="bold">XOR Reconstruct</text>
+  <text x="900" y="182" font-size="8.5" fill="#333">Share&#x1D2C; &#x2295; Share&#x1D30; &#x21D2; true cell counts</text>
+  <text x="900" y="194" font-size="8.5" fill="#555" font-style="italic">avg 180 valid clients/round</text>
+
+  <rect x="890" y="212" width="180" height="64" rx="4" fill="white" stroke="#8e44ad" stroke-width="0.8"/>
+  <text x="980" y="228" text-anchor="middle" font-size="9" fill="#6c3483" font-weight="bold">Gaussian DP Noise</text>
+  <text x="900" y="242" font-size="8.5" fill="#333">&#x3B7; ~ N(0, &#x3C3;&#xB2;)  per cell</text>
+  <text x="900" y="254" font-size="8.5" fill="#333">&#x3C3; = &#x394;f&#xB7;&#x221A;(2ln(1.25/&#x3B4;))/&#x3B5;</text>
+  <text x="900" y="266" font-size="8.5" fill="#555" font-style="italic">&#x3B5;=1.0, &#x3B4;=10&#x207B;&#x2075;  (default)</text>
+
+  <rect x="890" y="283" width="180" height="52" rx="4" fill="white" stroke="#8e44ad" stroke-width="0.8"/>
+  <text x="980" y="299" text-anchor="middle" font-size="9" fill="#6c3483" font-weight="bold">Threshold Filtering</text>
+  <text x="900" y="314" font-size="8.5" fill="#333">count+&#x3B7; &#x2265; threshold &#x21D2; publish</text>
+  <text x="900" y="326" font-size="8.5" fill="#555" font-style="italic">Suppresses sparse cells</text>
+
+  <rect x="890" y="342" width="180" height="52" rx="4" fill="white" stroke="#8e44ad" stroke-width="0.8"/>
+  <text x="980" y="358" text-anchor="middle" font-size="9" fill="#6c3483" font-weight="bold">Output</text>
+  <text x="900" y="372" font-size="8.5" fill="#333">~8,200 cells per round</text>
+  <text x="900" y="384" font-size="8.5" fill="#555" font-style="italic">(x,y)-DP heat-map</text>
+
+  <rect x="890" y="401" width="180" height="66" rx="4" fill="#f5eef8" stroke="#8e44ad" stroke-width="0.8"/>
+  <text x="980" y="417" text-anchor="middle" font-size="8.5" fill="#6c3483" font-weight="bold">Security Properties</text>
+  <text x="900" y="430" font-size="8" fill="#333">&#x2713; ZK: server never sees loc plaintext</text>
+  <text x="900" y="442" font-size="8" fill="#333">&#x2713; DP: &#x3B5;=1.0 output guarantee</text>
+  <text x="900" y="454" font-size="8" fill="#333">&#x2713; MRR=1.0 over 30 rounds</text>
+  <text x="900" y="466" font-size="8" fill="#333">&#x2713; FRR=0.09% avg (30 rounds)</text>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  HEAT-MAP OUTPUT                                        -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <rect x="900" y="492" width="160" height="70" rx="8" fill="#1a1a2e" stroke="#1a1a2e" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="980" y="516" text-anchor="middle" font-size="11" font-weight="bold" fill="white">City Heat-Map</text>
+  <text x="980" y="532" text-anchor="middle" font-size="9" fill="#aab" font-style="italic">~8,200 cells / round</text>
+  <text x="980" y="546" text-anchor="middle" font-size="9" fill="#aab" font-style="italic">DP-protected grid density</text>
+  <text x="980" y="560" text-anchor="middle" font-size="8.5" fill="#7fbbff">Real data: GeoLife / T-Drive</text>
+
+  <line x1="980" y1="475" x2="980" y2="492" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  VERTICAL DOTTED LINE: Server Side boundary             -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <line x1="310" y1="64" x2="310" y2="620" stroke="#bdc3c7" stroke-width="1" stroke-dasharray="5,4"/>
+  <text x="310" y="630" text-anchor="middle" font-size="9" fill="#999">Client / Server boundary</text>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SERVER SIDE LABEL                                      -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <text x="700" y="620" text-anchor="middle" font-size="10" fill="#555" font-style="italic">Server Side (untrusted microservices — no plaintext location access)</text>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  LEGEND / THREAT MODEL                                  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <rect x="320" y="450" width="288" height="163" rx="6" fill="#f8f9fa" stroke="#aaa" stroke-width="1"/>
+  <text x="464" y="467" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a1a2e">Threat Model &amp; Defenses</text>
+  <line x1="330" y1="472" x2="598" y2="472" stroke="#ccc" stroke-width="0.8"/>
+
+  <text x="330" y="486" font-size="8.5" fill="#c0392b" font-weight="bold">Attack Types Defended:</text>
+  <text x="330" y="499" font-size="8" fill="#333">&#x25CF; Teleportation (Sybil+jump):  ZK distance proof</text>
+  <text x="330" y="511" font-size="8" fill="#333">&#x25CF; Identity swap (colluding users):  commitment chain</text>
+  <text x="330" y="523" font-size="8" fill="#333">&#x25CF; Replay attack:  window_id + chain freshness</text>
+  <text x="330" y="535" font-size="8" fill="#333">&#x25CF; Forged proof:  Groth16 soundness (2&#x207B;&#xB9;&#xB2;&#x2078; fail prob.)</text>
+  <text x="330" y="547" font-size="8" fill="#333">&#x25CF; Persistent malicious:  3-strike blacklist</text>
+
+  <line x1="330" y1="555" x2="598" y2="555" stroke="#ccc" stroke-width="0.8"/>
+  <text x="330" y="568" font-size="8.5" fill="#27ae60" font-weight="bold">Privacy Guarantees:</text>
+  <text x="330" y="581" font-size="8" fill="#333">&#x25CB; ZK witness: loc never revealed to server</text>
+  <text x="330" y="593" font-size="8" fill="#333">&#x25CB; Secret sharing: single Agg sees only XOR share</text>
+  <text x="330" y="605" font-size="8" fill="#333">&#x25CB; DP output: (&#x3B5;=1.0, &#x3B4;=10&#x207B;&#x2075;)-DP on heat-map</text>
+
+</svg>

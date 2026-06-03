@@ -1,0 +1,5 @@
+jump_m,rounds,avg_malicious_reject_rate,avg_false_reject_rate,avg_valid_clients,avg_rejected,avg_malicious_total
+1000,30,0.0000,0.0146,49.35,0.65,4.77
+3300,30,0.0000,0.0198,49.10,0.90,4.50
+5940,30,0.0000,0.0345,48.46,1.54,5.30
+6534,30,0.0000,0.0532,47.59,2.41,4.62

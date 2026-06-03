@@ -1,0 +1,16 @@
+clients,workers,wall_s,within_60s,method
+50,1,57.452,True,measured
+50,2,47.883,True,measured
+50,4,25.095,True,measured
+50,8,21.277,True,measured
+50,16,20.278,True,measured
+100,1,117.433,False,measured
+100,2,54.877,True,measured
+100,4,33.682,True,measured
+100,8,25.602,True,measured
+100,16,28.636,True,measured
+1000,1,1126.002,False,projected
+1000,2,563.001,False,projected
+1000,4,281.501,False,projected
+1000,8,140.75,False,projected
+1000,16,70.375,False,projected

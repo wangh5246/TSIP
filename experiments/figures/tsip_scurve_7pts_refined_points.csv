@@ -1,0 +1,8 @@
+jump_m,avg_malicious_reject_rate,avg_false_reject_rate,rounds,repeats,data_tier,source
+1000,0.0000,0.0146,30,3,30r-summary,experiments/boundary/boundary_scan_20260405_152809.csv
+3300,0.0000,0.0198,30,3,30r-summary,experiments/boundary/boundary_scan_20260405_152809.csv
+5940,0.0000,0.0345,30,3,30r-summary,experiments/boundary/boundary_scan_20260405_152809.csv
+6534,0.0000,0.0532,30,3,30r-summary,experiments/boundary/boundary_scan_20260405_152809.csv
+6600,0.0000,0.0527,30,2,30r-metrics,experiments/boundary/boundary_scan_20260405_152809_jump_6600_rep_1_round_metrics_20260405_192825.csv;experiments/boundary/boundary_scan_20260405_152809_jump_6600_rep_2_round_metrics_20260405_194704.csv
+6666,1.0000,0.0376,10,1,10r-log,experiments/tdrive_boundary_clean_6666m.log
+7200,1.0000,0.0406,10,1,10r-log,experiments/tdrive_boundary_clean_7200m.log

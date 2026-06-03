@@ -1,0 +1,6 @@
+round_idx,round_id,total,valid_clients,rejected,malicious_total,malicious_reject_rate,false_reject_rate,received_A,received_R,cells_final,dp_ok,cells_kept_post,dp_error,gradual_drift_offset_avg_m,gradual_drift_offset_max_m,gradual_drift_terminal_offset_avg_m,gradual_drift_terminal_offset_max_m
+1,1012995871,50,42,8,5,1.0,0.0667,30,30,2524,true,82,"",11894.38,13268.38,11894.38,13268.38
+2,1013084275,50,39,11,6,1.0,0.1136,37,37,3034,true,394,"",12686.29,12738.3,12686.29,12738.3
+3,1013164097,50,41,9,2,1.0,0.1458,39,39,3136,true,154,"",12570.55,12675.05,12570.55,12675.05
+4,1013253661,50,40,10,4,1.0,0.1304,40,40,3205,true,346,"",12151.74,12684.09,12151.74,12684.09
+5,1013329747,50,39,11,4,1.0,0.1522,39,39,3190,true,398,"",12619.96,12718.56,12619.96,12718.56

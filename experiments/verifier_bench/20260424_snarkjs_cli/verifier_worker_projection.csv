@@ -1,0 +1,16 @@
+path,single_verify_ms,clients,workers,round_verify_latency_s,within_60s
+snarkjs_node_cli,1048.567,1000,1,1048.567,False
+snarkjs_node_cli,1048.567,1000,2,524.284,False
+snarkjs_node_cli,1048.567,1000,4,262.142,False
+snarkjs_node_cli,1048.567,1000,8,131.071,False
+snarkjs_node_cli,1048.567,1000,16,66.060,False
+snarkjs_node_cli,1048.567,5000,1,5242.836,False
+snarkjs_node_cli,1048.567,5000,2,2621.418,False
+snarkjs_node_cli,1048.567,5000,4,1310.709,False
+snarkjs_node_cli,1048.567,5000,8,655.355,False
+snarkjs_node_cli,1048.567,5000,16,328.202,False
+snarkjs_node_cli,1048.567,10000,1,10485.672,False
+snarkjs_node_cli,1048.567,10000,2,5242.836,False
+snarkjs_node_cli,1048.567,10000,4,2621.418,False
+snarkjs_node_cli,1048.567,10000,8,1310.709,False
+snarkjs_node_cli,1048.567,10000,16,655.355,False

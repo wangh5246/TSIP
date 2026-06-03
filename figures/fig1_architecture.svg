@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 430" font-family="'Times New Roman','DejaVu Serif',serif" font-size="12">
+<defs>
+  <marker id="ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#333"/></marker>
+  <marker id="ar" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#b22"/></marker>
+  <style>
+    .hdr  { font-weight:bold; fill:white; font-size:13px; }
+    .body { fill:#333; font-size:11px; }
+    .sm   { fill:#555; font-size:10px; }
+    .lbl  { fill:#444; font-size:10px; font-style:italic; }
+    .title{ font-weight:bold; fill:#111; font-size:15px; }
+  </style>
+</defs>
+
+<!-- Title -->
+<rect width="820" height="430" fill="white"/>
+<text x="410" y="24" text-anchor="middle" class="title">Fig. 1.  TSIP System Architecture</text>
+
+<!-- Dashed zones -->
+<rect x="8" y="36" width="155" height="388" rx="6" fill="none" stroke="#aaa" stroke-width="1" stroke-dasharray="6,3"/>
+<text x="85" y="52" text-anchor="middle" font-size="11" fill="#777" font-weight="bold">Client Side</text>
+<rect x="172" y="36" width="640" height="388" rx="6" fill="none" stroke="#aaa" stroke-width="1" stroke-dasharray="6,3"/>
+<text x="492" y="52" text-anchor="middle" font-size="11" fill="#777" font-weight="bold">Server Side</text>
+
+<!-- ═══ Client C_i ═══ -->
+<rect x="15" y="62" width="140" height="175" rx="5" fill="white" stroke="#2166ac" stroke-width="1.4"/>
+<rect x="15" y="62" width="140" height="26" rx="5" fill="#2166ac"/>
+<rect x="15" y="80" width="140" height="8"  rx="0" fill="#2166ac"/>
+<text x="85" y="80" text-anchor="middle" class="hdr">Client C<tspan font-size="9" dy="2">i</tspan></text>
+<text x="24" y="106" class="body">GPS trajectory data</text>
+<text x="24" y="122" class="body">H<tspan font-size="8" dy="-4">t</tspan><tspan dy="4"> = Poseidon2(x,y)</tspan></text>
+<text x="24" y="138" class="body">chain<tspan font-size="8" dy="-4">t</tspan><tspan dy="4"> = MiMC7(·)</tspan></text>
+<text x="24" y="154" class="body">ZK prove π (Groth16)</text>
+<text x="24" y="170" class="body">Submit Report</text>
+<text x="85" y="195" text-anchor="middle" class="sm" font-style="italic">N clients (×200 default)</text>
+
+<!-- ZK annotation box -->
+<rect x="15" y="250" width="140" height="165" rx="5" fill="#f7f7f7" stroke="#bbb" stroke-width="0.8" stroke-dasharray="4,2"/>
+<text x="85" y="270" text-anchor="middle" font-size="11" fill="#444" font-weight="bold">ZK Circuits</text>
+<text x="85" y="287" text-anchor="middle" class="sm">Groth16 / BN254</text>
+<line x1="30" y1="296" x2="140" y2="296" stroke="#ddd" stroke-width="0.5"/>
+<text x="24" y="314" class="sm" font-weight="bold">tsip_step</text>
+<text x="24" y="329" class="sm">  70 constraints</text>
+<text x="24" y="344" class="sm">  Δx²+Δy² ≤ (v·Δt)²</text>
+<line x1="30" y1="353" x2="140" y2="353" stroke="#ddd" stroke-width="0.5"/>
+<text x="24" y="371" class="sm" font-weight="bold">tsip_main</text>
+<text x="24" y="386" class="sm">  674 constraints</text>
+<text x="24" y="401" class="sm">  Poseidon2 commitment</text>
+<text x="24" y="416" class="sm">  + distance check</text>
+
+<!-- ═══ Shuffler ═══ -->
+<rect x="185" y="62" width="155" height="270" rx="5" fill="white" stroke="#5e3c99" stroke-width="1.4"/>
+<rect x="185" y="62" width="155" height="26" rx="5" fill="#5e3c99"/>
+<rect x="185" y="80" width="155" height="8"  rx="0" fill="#5e3c99"/>
+<text x="262" y="80" text-anchor="middle" class="hdr">Shuffler</text>
+<text x="194" y="106" class="body">(1) Verify ZK proof π</text>
+<text x="194" y="130" class="body">(2) Commitment chain</text>
+<text x="204" y="146" class="sm">H<tspan font-size="8" dy="-3">t-1</tspan><tspan dy="3" font-size="9" font-style="normal"> stored</tspan> =? H<tspan font-size="8" dy="-3">t-1</tspan><tspan dy="3" font-size="9"> recv</tspan></text>
+<text x="194" y="170" class="body">(3) Blacklist management</text>
+<text x="204" y="186" class="sm">reject_streak ≥ 3 → ban</text>
+<text x="194" y="210" class="body">(4) DP budget gate</text>
+<text x="194" y="234" class="body">(5) Forward to Agg A / R</text>
+
+<!-- Reject box -->
+<rect x="200" y="348" width="125" height="55" rx="4" fill="#fdf0f0" stroke="#b22" stroke-width="1.2"/>
+<text x="262" y="370" text-anchor="middle" font-size="12" fill="#b22" font-weight="bold">× Reject</text>
+<text x="262" y="390" text-anchor="middle" class="sm" fill="#b22">streak++ / blacklist</text>
+
+<!-- arrow shuffler → reject -->
+<line x1="262" y1="332" x2="262" y2="346" stroke="#b22" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#ar)"/>
+
+<!-- ═══ Aggregator A ═══ -->
+<rect x="368" y="62" width="155" height="155" rx="5" fill="white" stroke="#8c6d31" stroke-width="1.4"/>
+<rect x="368" y="62" width="155" height="26" rx="5" fill="#8c6d31"/>
+<rect x="368" y="80" width="155" height="8"  rx="0" fill="#8c6d31"/>
+<text x="445" y="80" text-anchor="middle" class="hdr">Aggregator A</text>
+<text x="377" y="106" class="body">PRP(k<tspan font-size="8" dy="-3">A</tspan><tspan dy="3">) permutation</tspan></text>
+<text x="377" y="124" class="body">Accumulate Σ val</text>
+<text x="377" y="142" class="body">MiMC7 masking</text>
+<text x="377" y="160" class="body">commit(Share<tspan font-size="8" dy="-3">A</tspan><tspan dy="3">)</tspan></text>
+<text x="377" y="180" class="sm">→ send to Decoder</text>
+
+<!-- ═══ Aggregator R ═══ -->
+<rect x="368" y="240" width="155" height="155" rx="5" fill="white" stroke="#1b7837" stroke-width="1.4"/>
+<rect x="368" y="240" width="155" height="26" rx="5" fill="#1b7837"/>
+<rect x="368" y="258" width="155" height="8"  rx="0" fill="#1b7837"/>
+<text x="445" y="258" text-anchor="middle" class="hdr">Aggregator R</text>
+<text x="377" y="284" class="body">PRP⁻¹(k<tspan font-size="8" dy="-3">R</tspan><tspan dy="3">) inverse perm.</tspan></text>
+<text x="377" y="302" class="body">Recover original index</text>
+<text x="377" y="320" class="body">DP seed generation</text>
+<text x="377" y="338" class="body">commit(Share<tspan font-size="8" dy="-3">R</tspan><tspan dy="3">)</tspan></text>
+<text x="377" y="356" class="sm">→ send to Decoder</text>
+
+<!-- ═══ Decoder ═══ -->
+<rect x="555" y="140" width="145" height="175" rx="5" fill="white" stroke="#993366" stroke-width="1.4"/>
+<rect x="555" y="140" width="145" height="26" rx="5" fill="#993366"/>
+<rect x="555" y="158" width="145" height="8"  rx="0" fill="#993366"/>
+<text x="627" y="158" text-anchor="middle" class="hdr">Decoder</text>
+<text x="564" y="186" class="body">Share<tspan font-size="8" dy="-3">A</tspan><tspan dy="3"> ⊕ Share</tspan><tspan font-size="8" dy="-3">R</tspan></text>
+<text x="564" y="204" class="body">= true cell counts</text>
+<text x="564" y="228" class="body">+ Gaussian(σ) noise</text>
+<text x="564" y="246" class="body">Threshold filtering</text>
+<text x="564" y="270" class="body" font-weight="bold">Output: DP heat-map</text>
+<text x="564" y="290" class="sm">(ε, δ)-differential privacy</text>
+
+<!-- ═══ Heat-Map Output ═══ -->
+<rect x="730" y="180" width="80" height="90" rx="5" fill="#f5f5ee" stroke="#888" stroke-width="1"/>
+<text x="770" y="210" text-anchor="middle" font-size="12" fill="#444" font-weight="bold">City</text>
+<text x="770" y="226" text-anchor="middle" font-size="12" fill="#444" font-weight="bold">Heat-Map</text>
+<text x="770" y="246" text-anchor="middle" class="sm">~8,200 cells</text>
+<text x="770" y="260" text-anchor="middle" class="sm">per round</text>
+
+<!-- ═══════ ARROWS ═══════ -->
+<!-- Client → Shuffler -->
+<line x1="155" y1="145" x2="183" y2="145" stroke="#333" stroke-width="1.2" marker-end="url(#ah)"/>
+<text x="169" y="139" text-anchor="middle" class="lbl">Report</text>
+
+<!-- Shuffler → Agg A -->
+<line x1="340" y1="120" x2="366" y2="120" stroke="#5e3c99" stroke-width="1.2" marker-end="url(#ah)"/>
+<text x="353" y="113" text-anchor="middle" class="lbl" fill="#5e3c99">ingestA</text>
+
+<!-- Shuffler → Agg R -->
+<line x1="340" y1="280" x2="366" y2="310" stroke="#5e3c99" stroke-width="1.2" marker-end="url(#ah)"/>
+<text x="343" y="300" class="lbl" fill="#5e3c99">ingestR</text>
+
+<!-- Agg A → Decoder -->
+<line x1="523" y1="155" x2="553" y2="200" stroke="#8c6d31" stroke-width="1.2" marker-end="url(#ah)"/>
+<text x="540" y="170" class="lbl" fill="#8c6d31">Share<tspan font-size="8" dy="-3">A</tspan></text>
+
+<!-- Agg R → Decoder -->
+<line x1="523" y1="315" x2="553" y2="265" stroke="#1b7837" stroke-width="1.2" marker-end="url(#ah)"/>
+<text x="540" y="298" class="lbl" fill="#1b7837">Share<tspan font-size="8" dy="-3">R</tspan></text>
+
+<!-- Decoder → Output -->
+<line x1="700" y1="228" x2="728" y2="228" stroke="#993366" stroke-width="1.2" marker-end="url(#ah)"/>
+<text x="714" y="222" text-anchor="middle" class="lbl" fill="#993366">DP</text>
+</svg>

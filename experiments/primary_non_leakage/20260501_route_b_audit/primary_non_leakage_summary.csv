@@ -1,0 +1,6 @@
+view,candidate_count,unique_primary,reason
+Shuffler view,10000,False,h_pay uses hidden payload_seed/payload_salt; ciphertext hashes and commitments are fixed length.
+A-only view,10000,False,dense A share is one additive share; for every candidate there exists an R share.
+R-only view,10000,False,dense R share is one additive share; for every candidate there exists an A share.
+A+R collusion,1,True,colluding aggregators reconstruct the one-hot contribution.
+Legacy deterministic h_pay,1,True,publicly derived payload_seed/payload_salt enables brute-force matching.

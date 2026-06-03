@@ -44,6 +44,7 @@ BASELINE_STYLES = {
     "nebula":   ("Nebula",       "#e6194b", "-",  "o"),
     "ldp":      ("Pure LDP",     "#3cb44b", "--", "s"),
     "eiffel":   ("EIFFeL-style", "#4363d8", "-.", "^"),
+    "risefl":   ("RiseFL-style", "#f032e6", "-",  "X"),
     # TSIP results come from the real-system CSV (added separately)
     "tsip":     ("TSIP (Full)",  "#f58231", "-",  "D"),
     "no_integ": ("No-Integrity", "#911eb4", ":",  "v"),
@@ -285,11 +286,13 @@ def write_comparison_csv(summary_rows: List[Dict], out_path: Path, summary_path:
         "nebula": 2.7,
         "ldp":    0.01,
         "eiffel": 40.0,
+        "risefl": 2.0,
     }
     LATENCY_S = {
         "nebula": 0.006,
         "ldp":    0.001,
         "eiffel": 0.05,
+        "risefl": 0.01,
     }
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -338,7 +341,7 @@ def write_comparison_csv(summary_rows: List[Dict], out_path: Path, summary_path:
             })
 
         # Standalone baselines
-        for bl in ["nebula", "ldp", "eiffel"]:
+        for bl in ["nebula", "ldp", "eiffel", "risefl"]:
             lbl = BASELINE_STYLES[bl][0]
             row = rows_10.get(bl, {})
             j = row.get("avg_jaccard", "")

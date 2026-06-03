@@ -1,0 +1,3 @@
+mode,malicious_rate,round_idx,round_id,total,valid_clients,rejected,malicious_total,malicious_reject_rate,false_reject_rate,dump_file,cells_kept_pre,cells_kept_post
+full,0.0,1,0,50,50,0,0,0.0,0.0,/Users/wanghao/Desktop/risefl_mvp/experiments/utility_dumps/20260430_222035/full_mal0.0_r1.json,0,0
+full,0.0,2,0,50,49,1,0,0.0,0.02,/Users/wanghao/Desktop/risefl_mvp/experiments/utility_dumps/20260430_222035/full_mal0.0_r2.json,0,0

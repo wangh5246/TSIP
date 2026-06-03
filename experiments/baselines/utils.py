@@ -158,21 +158,103 @@ def inject_attack(
     teleport_jump_cells: int,
     domain: int,
     rng: random.Random,
+    prev_cell: Optional[int] = None,
+    all_cells: Optional[List[int]] = None,
 ) -> int:
     """
     Return the cell that a malicious client submits.
 
-    attack_type:
-      "random"     - uniform random cell
+    Legacy names (backward-compatible):
+      "random"     - A1-style: uniform random cell
       "targeted"   - fixed cell 0 (concentrated injection)
-      "boundary"   - teleport_jump_cells away from true cell (boundary scan)
+      "boundary"   - A1-style: teleport_jump_cells away from true cell
+
+    TSIP attack taxonomy names (A1–A6):
+      "A1"  - Teleportation: jump >> v_max*Δt (same as "boundary")
+      "A2a" - Trajectory replay: submit a different user's true cell
+      "A3"  - In-envelope drift: stay within per-step distance but bias the direction
+              (submit a cell 1 step away from prev, skewed away from true location)
+      "A5"  - Sybil submission: same as A2a in cell-level simulation (different identity replay)
+      "A6"  - Payload malleability: submit a randomly displaced cell WITH a claimed-valid
+              proof (in simulation: the system either always catches this or never does,
+              depending on whether it has a sound proof system; the *submitted cell* is
+              any random cell, indistinguishable from A1 at cell level)
+
+    Note: A6 detection is protocol-level (soundness), not cell-level.  Baseline
+    implementations decide A6 detection independently of which cell is submitted.
+    The cell returned here is used for utility impact computation only.
     """
+    # ── TSIP taxonomy aliases ─────────────────────────────────────────────────
+    if attack_type == "A1":
+        # Teleportation: jump teleport_jump_cells away (same mechanism as "boundary")
+        return (true_cell + teleport_jump_cells) % domain
+
+    if attack_type == "A2a":
+        # Trajectory replay: submit some other user's cell.
+        # If a pool of other cells is provided, pick from it; else use a random cell.
+        if all_cells and len(all_cells) > 1:
+            candidates = [c for c in all_cells if c != true_cell]
+            return rng.choice(candidates) if candidates else rng.randint(0, domain - 1)
+        return rng.randint(0, domain - 1)
+
+    if attack_type == "A3":
+        # In-envelope drift: move one cell-step from prev_cell toward a biased direction.
+        # If no prev_cell, fall back to a small random offset.
+        base = prev_cell if prev_cell is not None else true_cell
+        offset = rng.choice([-GRID_W, -1, 1, GRID_W])  # adjacent cells
+        return (base + offset) % domain
+
+    if attack_type == "A5":
+        # Sybil: same as A2a in our cell-level simulation (replaying another identity's loc)
+        if all_cells and len(all_cells) > 1:
+            candidates = [c for c in all_cells if c != true_cell]
+            return rng.choice(candidates) if candidates else rng.randint(0, domain - 1)
+        return rng.randint(0, domain - 1)
+
+    if attack_type == "A6":
+        # Payload malleability: the attacker claims any cell with a forged proof.
+        # The *cell* submitted is random (utility impact); detection is protocol-level.
+        return rng.randint(0, domain - 1)
+
+    # ── legacy names ──────────────────────────────────────────────────────────
     if attack_type == "targeted":
         return 0
     if attack_type == "boundary":
         return (true_cell + teleport_jump_cells) % domain
     # default: "random"
     return rng.randint(0, domain - 1)
+
+
+# Attack types and their detectability per baseline system.
+# Value = whether the system can *ever* detect this attack (soundness/cross-round).
+# Used by baseline adapters to implement detection simulation.
+ATTACK_DETECTABILITY = {
+    # system → {attack → detectable (bool)}
+    "prio3": {
+        "A1": False,   # no cross-round state; SNIP only checks format
+        "A2a": False,  # no identity binding across rounds
+        "A3": False,   # no cross-round state
+        "A5": False,   # no cross-round state
+        "A6": True,    # SNIP soundness: forging a valid SNIP is infeasible
+        "random": False, "targeted": False, "boundary": False,
+    },
+    "rofl": {
+        "A1": True,    # per-step distance proof catches teleportation
+        "A2a": False,  # distance proof validates per-step; replay looks valid
+        "A3": False,   # in-envelope movement passes distance proof
+        "A5": False,   # no cross-round identity check
+        "A6": True,    # Bulletproofs soundness: forging a range proof is infeasible
+        "random": True, "targeted": True, "boundary": True,
+    },
+    "corgi": {
+        "A1": False,   # no integrity check at all
+        "A2a": False,
+        "A3": False,
+        "A5": False,
+        "A6": False,
+        "random": False, "targeted": False, "boundary": False,
+    },
+}
 
 
 # ── utility metrics ───────────────────────────────────────────────────────────

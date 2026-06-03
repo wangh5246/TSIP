@@ -1,0 +1,3 @@
+client_total,rounds,avg_valid_clients,avg_rejected,avg_malicious_total,avg_malicious_reject_rate,avg_false_reject_rate,avg_cells_final,avg_dp_cells_kept_post,source_csv
+5000,2,5000.00,0.00,494.50,0.0000,0.0000,10000.00,9240.50,experiments/round_metrics_20260425_010817.csv
+10000,2,10000.00,0.00,1000.50,0.0000,0.0000,10000.00,9763.00,experiments/round_metrics_20260425_011655.csv

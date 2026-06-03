@@ -1,0 +1,12 @@
+target,mutation,n_seeds,avg_reject_rate,std_reject_rate,ci95_reject_rate,total_attempts,total_rejected
+cap_policy_sq,inconsistency,3,1.000000,0.000000,0.000000,3,3
+cap_policy_vs_tier_anchor,cap_policy_gt_tier_anchor,3,1.000000,0.000000,0.000000,3,3
+hash_anchor,bitflip,3,1.000000,0.000000,0.000000,3,3
+hash_anchor,replacement,3,1.000000,0.000000,0.000000,3,3
+mode_tag,bitflip,3,1.000000,0.000000,0.000000,3,3
+mode_tag,replacement,3,1.000000,0.000000,0.000000,3,3
+modeset_commitment,bitflip,3,1.000000,0.000000,0.000000,3,3
+modeset_commitment,replacement,3,1.000000,0.000000,0.000000,3,3
+tier_anchor_cap_sq,inconsistency,3,1.000000,0.000000,0.000000,3,3
+tier_vmax_sq,bitflip,3,1.000000,0.000000,0.000000,3,3
+tier_vmax_sq,replacement,3,1.000000,0.000000,0.000000,3,3
