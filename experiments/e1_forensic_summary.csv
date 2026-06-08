@@ -1,11 +1,5 @@
-dataset,branch,n,skip_count,mean_savings,median_savings,p95_savings
-geolife,all_on,49,0,0.0,0.0,0.0
-geolife,no_cadence,38,11,0.7951329625781478,1.0,1.0
-geolife,no_continuity,49,0,0.0,0.0,0.0
-geolife,no_continuity_osnma_lifted,49,0,0.8696446976581929,1.0,1.0
-geolife,no_odometer,49,0,0.9591836734693877,1.0,1.0
-tdrive,all_on,49,1,0.0,0.0,0.0
-tdrive,no_cadence,19,31,0.9278718531853631,0.93674104673101,1.0
-tdrive,no_continuity,49,1,0.0,0.0,0.0
-tdrive,no_continuity_osnma_lifted,49,1,0.9729559956395103,0.9754069852710092,0.9999278499278499
-tdrive,no_odometer,49,1,1.0,1.0,1.0
+dataset,branch,n,skip_count,min_savings,mean_savings,median_savings,p95_savings
+geolife,no_cadence,1,13,0.0018018018018018018,0.0018018018018018018,0.0018018018018018018,0.0018018018018018018
+geolife,no_continuity,14,0,0.0,0.0,0.0,0.0
+geolife,no_continuity_osnma_lifted,14,0,0.039889958734525444,0.083653535012519,0.08494872317281507,0.14171711612548157
+geolife,no_zone_binding,14,0,0.0,0.2695731652974051,0.2764975221493263,0.4
