@@ -16,9 +16,11 @@ if str(ROOT_DIR) not in sys.path:
 
 from common.eval_harness import (
     ALL_CONSTRAINTS,
+    AdversaryResult,
     Constraint,
     HarnessParams,
     adversary_min_fee,
+    check_constraints,
     compute_bill,
     e1_forensic_rows,
     write_e1_forensic_csv,
@@ -244,7 +246,9 @@ def _lifted_cells_from_tariff(
     return lifted
 
 
-def _load_input_tariff(path: Path) -> TariffTable | None:
+def _load_input_tariff(path: Path) -> TariffTable:
+    if not path.exists():
+        raise FileNotFoundError(f"input file not found: {path}")
     candidates = [
         path.parent / "tariff_block.json",
         path.parent.parent / "tariff_block.json",
@@ -260,7 +264,9 @@ def _load_input_tariff(path: Path) -> TariffTable | None:
             cell_zones={int(k): int(v) for k, v in tariff["cell_zones"].items()},
             zone_rates_cents_per_m={int(k): int(v) for k, v in tariff["zone_rates_cents_per_m"].items()},
         )
-    return None
+    raise FileNotFoundError(
+        "missing tariff_block.json next to input or its parent; refusing to use a synthetic checkerboard tariff"
+    )
 
 
 def _zone_for_cell(cell: int, grid_w: int) -> int:
@@ -352,6 +358,18 @@ def _audit_continuity_pair(
     params: HarnessParams,
     lifted_allowed_cells_by_fix: list[set[int]],
 ) -> list[dict[str, Any]]:
+    lifted_attack: AdversaryResult | None = None
+    lifted_error = ""
+    try:
+        lifted_attack = adversary_min_fee(
+            fixes,
+            tariff,
+            enabled=ALL_CONSTRAINTS - {Constraint.CONTINUITY},
+            params=params,
+            allowed_cells_by_fix=lifted_allowed_cells_by_fix,
+        )
+    except ValueError as exc:
+        lifted_error = str(exc)
     branches = [
         ("no_continuity", ALL_CONSTRAINTS - {Constraint.CONTINUITY}, None),
         ("no_continuity_osnma_lifted", ALL_CONSTRAINTS - {Constraint.CONTINUITY}, lifted_allowed_cells_by_fix),
@@ -368,6 +386,23 @@ def _audit_continuity_pair(
             )
             honest_bill = compute_bill(fixes, tariff, params)
             attack_bill = compute_bill(result.claimed_fixes, tariff, params)
+            replay_claim = lifted_attack.claimed_fixes if branch == "no_continuity" and lifted_attack else result.claimed_fixes
+            passed = check_constraints(
+                replay_claim,
+                true_fixes=fixes,
+                enabled=enabled,
+                params=params,
+                allowed_cells_by_fix=allowed,
+                tariff=tariff,
+            )
+            violations = _constraint_violations(
+                replay_claim,
+                true_fixes=fixes,
+                enabled=enabled,
+                params=params,
+                allowed_cells_by_fix=allowed,
+                tariff=tariff,
+            )
             out.append(
                 {
                     "dataset": label,
@@ -375,6 +410,13 @@ def _audit_continuity_pair(
                     "honest_fee_cents": int(honest_bill["total_fee_cents"]),
                     "attack_fee_cents": int(attack_bill["total_fee_cents"]),
                     "savings_ratio": float(result.savings_ratio),
+                    "replayed_attack_source": (
+                        "no_continuity_osnma_lifted" if branch == "no_continuity" and lifted_attack else branch
+                    ),
+                    "chk.passed": bool(passed),
+                    "chk.violations": violations,
+                    "receipt_savings_ratio": 0.0 if branch == "no_continuity" and not passed else float(result.savings_ratio),
+                    "lifted_attack_error": lifted_error,
                     "honest_distance_m": int(honest_bill["total_distance_m"]),
                     "attack_distance_m": int(attack_bill["total_distance_m"]),
                     "honest_private_zone_distance_m": honest_bill["private_zone_distance_m"],
@@ -386,6 +428,95 @@ def _audit_continuity_pair(
         except ValueError as exc:
             out.append({"dataset": label, "branch": branch, "skip_reason": str(exc)})
     return out
+
+
+def _constraint_violations(
+    claimed_fixes: list[ReceiverFix],
+    *,
+    true_fixes: list[ReceiverFix],
+    enabled: Iterable[Constraint],
+    params: HarnessParams,
+    allowed_cells_by_fix: list[set[int]] | None,
+    tariff: TariffTable,
+) -> list[dict[str, Any]]:
+    enabled_set = {Constraint(c) for c in enabled}
+    violations: list[dict[str, Any]] = []
+    if len(claimed_fixes) < 2:
+        violations.append({"constraint": "shape", "reason": "fewer than two fixes"})
+        return violations
+    if Constraint.ODOMETER in enabled_set:
+        claimed_distance = int(claimed_fixes[-1].odometer_reading_m) - int(claimed_fixes[0].odometer_reading_m)
+        true_distance = int(true_fixes[-1].odometer_reading_m) - int(true_fixes[0].odometer_reading_m)
+        delta = abs(claimed_distance - true_distance)
+        if delta > int(params.odometer_tolerance_m):
+            violations.append(
+                {
+                    "constraint": "odometer",
+                    "delta_m": int(delta),
+                    "tolerance_m": int(params.odometer_tolerance_m),
+                }
+            )
+    for idx, (prev, curr) in enumerate(zip(claimed_fixes, claimed_fixes[1:])):
+        dt = int(curr.auth_gnss_time) - int(prev.auth_gnss_time)
+        if dt <= 0:
+            violations.append({"constraint": "time", "edge": idx, "dt_sec": int(dt)})
+            continue
+        if Constraint.MAX_DT in enabled_set and dt > int(params.max_dt_sec):
+            violations.append(
+                {"constraint": "max_dt", "edge": idx, "dt_sec": int(dt), "max_dt_sec": int(params.max_dt_sec)}
+            )
+        if Constraint.CONTINUITY in enabled_set:
+            dist_m = math.hypot(int(curr.cell_x) - int(prev.cell_x), int(curr.cell_y) - int(prev.cell_y)) * int(
+                params.cell_size_m
+            )
+            cap_m = int(params.tier_vmax_mps) * dt
+            if dist_m > cap_m:
+                violations.append(
+                    {
+                        "constraint": "continuity",
+                        "edge": idx,
+                        "dist_m": float(dist_m),
+                        "cap_m": int(cap_m),
+                    }
+                )
+    if Constraint.OSNMA in enabled_set:
+        if allowed_cells_by_fix is not None:
+            if len(allowed_cells_by_fix) != len(claimed_fixes):
+                violations.append(
+                    {
+                        "constraint": "osnma",
+                        "reason": "allowed_cells length mismatch",
+                        "allowed_len": len(allowed_cells_by_fix),
+                        "claimed_len": len(claimed_fixes),
+                    }
+                )
+            else:
+                for idx, (fix, allowed) in enumerate(zip(claimed_fixes, allowed_cells_by_fix)):
+                    cell = tariff.cell_index(fix.cell_x, fix.cell_y)
+                    if cell not in allowed:
+                        violations.append({"constraint": "osnma", "fix": idx, "cell": int(cell), "reason": "outside allowed set"})
+        else:
+            if len(claimed_fixes) != len(true_fixes):
+                violations.append(
+                    {
+                        "constraint": "osnma",
+                        "reason": "pinned fix count mismatch",
+                        "claimed_len": len(claimed_fixes),
+                        "true_len": len(true_fixes),
+                    }
+                )
+            for idx, (claimed, true) in enumerate(zip(claimed_fixes, true_fixes)):
+                if (int(claimed.cell_x), int(claimed.cell_y)) != (int(true.cell_x), int(true.cell_y)):
+                    violations.append(
+                        {
+                            "constraint": "osnma",
+                            "fix": idx,
+                            "claimed_cell": int(tariff.cell_index(claimed.cell_x, claimed.cell_y)),
+                            "true_cell": int(tariff.cell_index(true.cell_x, true.cell_y)),
+                            "reason": "pinned cell mismatch",
+                        }
+                    )
+    return violations
 
 
 def _edge_audit(fixes: list[ReceiverFix], tariff: TariffTable, params: HarnessParams) -> list[dict[str, Any]]:
