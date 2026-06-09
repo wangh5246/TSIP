@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import zipfile
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -46,6 +47,10 @@ def test_four_dataset_parsers(tmp_path: Path):
     porto = tmp_path / "porto.csv"
     porto.write_text('TRIP_ID,TAXI_ID,TIMESTAMP,POLYLINE\np1,t1,100,"[[-8.6,41.1],[-8.7,41.2]]"\n')
     assert next(iter_porto_trips(porto))[1][1].timestamp == 115
+    porto_zip = tmp_path / "porto.csv.zip"
+    with zipfile.ZipFile(porto_zip, "w") as archive:
+        archive.write(porto, arcname="train.csv")
+    assert next(iter_porto_trips(porto_zip))[1][0].lon == -8.6
 
     geolife = tmp_path / "Data" / "001"
     (geolife / "Trajectory").mkdir(parents=True)

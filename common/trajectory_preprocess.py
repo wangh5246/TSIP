@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import csv
 from collections import Counter, defaultdict
+import io
 import json
 import math
 import re
+import zipfile
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -249,7 +251,7 @@ def iter_rome_raw_points(path: Path) -> Iterator[RawPoint]:
 
 
 def iter_porto_trips(path: Path) -> Iterator[tuple[str, list[RawPoint]]]:
-    with path.open("r", encoding="utf-8", newline="") as f:
+    with _open_csv_text(path) as f:
         for row in csv.DictReader(f):
             try:
                 coords = json.loads(row["POLYLINE"])
@@ -269,7 +271,7 @@ def iter_porto_trips(path: Path) -> Iterator[tuple[str, list[RawPoint]]]:
 
 
 def iter_porto_raw_points(path: Path) -> Iterator[RawPoint]:
-    with path.open("r", encoding="utf-8", newline="") as f:
+    with _open_csv_text(path) as f:
         for row in csv.DictReader(f):
             try:
                 coords = json.loads(row["POLYLINE"])
@@ -284,6 +286,29 @@ def iter_porto_raw_points(path: Path) -> Iterator[RawPoint]:
                     yield RawPoint(vehicle, start + i * 15, float(lon_lat[1]), float(lon_lat[0]))
                 except (TypeError, ValueError):
                     continue
+
+
+def _open_csv_text(path: Path):
+    if path.suffix.lower() != ".zip":
+        return path.open("r", encoding="utf-8", newline="")
+    archive = zipfile.ZipFile(path)
+    names = [name for name in archive.namelist() if name.lower().endswith(".csv")]
+    if not names:
+        archive.close()
+        raise FileNotFoundError(f"no csv member in {path}")
+    raw = archive.open(names[0], "r")
+    text = io.TextIOWrapper(raw, encoding="utf-8", newline="")
+
+    class ZipText:
+        def __enter__(self):
+            return text
+
+        def __exit__(self, exc_type, exc, tb):
+            text.close()
+            raw.close()
+            archive.close()
+
+    return ZipText()
 
 
 def iter_geolife_driving_trips(root: Path, *, gap_sec: int = 120) -> Iterator[tuple[str, list[RawPoint]]]:

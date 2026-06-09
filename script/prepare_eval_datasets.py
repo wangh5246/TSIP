@@ -65,6 +65,7 @@ def main() -> int:
         )
         output = args.output_dir / f"{dataset}_{args.granularity}_{matcher.name}.jsonl"
         count = write_jsonl(output, prepared)
+        _write_tariff_block(args.output_dir / "tariff_block.json", dataset, city, args.granularity, geometry, tariff)
         summary[dataset] = {"output": str(output), "trips": count, "matcher": matcher.name, "city": city, "tariff_source": tariff_source}
     print(json.dumps(summary, indent=2, ensure_ascii=True))
     return 0
@@ -75,17 +76,20 @@ def _prepare_source(dataset, source, *, matcher, tariff, params, cadence_sec, or
     for scanned, (trip_id, points) in enumerate(source, start=1):
         if max_scan_trips > 0 and scanned > max_scan_trips:
             return
-        trip = prepare_trip(
-            dataset,
-            trip_id,
-            points,
-            matcher=matcher,
-            tariff=tariff,
-            params=params,
-            cadence_sec=cadence_sec,
-            origin_lat=origin_lat,
-            origin_lon=origin_lon,
-        )
+        try:
+            trip = prepare_trip(
+                dataset,
+                trip_id,
+                points,
+                matcher=matcher,
+                tariff=tariff,
+                params=params,
+                cadence_sec=cadence_sec,
+                origin_lat=origin_lat,
+                origin_lon=origin_lon,
+            )
+        except ValueError:
+            continue
         if trip is None:
             continue
         yield trip
@@ -100,9 +104,13 @@ def _iter_source(dataset: str, gap_sec: int):
     if dataset == "geolife":
         return iter_geolife_driving_trips(DATASET_DIR / "Geolife Trajectories 1.3" / "Data", gap_sec=gap_sec)
     if dataset == "porto":
-        return iter_porto_trips(DATASET_DIR / "porto" / "train.csv")
+        csv_path = DATASET_DIR / "porto" / "train.csv"
+        zip_path = DATASET_DIR / "porto" / "train.csv.zip"
+        return iter_porto_trips(csv_path if csv_path.exists() else zip_path)
     if dataset == "rome":
-        return iter_rome_trips(DATASET_DIR / "Rome.txt", gap_sec=gap_sec)
+        rome_path = DATASET_DIR / "Rome.txt"
+        roma_path = DATASET_DIR / "Roma.txt"
+        return iter_rome_trips(rome_path if rome_path.exists() else roma_path, gap_sec=gap_sec)
     raise ValueError(dataset)
 
 
@@ -122,6 +130,35 @@ def _load_tariff(city: str, granularity: str, grid_w: int, cell_size_m: int):
             cell_size_m=cell_size_m,
         ),
         str(overlay),
+    )
+
+
+def _write_tariff_block(path: Path, dataset: str, city: str, granularity: str, geometry, tariff) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "dataset": dataset,
+                "city": city,
+                "granularity": granularity,
+                "projection": "local_equirectangular_origin_city_center",
+                "tariff": {
+                    "tariff_version": tariff.tariff_version,
+                    "grid_w": tariff.grid_w,
+                    "cell_zones": tariff.cell_zones,
+                    "zone_rates_cents_per_m": tariff.zone_rates_cents_per_m,
+                },
+                "origin": {
+                    "lat": geometry.origin_lat,
+                    "lon": geometry.origin_lon,
+                    "cell_size_m": geometry.cell_size_m,
+                },
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
     )
 
 

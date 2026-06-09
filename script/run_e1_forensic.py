@@ -332,6 +332,10 @@ def _dataset_name(path: Path) -> str:
         return "geolife"
     if "tdrive" in name or "t-drive" in name:
         return "tdrive"
+    if "porto" in name:
+        return "porto"
+    if "rome" in name or "roma" in name:
+        return "rome"
     return path.stem
 
 

@@ -1,0 +1,649 @@
+branch,dataset,len_claimed_fixes,savings_ratio,skip_reason
+no_zone_binding,rome:60:103-0-s96:p0,25,0.0,
+no_continuity,rome:60:103-0-s96:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:103-0-s96:p0,25,0.8641350934339105,
+no_cadence,rome:60:103-0-s96:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:104-0-s145:p0,25,0.0,
+no_continuity,rome:60:104-0-s145:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:104-0-s145:p0,25,0.9914037651508639,
+no_cadence,rome:60:104-0-s145:p0,4,0.9914037651508639,
+no_zone_binding,rome:60:105-0-s77:p0,25,0.0,
+no_continuity,rome:60:105-0-s77:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:105-0-s77:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:105-0-s77:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:109-0-s11:p0,25,0.0,
+no_continuity,rome:60:109-0-s11:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:109-0-s11:p0,25,0.924685808641409,
+no_cadence,rome:60:109-0-s11:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:109-0-s11:p1,25,0.0,
+no_continuity,rome:60:109-0-s11:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:109-0-s11:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:109-0-s11:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:109-0-s188:p0,25,0.0,
+no_continuity,rome:60:109-0-s188:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:109-0-s188:p0,25,0.9209935773427222,
+no_cadence,rome:60:109-0-s188:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:109-0-s188:p1,25,0.0,
+no_continuity,rome:60:109-0-s188:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:109-0-s188:p1,25,0.981784175002033,
+no_cadence,rome:60:109-0-s188:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:109-0-s32:p0,25,0.0,
+no_continuity,rome:60:109-0-s32:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:109-0-s32:p0,25,0.9129273852165418,
+no_cadence,rome:60:109-0-s32:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:109-0-s40:p0,25,0.0,
+no_continuity,rome:60:109-0-s40:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:109-0-s40:p0,25,0.8098233728526494,
+no_cadence,rome:60:109-0-s40:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:109-0-s42:p0,25,0.0,
+no_continuity,rome:60:109-0-s42:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:109-0-s42:p0,25,0.8598229867863376,
+no_cadence,rome:60:109-0-s42:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:11-0-s11:p0,25,0.0,
+no_continuity,rome:60:11-0-s11:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:11-0-s11:p0,25,0.9666824196597353,
+no_cadence,rome:60:11-0-s11:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:11-0-s11:p1,25,0.0,
+no_continuity,rome:60:11-0-s11:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:11-0-s11:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:11-0-s11:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:11-0-s11:p2,25,0.0,
+no_continuity,rome:60:11-0-s11:p2,25,0.0,
+no_continuity_osnma_lifted,rome:60:11-0-s11:p2,25,0.9773418734987991,
+no_cadence,rome:60:11-0-s11:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:11-0-s136:p0,25,0.0,
+no_continuity,rome:60:11-0-s136:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:11-0-s136:p0,25,0.9741770978210478,
+no_cadence,rome:60:11-0-s136:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:11-0-s186:p0,25,0.0,
+no_continuity,rome:60:11-0-s186:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:11-0-s186:p0,25,0.9758738684107939,
+no_cadence,rome:60:11-0-s186:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:11-0-s84:p0,25,0.0,
+no_continuity,rome:60:11-0-s84:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:11-0-s84:p0,25,0.9558201472661758,
+no_cadence,rome:60:11-0-s84:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:124-1-s99:p0,25,0.0,
+no_continuity,rome:60:124-1-s99:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:124-1-s99:p0,25,0.9941537440915499,
+no_cadence,rome:60:124-1-s99:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:127-0-s273:p0,25,0.0,
+no_continuity,rome:60:127-0-s273:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:127-0-s273:p0,25,0.7659454374412041,
+no_cadence,rome:60:127-0-s273:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:128-0-s16:p0,25,0.0,
+no_continuity,rome:60:128-0-s16:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:128-0-s16:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:128-0-s16:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:128-0-s16:p1,25,0.0,
+no_continuity,rome:60:128-0-s16:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:128-0-s16:p1,25,0.9861493123772103,
+no_cadence,rome:60:128-0-s16:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:128-0-s65:p0,25,0.0,
+no_continuity,rome:60:128-0-s65:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:128-0-s65:p0,25,0.9860891870560379,
+no_cadence,rome:60:128-0-s65:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:128-0-s82:p0,25,0.0,
+no_continuity,rome:60:128-0-s82:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:128-0-s82:p0,25,0.8558831157603527,
+no_cadence,rome:60:128-0-s82:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:128-0-s82:p1,25,0.0,
+no_continuity,rome:60:128-0-s82:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:128-0-s82:p1,25,0.9817411150961852,
+no_cadence,rome:60:128-0-s82:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:128-0-s82:p2,25,0.0,
+no_continuity,rome:60:128-0-s82:p2,25,0.0,
+no_continuity_osnma_lifted,rome:60:128-0-s82:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:128-0-s82:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:134-0-s99:p0,25,0.0,
+no_continuity,rome:60:134-0-s99:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:134-0-s99:p0,25,0.9884653141361257,
+no_cadence,rome:60:134-0-s99:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:137-0-s71:p0,25,0.0,
+no_continuity,rome:60:137-0-s71:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:137-0-s71:p0,25,0.9498807947019867,
+no_cadence,rome:60:137-0-s71:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:137-0-s71:p1,25,0.0,
+no_continuity,rome:60:137-0-s71:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:137-0-s71:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:137-0-s71:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:137-0-s71:p2,25,0.0,
+no_continuity,rome:60:137-0-s71:p2,25,0.0,
+no_continuity_osnma_lifted,rome:60:137-0-s71:p2,25,0.976583754372328,
+no_cadence,rome:60:137-0-s71:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:140-0-s121:p0,25,0.0,
+no_continuity,rome:60:140-0-s121:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:140-0-s121:p0,25,0.9913141665942847,
+no_cadence,rome:60:140-0-s121:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:140-0-s121:p1,25,0.0,
+no_continuity,rome:60:140-0-s121:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:140-0-s121:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:140-0-s121:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:149-0-s182:p0,25,0.0,
+no_continuity,rome:60:149-0-s182:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:149-0-s182:p0,25,0.9366766467065868,
+no_cadence,rome:60:149-0-s182:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:149-0-s21:p0,25,0.0,
+no_continuity,rome:60:149-0-s21:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:149-0-s21:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:149-0-s21:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:149-0-s21:p1,25,0.0,
+no_continuity,rome:60:149-0-s21:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:149-0-s21:p1,25,1.0,
+no_cadence,rome:60:149-0-s21:p1,4,1.0,
+no_zone_binding,rome:60:149-0-s21:p2,25,0.0,
+no_continuity,rome:60:149-0-s21:p2,25,0.0,
+no_continuity_osnma_lifted,rome:60:149-0-s21:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:149-0-s21:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:149-0-s21:p3,25,0.0,
+no_continuity,rome:60:149-0-s21:p3,25,0.0,
+no_continuity_osnma_lifted,rome:60:149-0-s21:p3,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:149-0-s21:p3,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:150-0-s108:p0,25,0.0,
+no_continuity,rome:60:150-0-s108:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:150-0-s108:p0,25,0.9871535181236674,
+no_cadence,rome:60:150-0-s108:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:153-0-s12:p0,25,0.0,
+no_continuity,rome:60:153-0-s12:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:153-0-s12:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:153-0-s12:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:153-0-s12:p1,25,0.0,
+no_continuity,rome:60:153-0-s12:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:153-0-s12:p1,25,0.9929696287964005,
+no_cadence,rome:60:153-0-s12:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:153-0-s15:p0,25,0.0,
+no_continuity,rome:60:153-0-s15:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:153-0-s15:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:153-0-s15:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:153-0-s15:p1,25,0.0,
+no_continuity,rome:60:153-0-s15:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:153-0-s15:p1,25,0.9813854468038649,
+no_cadence,rome:60:153-0-s15:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:153-0-s15:p2,25,0.0,
+no_continuity,rome:60:153-0-s15:p2,25,0.0,
+no_continuity_osnma_lifted,rome:60:153-0-s15:p2,25,0.9650175723168424,
+no_cadence,rome:60:153-0-s15:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:153-0-s214:p0,25,0.0,
+no_continuity,rome:60:153-0-s214:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:153-0-s214:p0,25,0.901716992303138,
+no_cadence,rome:60:153-0-s214:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:155-0-s239:p0,25,0.0,
+no_continuity,rome:60:155-0-s239:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:155-0-s239:p0,25,0.9879459721250605,
+no_cadence,rome:60:155-0-s239:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:155-0-s253:p0,25,0.0,
+no_continuity,rome:60:155-0-s253:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:155-0-s253:p0,25,0.9729985228951256,
+no_cadence,rome:60:155-0-s253:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:155-0-s266:p0,25,0.0,
+no_continuity,rome:60:155-0-s266:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:155-0-s266:p0,25,0.9763008758371973,
+no_cadence,rome:60:155-0-s266:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:156-0-s76:p0,25,0.0,
+no_continuity,rome:60:156-0-s76:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:156-0-s76:p0,25,0.8899304284145002,
+no_cadence,rome:60:156-0-s76:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:157-0-s98:p0,25,0.0,
+no_continuity,rome:60:157-0-s98:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:157-0-s98:p0,25,0.9939116542165033,
+no_cadence,rome:60:157-0-s98:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:162-0-s40:p0,25,0.0,
+no_continuity,rome:60:162-0-s40:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:162-0-s40:p0,25,0.8730888484978082,
+no_cadence,rome:60:162-0-s40:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:162-0-s40:p1,25,0.0,
+no_continuity,rome:60:162-0-s40:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:162-0-s40:p1,25,0.9796431102235392,
+no_cadence,rome:60:162-0-s40:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:163-0-s105:p0,25,0.0,
+no_continuity,rome:60:163-0-s105:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:163-0-s105:p0,25,0.9018514387686817,
+no_cadence,rome:60:163-0-s105:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:167-0-s26:p0,25,0.0,
+no_continuity,rome:60:167-0-s26:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:167-0-s26:p0,25,0.952652414885194,
+no_cadence,rome:60:167-0-s26:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:167-0-s73:p0,25,0.0,
+no_continuity,rome:60:167-0-s73:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:167-0-s73:p0,25,0.9706142822639079,
+no_cadence,rome:60:167-0-s73:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:172-0-s6:p0,25,0.0,
+no_continuity,rome:60:172-0-s6:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:172-0-s6:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:172-0-s6:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:178-0-s37:p0,25,0.0,
+no_continuity,rome:60:178-0-s37:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:178-0-s37:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:178-0-s37:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:178-1-s43:p0,25,0.0,
+no_continuity,rome:60:178-1-s43:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:178-1-s43:p0,25,0.8970314576871954,
+no_cadence,rome:60:178-1-s43:p0,10,0.8931324767390341,
+no_zone_binding,rome:60:185-0-s124:p0,25,0.0,
+no_continuity,rome:60:185-0-s124:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:185-0-s124:p0,25,0.976910644193027,
+no_cadence,rome:60:185-0-s124:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:185-0-s150:p0,25,0.0,
+no_continuity,rome:60:185-0-s150:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:185-0-s150:p0,25,0.8848150895411677,
+no_cadence,rome:60:185-0-s150:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:193-0-s204:p0,25,0.0,
+no_continuity,rome:60:193-0-s204:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:193-0-s204:p0,25,1.0,
+no_cadence,rome:60:193-0-s204:p0,4,1.0,
+no_zone_binding,rome:60:213-0-s41:p0,25,0.0,
+no_continuity,rome:60:213-0-s41:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:213-0-s41:p0,25,0.9747492217225874,
+no_cadence,rome:60:213-0-s41:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:213-0-s41:p1,25,0.0,
+no_continuity,rome:60:213-0-s41:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:213-0-s41:p1,25,0.980350591112923,
+no_cadence,rome:60:213-0-s41:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:213-0-s66:p0,25,0.0,
+no_continuity,rome:60:213-0-s66:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:213-0-s66:p0,25,0.9364864864864865,
+no_cadence,rome:60:213-0-s66:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:214-0-s203:p0,25,0.0,
+no_continuity,rome:60:214-0-s203:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:214-0-s203:p0,25,0.9293337923911172,
+no_cadence,rome:60:214-0-s203:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:214-0-s203:p1,25,0.0,
+no_continuity,rome:60:214-0-s203:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:214-0-s203:p1,25,0.9644639885904445,
+no_cadence,rome:60:214-0-s203:p1,5,0.962918944616116,
+no_zone_binding,rome:60:214-0-s220:p0,25,0.0,
+no_continuity,rome:60:214-0-s220:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:214-0-s220:p0,25,0.828705594120049,
+no_cadence,rome:60:214-0-s220:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:229-0-s172:p0,25,0.0,
+no_continuity,rome:60:229-0-s172:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:229-0-s172:p0,25,0.968325995147812,
+no_cadence,rome:60:229-0-s172:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:234-0-s260:p0,25,0.0,
+no_continuity,rome:60:234-0-s260:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:234-0-s260:p0,25,0.9435966386554622,
+no_cadence,rome:60:234-0-s260:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:24-0-s158:p0,25,0.0,
+no_continuity,rome:60:24-0-s158:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:24-0-s158:p0,25,0.9931232930159969,
+no_cadence,rome:60:24-0-s158:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:24-0-s158:p1,25,0.0,
+no_continuity,rome:60:24-0-s158:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:24-0-s158:p1,25,0.9862632585637281,
+no_cadence,rome:60:24-0-s158:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:24-0-s158:p2,25,0.0,
+no_continuity,rome:60:24-0-s158:p2,25,0.0,
+no_continuity_osnma_lifted,rome:60:24-0-s158:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:24-0-s158:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:24-0-s158:p3,25,0.0,
+no_continuity,rome:60:24-0-s158:p3,25,0.0,
+no_continuity_osnma_lifted,rome:60:24-0-s158:p3,25,0.9765086800771562,
+no_cadence,rome:60:24-0-s158:p3,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:24-0-s50:p0,25,0.0,
+no_continuity,rome:60:24-0-s50:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:24-0-s50:p0,25,0.9663875646007772,
+no_cadence,rome:60:24-0-s50:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:24-0-s50:p1,25,0.0,
+no_continuity,rome:60:24-0-s50:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:24-0-s50:p1,25,0.9889509233592316,
+no_cadence,rome:60:24-0-s50:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:24-0-s50:p2,25,0.0,
+no_continuity,rome:60:24-0-s50:p2,25,0.0,
+no_continuity_osnma_lifted,rome:60:24-0-s50:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:24-0-s50:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:24-0-s50:p3,25,0.0,
+no_continuity,rome:60:24-0-s50:p3,25,0.0,
+no_continuity_osnma_lifted,rome:60:24-0-s50:p3,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:24-0-s50:p3,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:24-0-s50:p4,25,0.0,
+no_continuity,rome:60:24-0-s50:p4,25,0.0,
+no_continuity_osnma_lifted,rome:60:24-0-s50:p4,25,0.9903431626142438,
+no_cadence,rome:60:24-0-s50:p4,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:243-0-s57:p0,25,0.0,
+no_continuity,rome:60:243-0-s57:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:243-0-s57:p0,25,0.8279088689991864,
+no_cadence,rome:60:243-0-s57:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:243-0-s91:p0,25,0.0,
+no_continuity,rome:60:243-0-s91:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:243-0-s91:p0,25,0.744842562432139,
+no_cadence,rome:60:243-0-s91:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:243-0-s91:p1,25,0.0,
+no_continuity,rome:60:243-0-s91:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:243-0-s91:p1,25,0.9709533566349283,
+no_cadence,rome:60:243-0-s91:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:243-0-s94:p0,25,0.0,
+no_continuity,rome:60:243-0-s94:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:243-0-s94:p0,25,0.8917216117216117,
+no_cadence,rome:60:243-0-s94:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:249-0-s139:p0,25,0.0,
+no_continuity,rome:60:249-0-s139:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:249-0-s139:p0,25,0.8008917713822457,
+no_cadence,rome:60:249-0-s139:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:254-0-s329:p0,25,0.0,
+no_continuity,rome:60:254-0-s329:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:254-0-s329:p0,25,0.9558963953210791,
+no_cadence,rome:60:254-0-s329:p0,6,0.9548221532585343,
+no_zone_binding,rome:60:256-0-s375:p0,25,0.0,
+no_continuity,rome:60:256-0-s375:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:256-0-s375:p0,25,0.9343269678621332,
+no_cadence,rome:60:256-0-s375:p0,7,0.9309734513274336,
+no_zone_binding,rome:60:257-0-s123:p0,25,0.0,
+no_continuity,rome:60:257-0-s123:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:257-0-s123:p0,25,0.9508403692890397,
+no_cadence,rome:60:257-0-s123:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:257-0-s123:p1,25,0.0,
+no_continuity,rome:60:257-0-s123:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:257-0-s123:p1,25,0.9422416194632742,
+no_cadence,rome:60:257-0-s123:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:260-0-s115:p0,25,0.0,
+no_continuity,rome:60:260-0-s115:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:260-0-s115:p0,25,0.8875251607835436,
+no_cadence,rome:60:260-0-s115:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:260-0-s14:p0,25,0.0,
+no_continuity,rome:60:260-0-s14:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:260-0-s14:p0,25,0.9590552705449618,
+no_cadence,rome:60:260-0-s14:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:268-0-s46:p0,25,0.0,
+no_continuity,rome:60:268-0-s46:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:268-0-s46:p0,25,0.932052225082751,
+no_cadence,rome:60:268-0-s46:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:275-0-s235:p0,25,0.0,
+no_continuity,rome:60:275-0-s235:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:275-0-s235:p0,25,0.7565838976674191,
+no_cadence,rome:60:275-0-s235:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:275-0-s290:p0,25,0.0,
+no_continuity,rome:60:275-0-s290:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:275-0-s290:p0,25,0.8456006768189509,
+no_cadence,rome:60:275-0-s290:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:275-0-s376:p0,25,0.0,
+no_continuity,rome:60:275-0-s376:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:275-0-s376:p0,25,0.7642276422764228,
+no_cadence,rome:60:275-0-s376:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:289-0-s12:p0,25,0.0,
+no_continuity,rome:60:289-0-s12:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:289-0-s12:p0,25,0.9438805970149253,
+no_cadence,rome:60:289-0-s12:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:289-0-s30:p0,25,0.0,
+no_continuity,rome:60:289-0-s30:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:289-0-s30:p0,25,0.9770482908301682,
+no_cadence,rome:60:289-0-s30:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:289-0-s77:p0,25,0.0,
+no_continuity,rome:60:289-0-s77:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:289-0-s77:p0,25,0.9263130389338908,
+no_cadence,rome:60:289-0-s77:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:289-0-s94:p0,25,0.0,
+no_continuity,rome:60:289-0-s94:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:289-0-s94:p0,25,0.8978407992265549,
+no_cadence,rome:60:289-0-s94:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:290-0-s103:p0,25,0.0,
+no_continuity,rome:60:290-0-s103:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:290-0-s103:p0,25,0.7560401437244455,
+no_cadence,rome:60:290-0-s103:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:290-0-s103:p1,25,0.0,
+no_continuity,rome:60:290-0-s103:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:290-0-s103:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:290-0-s103:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:290-0-s119:p0,25,0.0,
+no_continuity,rome:60:290-0-s119:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:290-0-s119:p0,25,0.9729239695394657,
+no_cadence,rome:60:290-0-s119:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:290-0-s34:p0,25,0.0,
+no_continuity,rome:60:290-0-s34:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:290-0-s34:p0,25,0.9803217114395362,
+no_cadence,rome:60:290-0-s34:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:290-0-s36:p0,25,0.0,
+no_continuity,rome:60:290-0-s36:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:290-0-s36:p0,25,0.9834829689534644,
+no_cadence,rome:60:290-0-s36:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:290-0-s36:p1,25,0.0,
+no_continuity,rome:60:290-0-s36:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:290-0-s36:p1,25,0.9136723163841808,
+no_cadence,rome:60:290-0-s36:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:290-0-s36:p2,25,0.0,
+no_continuity,rome:60:290-0-s36:p2,25,0.0,
+no_continuity_osnma_lifted,rome:60:290-0-s36:p2,25,0.968493622888659,
+no_cadence,rome:60:290-0-s36:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:293-0-s42:p0,25,0.0,
+no_continuity,rome:60:293-0-s42:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:293-0-s42:p0,25,0.9594088859034642,
+no_cadence,rome:60:293-0-s42:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:297-1-s52:p0,25,0.0,
+no_continuity,rome:60:297-1-s52:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:297-1-s52:p0,25,0.9794961282582615,
+no_cadence,rome:60:297-1-s52:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:297-1-s52:p1,25,0.0,
+no_continuity,rome:60:297-1-s52:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:297-1-s52:p1,25,0.9834481563325967,
+no_cadence,rome:60:297-1-s52:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:306-0-s25:p0,25,0.0,
+no_continuity,rome:60:306-0-s25:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:306-0-s25:p0,25,0.8455334987593052,
+no_cadence,rome:60:306-0-s25:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:306-0-s68:p0,25,0.0,
+no_continuity,rome:60:306-0-s68:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:306-0-s68:p0,25,0.8958558003389309,
+no_cadence,rome:60:306-0-s68:p0,9,0.8916961947311662,
+no_zone_binding,rome:60:309-0-s267:p0,25,0.0,
+no_continuity,rome:60:309-0-s267:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:309-0-s267:p0,25,0.9740525409130061,
+no_cadence,rome:60:309-0-s267:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:309-0-s61:p0,25,0.0,
+no_continuity,rome:60:309-0-s61:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:309-0-s61:p0,25,0.893598233995585,
+no_cadence,rome:60:309-0-s61:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:309-0-s61:p1,25,0.0,
+no_continuity,rome:60:309-0-s61:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:309-0-s61:p1,25,0.9659872150524665,
+no_cadence,rome:60:309-0-s61:p1,4,0.9638161862260283,
+no_zone_binding,rome:60:326-0-s63:p0,25,0.0,
+no_continuity,rome:60:326-0-s63:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:326-0-s63:p0,25,0.9343748538285234,
+no_cadence,rome:60:326-0-s63:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:326-0-s63:p1,25,0.0,
+no_continuity,rome:60:326-0-s63:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:326-0-s63:p1,25,0.9256831610044313,
+no_cadence,rome:60:326-0-s63:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:326-0-s82:p0,25,0.0,
+no_continuity,rome:60:326-0-s82:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:326-0-s82:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:326-0-s82:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:329-0-s52:p0,25,0.0,
+no_continuity,rome:60:329-0-s52:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:329-0-s52:p0,25,0.9878096058582813,
+no_cadence,rome:60:329-0-s52:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:329-0-s55:p0,25,0.0,
+no_continuity,rome:60:329-0-s55:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:329-0-s55:p0,25,0.934871304085025,
+no_cadence,rome:60:329-0-s55:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:329-0-s55:p1,25,0.0,
+no_continuity,rome:60:329-0-s55:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:329-0-s55:p1,25,0.9927225092788007,
+no_cadence,rome:60:329-0-s55:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:336-0-s227:p0,25,0.0,
+no_continuity,rome:60:336-0-s227:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:336-0-s227:p0,25,0.9620109925638539,
+no_cadence,rome:60:336-0-s227:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:336-0-s227:p1,25,0.0,
+no_continuity,rome:60:336-0-s227:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:336-0-s227:p1,25,0.9861254612546125,
+no_cadence,rome:60:336-0-s227:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:353-0-s131:p0,25,0.0,
+no_continuity,rome:60:353-0-s131:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:353-0-s131:p0,25,0.9615225865627149,
+no_cadence,rome:60:353-0-s131:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:353-0-s219:p0,25,0.0,
+no_continuity,rome:60:353-0-s219:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:353-0-s219:p0,25,0.9689964759187784,
+no_cadence,rome:60:353-0-s219:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:360-0-s126:p0,25,0.0,
+no_continuity,rome:60:360-0-s126:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:360-0-s126:p0,25,0.872636815920398,
+no_cadence,rome:60:360-0-s126:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:366-0-s105:p0,25,0.0,
+no_continuity,rome:60:366-0-s105:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:366-0-s105:p0,25,0.977686758772466,
+no_cadence,rome:60:366-0-s105:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:43-1-s109:p0,25,0.0,
+no_continuity,rome:60:43-1-s109:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:43-1-s109:p0,25,0.9614850964068705,
+no_cadence,rome:60:43-1-s109:p0,4,0.9587579541648725,
+no_zone_binding,rome:60:43-1-s80:p0,25,0.0,
+no_continuity,rome:60:43-1-s80:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:43-1-s80:p0,25,0.9614211649893261,
+no_cadence,rome:60:43-1-s80:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:45-0-s4:p0,25,0.0,
+no_continuity,rome:60:45-0-s4:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:45-0-s4:p0,25,0.96658569820487,
+no_cadence,rome:60:45-0-s4:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:45-0-s4:p1,25,0.0,
+no_continuity,rome:60:45-0-s4:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:45-0-s4:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:45-0-s4:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:46-0-s41:p0,25,0.0,
+no_continuity,rome:60:46-0-s41:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:46-0-s41:p0,25,0.9923135630178805,
+no_cadence,rome:60:46-0-s41:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:46-0-s41:p1,25,0.0,
+no_continuity,rome:60:46-0-s41:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:46-0-s41:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:46-0-s41:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:46-0-s49:p0,25,0.0,
+no_continuity,rome:60:46-0-s49:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:46-0-s49:p0,25,0.9566043110815687,
+no_cadence,rome:60:46-0-s49:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:46-0-s56:p0,25,0.0,
+no_continuity,rome:60:46-0-s56:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:46-0-s56:p0,25,0.9860975948839149,
+no_cadence,rome:60:46-0-s56:p0,4,0.9860975948839149,
+no_zone_binding,rome:60:46-0-s56:p1,25,0.0,
+no_continuity,rome:60:46-0-s56:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:46-0-s56:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:46-0-s56:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:46-0-s56:p2,25,0.0,
+no_continuity,rome:60:46-0-s56:p2,25,0.0,
+no_continuity_osnma_lifted,rome:60:46-0-s56:p2,25,0.9901267418248022,
+no_cadence,rome:60:46-0-s56:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:46-0-s56:p3,25,0.0,
+no_continuity,rome:60:46-0-s56:p3,25,0.0,
+no_continuity_osnma_lifted,rome:60:46-0-s56:p3,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:46-0-s56:p3,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:46-0-s65:p0,25,0.0,
+no_continuity,rome:60:46-0-s65:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:46-0-s65:p0,25,0.9000089198109,
+no_cadence,rome:60:46-0-s65:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:46-0-s89:p0,25,0.0,
+no_continuity,rome:60:46-0-s89:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:46-0-s89:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:46-0-s89:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:47-0-s268:p0,25,0.0,
+no_continuity,rome:60:47-0-s268:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:47-0-s268:p0,25,0.9772316137483625,
+no_cadence,rome:60:47-0-s268:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:51-1-s193:p0,25,0.0,
+no_continuity,rome:60:51-1-s193:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:51-1-s193:p0,25,0.8021066491112574,
+no_cadence,rome:60:51-1-s193:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:53-0-s98:p0,25,0.0,
+no_continuity,rome:60:53-0-s98:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:53-0-s98:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:53-0-s98:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:58-0-s2:p0,25,0.0,
+no_continuity,rome:60:58-0-s2:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:58-0-s2:p0,25,0.9261921058635638,
+no_cadence,rome:60:58-0-s2:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:58-0-s8:p0,25,0.0,
+no_continuity,rome:60:58-0-s8:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:58-0-s8:p0,25,0.9507983441750444,
+no_cadence,rome:60:58-0-s8:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:58-1-s27:p0,25,0.0,
+no_continuity,rome:60:58-1-s27:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:58-1-s27:p0,25,0.927289461573861,
+no_cadence,rome:60:58-1-s27:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:66-0-s9:p0,25,0.0,
+no_continuity,rome:60:66-0-s9:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:66-0-s9:p0,25,0.9522951772225451,
+no_cadence,rome:60:66-0-s9:p0,5,0.9507263219058687,
+no_zone_binding,rome:60:67-1-s1:p0,25,0.0,
+no_continuity,rome:60:67-1-s1:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:67-1-s1:p0,25,0.9694398116354361,
+no_cadence,rome:60:67-1-s1:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:68-0-s112:p0,25,0.0,
+no_continuity,rome:60:68-0-s112:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:68-0-s112:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:68-0-s112:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:68-0-s234:p0,25,0.0,
+no_continuity,rome:60:68-0-s234:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:68-0-s234:p0,25,0.9705597677044685,
+no_cadence,rome:60:68-0-s234:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:70-0-s118:p0,25,0.0,
+no_continuity,rome:60:70-0-s118:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:70-0-s118:p0,25,0.9590318032273226,
+no_cadence,rome:60:70-0-s118:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:70-0-s141:p0,25,0.0,
+no_continuity,rome:60:70-0-s141:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:70-0-s141:p0,25,0.8569835277968428,
+no_cadence,rome:60:70-0-s141:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:70-0-s152:p0,25,0.0,
+no_continuity,rome:60:70-0-s152:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:70-0-s152:p0,25,0.981853532080363,
+no_cadence,rome:60:70-0-s152:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:70-0-s162:p0,25,0.0,
+no_continuity,rome:60:70-0-s162:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:70-0-s162:p0,25,0.9877413423230156,
+no_cadence,rome:60:70-0-s162:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:70-0-s172:p0,25,0.0,
+no_continuity,rome:60:70-0-s172:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:70-0-s172:p0,25,0.9792301132902912,
+no_cadence,rome:60:70-0-s172:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:70-0-s57:p0,25,0.0,
+no_continuity,rome:60:70-0-s57:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:70-0-s57:p0,25,0.949936628643853,
+no_cadence,rome:60:70-0-s57:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:70-0-s57:p1,25,0.0,
+no_continuity,rome:60:70-0-s57:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:70-0-s57:p1,25,0.9734427141268076,
+no_cadence,rome:60:70-0-s57:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:70-0-s57:p2,25,0.0,
+no_continuity,rome:60:70-0-s57:p2,25,0.0,
+no_continuity_osnma_lifted,rome:60:70-0-s57:p2,25,0.9832522960561858,
+no_cadence,rome:60:70-0-s57:p2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:70-0-s78:p0,25,0.0,
+no_continuity,rome:60:70-0-s78:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:70-0-s78:p0,25,0.9792022444498658,
+no_cadence,rome:60:70-0-s78:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:72-0-s234:p0,25,0.0,
+no_continuity,rome:60:72-0-s234:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:72-0-s234:p0,25,0.9354838709677419,
+no_cadence,rome:60:72-0-s234:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:78-0-s44:p0,25,0.0,
+no_continuity,rome:60:78-0-s44:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:78-0-s44:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:78-0-s44:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:83-0-s152:p0,25,0.0,
+no_continuity,rome:60:83-0-s152:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:83-0-s152:p0,25,0.9836173001310616,
+no_cadence,rome:60:83-0-s152:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:83-0-s41:p0,25,0.0,
+no_continuity,rome:60:83-0-s41:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:83-0-s41:p0,25,0.9547875488223458,
+no_cadence,rome:60:83-0-s41:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:83-0-s59:p0,25,0.0,
+no_continuity,rome:60:83-0-s59:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:83-0-s59:p0,25,0.9637284138983286,
+no_cadence,rome:60:83-0-s59:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:83-0-s95:p0,25,0.0,
+no_continuity,rome:60:83-0-s95:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:83-0-s95:p0,25,0.9804176484927277,
+no_cadence,rome:60:83-0-s95:p0,5,0.9804176484927277,
+no_zone_binding,rome:60:83-0-s95:p1,25,0.0,
+no_continuity,rome:60:83-0-s95:p1,25,0.0,
+no_continuity_osnma_lifted,rome:60:83-0-s95:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_cadence,rome:60:83-0-s95:p1,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:95-0-s137:p0,25,0.0,
+no_continuity,rome:60:95-0-s137:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:95-0-s137:p0,25,0.988135593220339,
+no_cadence,rome:60:95-0-s137:p0,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,rome:60:96-0-s156:p0,25,0.0,
+no_continuity,rome:60:96-0-s156:p0,25,0.0,
+no_continuity_osnma_lifted,rome:60:96-0-s156:p0,25,0.9846279640228945,
+no_cadence,rome:60:96-0-s156:p0,0,0.0,no feasible adversarial claim under enabled constraints

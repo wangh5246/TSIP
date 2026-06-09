@@ -1,0 +1,5 @@
+dataset,branch,n,skip_count,min_savings,mean_savings,median_savings,p95_savings
+rome,no_cadence,13,149,0.8916961947311662,0.9588278993458892,0.962918944616116,1.0
+rome,no_continuity,162,0,0.0,0.0,0.0,0.0
+rome,no_continuity_osnma_lifted,134,28,0.744842562432139,0.9414956466446929,0.9647407804536434,0.9927225092788007
+rome,no_zone_binding,162,0,0.0,0.0,0.0,0.0

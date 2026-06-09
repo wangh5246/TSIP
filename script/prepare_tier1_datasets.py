@@ -253,9 +253,13 @@ def _iter_raw(dataset: str):
     if dataset == "geolife":
         return iter_geolife_driving_raw_points(DATASET_DIR / "Geolife Trajectories 1.3" / "Data")
     if dataset == "porto":
-        return iter_porto_raw_points(DATASET_DIR / "porto" / "train.csv")
+        csv_path = DATASET_DIR / "porto" / "train.csv"
+        zip_path = DATASET_DIR / "porto" / "train.csv.zip"
+        return iter_porto_raw_points(csv_path if csv_path.exists() else zip_path)
     if dataset == "rome":
-        return iter_rome_raw_points(DATASET_DIR / "Rome.txt")
+        rome_path = DATASET_DIR / "Rome.txt"
+        roma_path = DATASET_DIR / "Roma.txt"
+        return iter_rome_raw_points(rome_path if rome_path.exists() else roma_path)
     raise ValueError(dataset)
 
 
@@ -305,7 +309,11 @@ def _cadence_rejects(cadence_sec: int, rejects) -> list:
 
 def _write_parquet(pd, path: Path, rows: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(rows).to_parquet(path, index=False, engine="pyarrow")
+    frame = pd.DataFrame(rows)
+    try:
+        frame.to_parquet(path, index=False, engine="pyarrow")
+    except (ImportError, OSError):
+        frame.to_csv(path.with_suffix(".csv"), index=False)
 
 
 def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:

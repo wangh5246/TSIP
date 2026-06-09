@@ -1,0 +1,5 @@
+dataset,branch,n,skip_count,min_savings,mean_savings,median_savings,p95_savings
+tdrive,no_cadence,0,1,,,,
+tdrive,no_continuity,1,0,0.0,0.0,0.0,0.0
+tdrive,no_continuity_osnma_lifted,1,0,0.9918364143019742,0.9918364143019742,0.9918364143019742,0.9918364143019742
+tdrive,no_zone_binding,1,0,0.0034145767102319556,0.0034145767102319556,0.0034145767102319556,0.0034145767102319556
