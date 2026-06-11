@@ -25,7 +25,7 @@ motivation 应改写为：
 ### 1.2 政策时间窗：RUC 正在从试点变强制，隐私是头号反对理由
 
 - EV 普及 → 燃油税收入侵蚀 → 各国被迫转向按里程/按区域收费。
-- **Oregon 于 2026-04 启动美国首个强制性 road-user charge**；多州（Utah、Virginia、Hawaii）已有 program。
+- **Oregon 已立法美国首个强制性 RUC 分阶段时间表**（⚠️ 2026-06-11 v3 审阅纠错:此前"2026-04 已强制"为媒体标题党口径,与官方不符。正确口径:自愿项目 OReGO 自 2015 运行,2026 年费率升至 2.3¢/mile;**强制阶段:2027-07-01 二手 EV 续期、2028-01-01 新 EV、2028-07-01 混动**。论文写 "Oregon has legislated the first mandatory RUC phase-in (EVs from 2027)",引 ODOT/NCSL 官方源,不引二手媒体）；多州（Utah、Virginia、Hawaii）已有 program。
 - RUC 试点的公开听证中，GPS 追踪隐私始终是最大公众反对点（Oregon/California 试点报告均有记录，写作时引官方报告）。
 
 叙事：**这不是"假如未来有 RUC"的论文，而是"RUC 正在立法落地、隐私反对正在阻碍它、硬件前提刚刚就位"的三线交汇时刻**。把这写成 intro 第一段，时效性即是 motivation。

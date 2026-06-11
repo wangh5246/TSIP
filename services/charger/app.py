@@ -20,6 +20,7 @@ from common.settlement import (
     field_from_text,
     make_device_attestation_commitment,
     month_window_from_period_start,
+    verify_monthly_odometer_attestation,
     verify_public_statement_commitment,
     verify_receiver_root_attestation,
     verify_period_submission,
@@ -46,8 +47,23 @@ if _registry_json:
     for _dev_id, _hex_key in json.loads(_registry_json).items():
         device_registry[str(_dev_id)] = bytes.fromhex(str(_hex_key))
 
-accepted_periods: dict[str, dict[str, Any]] = {}
-monthly_ledger: dict[str, dict[str, int]] = {}
+# Reconciliation rate for kilometres not covered by any accepted period.
+# Must satisfy rate >= alpha * max_zone_rate with alpha >= 1 so that whole-period
+# withholding is never cheaper than exact settlement (monthly extension of the
+# E2 monotone-degradation rule).
+RECONCILIATION_RATE_CENTS_PER_M = int(os.getenv("SETTLEMENT_RECONCILIATION_RATE_CENTS_PER_M", "5"))
+
+# Keyed by (device_id, period_id) / (device_id, month_id): a device must not be
+# able to block another device's submissions by colliding on a bare period_id,
+# and bills are per-device.
+accepted_periods: dict[tuple[str, str], dict[str, Any]] = {}
+monthly_ledger: dict[tuple[str, str], dict[str, int]] = {}
+# Accepted [period_start_time, period_end_time) windows per device. Overlapping
+# windows would double-count odometer distance and eat into the reconciliation
+# margin, so they are rejected at submission time.
+device_period_windows: dict[str, list[tuple[int, int]]] = {}
+# (device_id, month_id) -> verified month-boundary odometer attestation.
+monthly_odometer_attestations: dict[tuple[str, str], dict[str, Any]] = {}
 
 
 def _verify_zk_proof(proof: dict[str, Any], public_signals: list[str], vkey_path: str) -> None:
@@ -201,6 +217,37 @@ def _validate_public_statement_shape(public: dict[str, Any]) -> None:
         raise ValueError("month window does not match month_id for the period start")
 
 
+def _accept_period(device_id: str, public: dict[str, Any]) -> tuple[str, str]:
+    """Dedup, overlap-check, and accumulate an accepted period into the ledger."""
+
+    period_id = str(public["period_id"])
+    month_id = str(public["month_id"])
+    if (device_id, period_id) in accepted_periods:
+        raise HTTPException(status_code=409, detail="period already accepted")
+
+    start = int(public["period_start_time"])
+    end = int(public["period_end_time"])
+    for prev_start, prev_end in device_period_windows.get(device_id, []):
+        if start < prev_end and prev_start < end:
+            raise HTTPException(
+                status_code=409,
+                detail="period time window overlaps an accepted period for this device",
+            )
+
+    accepted_periods[(device_id, period_id)] = public
+    device_period_windows.setdefault(device_id, []).append((start, end))
+    month = monthly_ledger.setdefault(
+        (device_id, month_id),
+        {"periods": 0, "total_fee_cents": 0, "total_distance_m": 0, "fallback_intervals": 0},
+    )
+    month["periods"] += 1
+    month["total_fee_cents"] += int(public["total_fee_cents"])
+    month["fallback_intervals"] += int(public.get("fallback_intervals", 0))
+    if "total_distance_m" in public:
+        month["total_distance_m"] += int(public["total_distance_m"])
+    return period_id, month_id
+
+
 class TariffPayload(BaseModel):
     tariff_version: int
     grid_w: int
@@ -351,21 +398,7 @@ def submit_period(req: PeriodSubmission) -> dict[str, Any]:
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
 
-    period_id = str(public["period_id"])
-    month_id = str(public["month_id"])
-    if period_id in accepted_periods:
-        raise HTTPException(status_code=409, detail="period already accepted")
-    accepted_periods[period_id] = public
-
-    month = monthly_ledger.setdefault(
-        month_id,
-        {"periods": 0, "total_fee_cents": 0, "total_distance_m": 0, "fallback_intervals": 0},
-    )
-    month["periods"] += 1
-    month["total_fee_cents"] += int(public["total_fee_cents"])
-    month["fallback_intervals"] += int(public.get("fallback_intervals", 0))
-    if "total_distance_m" in public:
-        month["total_distance_m"] += int(public["total_distance_m"])
+    period_id, month_id = _accept_period(device_id, public)
 
     return {
         "ok": True,
@@ -411,21 +444,7 @@ def submit_period_proof_only(req: ProofOnlyPeriodSubmission) -> dict[str, Any]:
     ):
         raise HTTPException(status_code=400, detail="root attestation rejected")
 
-    period_id = str(public["period_id"])
-    month_id = str(public["month_id"])
-    if period_id in accepted_periods:
-        raise HTTPException(status_code=409, detail="period already accepted")
-    accepted_periods[period_id] = public
-
-    month = monthly_ledger.setdefault(
-        month_id,
-        {"periods": 0, "total_fee_cents": 0, "total_distance_m": 0, "fallback_intervals": 0},
-    )
-    month["periods"] += 1
-    month["total_fee_cents"] += int(public["total_fee_cents"])
-    month["fallback_intervals"] += int(public.get("fallback_intervals", 0))
-    if "total_distance_m" in public:
-        month["total_distance_m"] += int(public["total_distance_m"])
+    period_id, month_id = _accept_period(device_id, public)
 
     return {
         "ok": True,
@@ -435,12 +454,93 @@ def submit_period_proof_only(req: ProofOnlyPeriodSubmission) -> dict[str, Any]:
     }
 
 
+class MonthlyOdometerAttestation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: str
+    month_id: str
+    odometer_start_m: int
+    odometer_end_m: int
+    signature: str
+
+
+@app.post("/settlement/month/attest")
+def attest_month_odometer(req: MonthlyOdometerAttestation) -> dict[str, Any]:
+    """Record receiver-signed month-boundary odometer readings for reconciliation."""
+
+    if req.device_id not in device_registry:
+        raise HTTPException(status_code=400, detail=f"device {req.device_id!r} not registered")
+    attestation = req.model_dump()
+    if not verify_monthly_odometer_attestation(
+        attestation=attestation, public_key_bytes=device_registry[req.device_id]
+    ):
+        raise HTTPException(status_code=400, detail="monthly odometer attestation rejected")
+    key = (req.device_id, req.month_id)
+    existing = monthly_odometer_attestations.get(key)
+    if existing is not None and (
+        int(existing["odometer_start_m"]) != int(req.odometer_start_m)
+        or int(existing["odometer_end_m"]) != int(req.odometer_end_m)
+    ):
+        raise HTTPException(status_code=409, detail="conflicting odometer attestation already recorded")
+    monthly_odometer_attestations[key] = attestation
+    return {"ok": True, "device_id": req.device_id, "month_id": req.month_id}
+
+
+@app.get("/settlement/month/{month_id}/reconcile")
+def reconcile_month(month_id: str, device_id: str) -> dict[str, Any]:
+    """Monthly completeness reconciliation: bill unaccounted kilometres at the fallback rate.
+
+    unaccounted_m = attested odometer delta - sum of accepted period distances.
+    Disjoint period time windows and the in-circuit odometer binding make the
+    period sum a lower bound on real driving, so unaccounted_m >= 0 for honest
+    devices; a negative value indicates inconsistent submissions and is flagged.
+    """
+
+    attestation = monthly_odometer_attestations.get((device_id, month_id))
+    if attestation is None:
+        raise HTTPException(status_code=400, detail="no odometer attestation for this device and month")
+    month = monthly_ledger.get((device_id, month_id), {
+        "periods": 0, "total_fee_cents": 0, "total_distance_m": 0, "fallback_intervals": 0,
+    })
+    attested_delta_m = int(attestation["odometer_end_m"]) - int(attestation["odometer_start_m"])
+    covered_m = int(month["total_distance_m"])
+    unaccounted_m = attested_delta_m - covered_m
+    consistent = unaccounted_m >= 0
+    unaccounted_fee = max(0, unaccounted_m) * RECONCILIATION_RATE_CENTS_PER_M
+    return {
+        "ok": consistent,
+        "device_id": device_id,
+        "month_id": month_id,
+        "attested_odometer_delta_m": attested_delta_m,
+        "covered_distance_m": covered_m,
+        "unaccounted_distance_m": unaccounted_m,
+        "reconciliation_rate_cents_per_m": RECONCILIATION_RATE_CENTS_PER_M,
+        "unaccounted_fee_cents": unaccounted_fee,
+        "period_fee_cents": int(month["total_fee_cents"]),
+        "total_month_bill_cents": int(month["total_fee_cents"]) + unaccounted_fee,
+        "periods": int(month["periods"]),
+        **({} if consistent else {"error": "covered distance exceeds attested odometer delta"}),
+    }
+
+
 @app.get("/settlement/month/{month_id}")
-def month_status(month_id: str) -> dict[str, Any]:
-    month = monthly_ledger.get(month_id)
-    if not month:
+def month_status(month_id: str, device_id: str | None = None) -> dict[str, Any]:
+    if device_id is not None:
+        month = monthly_ledger.get((device_id, month_id))
+        if not month:
+            return {"ok": False, "error": "unknown month", "month_id": month_id, "device_id": device_id}
+        return {"ok": True, "month_id": month_id, "device_id": device_id, **month}
+    # Aggregate across devices (operator view / backwards compatibility).
+    totals = {"periods": 0, "total_fee_cents": 0, "total_distance_m": 0, "fallback_intervals": 0}
+    found = False
+    for (dev, mid), month in monthly_ledger.items():
+        if mid == month_id:
+            found = True
+            for k in totals:
+                totals[k] += int(month[k])
+    if not found:
         return {"ok": False, "error": "unknown month", "month_id": month_id}
-    return {"ok": True, "month_id": month_id, **month}
+    return {"ok": True, "month_id": month_id, **totals}
 
 
 @app.post("/settlement/reset")
@@ -448,4 +548,6 @@ def reset() -> dict[str, Any]:
     accepted_periods.clear()
     monthly_ledger.clear()
     device_registry.clear()
+    device_period_windows.clear()
+    monthly_odometer_attestations.clear()
     return {"ok": True}

@@ -20,6 +20,7 @@ SNARK_FIELD = 218882428718392752222464057452572750885483644004160343436982041865
 SETTLEMENT_FIX_DOMAIN = "tsip_settlement_receiver_fix_v1"
 SETTLEMENT_PUBLIC_DOMAIN = "tsip_settlement_public_v1"
 SETTLEMENT_ROOT_ATTESTATION_DOMAIN = "tsip_settlement_receiver_root_attestation_v1"
+SETTLEMENT_ODOMETER_ATTESTATION_DOMAIN = "tsip_settlement_monthly_odometer_attestation_v1"
 SETTLEMENT_MAX_DT_SEC = 600
 SETTLEMENT_PERIOD_MAX_SEC = 14_400
 SETTLEMENT_CAP_POLICY_SQ = 3_000_000_000
@@ -132,6 +133,68 @@ def sign_receiver_root_attestation(
     private_key = Ed25519PrivateKey.from_private_bytes(private_key_bytes)
     sig = private_key.sign(canonical_json(payload).encode("utf-8"))
     return {"device_id": str(device_id), "signature": _b64url(sig)}
+
+
+def monthly_odometer_attestation_payload(
+    *,
+    device_id: str,
+    month_id: str,
+    odometer_start_m: int,
+    odometer_end_m: int,
+) -> dict[str, Any]:
+    return {
+        "domain_sep": SETTLEMENT_ODOMETER_ATTESTATION_DOMAIN,
+        "device_id": str(device_id),
+        "month_id": str(month_id),
+        "odometer_start_m": int(odometer_start_m),
+        "odometer_end_m": int(odometer_end_m),
+    }
+
+
+def sign_monthly_odometer_attestation(
+    *,
+    device_id: str,
+    month_id: str,
+    odometer_start_m: int,
+    odometer_end_m: int,
+    private_key_bytes: bytes,
+) -> dict[str, Any]:
+    """Receiver-signed month-boundary odometer readings.
+
+    This is the completeness anchor for monthly reconciliation: the charger
+    bills any kilometre not covered by an accepted period at the fallback
+    rate, so withholding whole periods can never reduce the bill (the
+    monthly extension of the E2 monotone-degradation rule).
+    """
+
+    payload = monthly_odometer_attestation_payload(
+        device_id=device_id,
+        month_id=month_id,
+        odometer_start_m=odometer_start_m,
+        odometer_end_m=odometer_end_m,
+    )
+    private_key = Ed25519PrivateKey.from_private_bytes(private_key_bytes)
+    sig = private_key.sign(canonical_json(payload).encode("utf-8"))
+    wire = {k: v for k, v in payload.items() if k != "domain_sep"}
+    return {**wire, "signature": _b64url(sig)}
+
+
+def verify_monthly_odometer_attestation(*, attestation: dict[str, Any], public_key_bytes: bytes) -> bool:
+    try:
+        payload = monthly_odometer_attestation_payload(
+            device_id=str(attestation["device_id"]),
+            month_id=str(attestation["month_id"]),
+            odometer_start_m=int(attestation["odometer_start_m"]),
+            odometer_end_m=int(attestation["odometer_end_m"]),
+        )
+        if payload["odometer_end_m"] < payload["odometer_start_m"]:
+            return False
+        sig = _b64url_decode(str(attestation["signature"]))
+        public_key = Ed25519PublicKey.from_public_bytes(public_key_bytes)
+        public_key.verify(sig, canonical_json(payload).encode("utf-8"))
+        return True
+    except (InvalidSignature, Exception):
+        return False
 
 
 def verify_receiver_root_attestation(

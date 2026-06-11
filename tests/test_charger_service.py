@@ -407,3 +407,172 @@ def test_charger_rejects_wrong_device_attestation_commitment():
     )
     assert resp.status_code == 400
     assert "device_attestation_commitment" in resp.json()["detail"]
+
+
+# --- GAP-1/2/3 regressions: monthly reconciliation, per-device keys, overlap ---
+
+_TEST_SEED_2 = hashlib.sha256(b"tsip-test-device-key-v2").digest()
+_TEST_PUBLIC_KEY_BYTES_2 = Ed25519PrivateKey.from_private_bytes(_TEST_SEED_2).public_key().public_bytes_raw()
+_TEST_DAC_2 = make_device_attestation_commitment(_TEST_PUBLIC_KEY_BYTES_2)
+
+
+def _fix_for(device_id: str, period_id: str, seed: bytes, seq: int, ts: int, odo: int, x: int, y: int) -> ReceiverFix:
+    if ts < _MAY_2026_START:
+        ts += _MAY_2026_START
+    return sign_receiver_fix(
+        ReceiverFix(
+            device_id=device_id,
+            period_id=period_id,
+            fix_seq=seq,
+            auth_gnss_time=ts,
+            cell_x=x,
+            cell_y=y,
+            osnma_status="authenticated",
+            odometer_reading_m=odo,
+            nonce=f"nonce-{seq}",
+        ),
+        seed,
+    )
+
+
+def _submit(client: TestClient, fixes: list[ReceiverFix], public: dict) -> object:
+    tariff = _tariff()
+    return client.post(
+        "/settlement/period",
+        json={
+            "fixes": [f.to_dict() for f in fixes],
+            "tariff": {
+                "tariff_version": tariff.tariff_version,
+                "grid_w": tariff.grid_w,
+                "cell_zones": tariff.cell_zones,
+                "zone_rates_cents_per_m": tariff.zone_rates_cents_per_m,
+            },
+            "public_statement": public,
+        },
+    )
+
+
+def _statement(fixes: list[ReceiverFix], period_id: str, dac: str) -> dict:
+    return build_period_public_statement(
+        fixes=fixes,
+        tariff=_tariff(),
+        period_id=period_id,
+        month_id="2026-05",
+        cadence_sec=60,
+        tier_vmax_mps=33,
+        device_attestation_commitment=dac,
+    )
+
+
+def test_monthly_reconciliation_bills_withheld_kilometres():
+    from common.settlement import sign_monthly_odometer_attestation
+
+    client = TestClient(charger_app.app)
+    client.post("/settlement/reset")
+    _register_device(client)
+
+    fixes = [_fix(0, 100, 1_000, 0, 0), _fix(1, 110, 1_070, 1, 0)]
+    assert _submit(client, fixes, _statement(fixes, "2026-05-p01", _TEST_DAC)).status_code == 200
+
+    # The receiver attests 2000m driven this month; only 70m were settled.
+    att = sign_monthly_odometer_attestation(
+        device_id="dev-1", month_id="2026-05",
+        odometer_start_m=0, odometer_end_m=2_000,
+        private_key_bytes=_TEST_SEED,
+    )
+    assert client.post("/settlement/month/attest", json=att).status_code == 200
+
+    rec = client.get("/settlement/month/2026-05/reconcile", params={"device_id": "dev-1"}).json()
+    assert rec["ok"] is True
+    assert rec["covered_distance_m"] == 70
+    assert rec["unaccounted_distance_m"] == 1_930
+    # Withheld kilometres are billed at the reconciliation rate (>= max zone rate),
+    # so withholding can never beat exact settlement: 1930 * 5 = 9650.
+    assert rec["unaccounted_fee_cents"] == 9_650
+    assert rec["total_month_bill_cents"] == 70 + 9_650
+
+
+def test_overlapping_period_window_rejected():
+    client = TestClient(charger_app.app)
+    client.post("/settlement/reset")
+    _register_device(client)
+
+    fixes1 = [_fix(0, 100, 1_000, 0, 0), _fix(1, 110, 1_070, 1, 0)]
+    assert _submit(client, fixes1, _statement(fixes1, "2026-05-p01", _TEST_DAC)).status_code == 200
+
+    fixes2 = [
+        _fix_for("dev-1", "2026-05-p02", _TEST_SEED, 0, 105, 2_000, 0, 0),
+        _fix_for("dev-1", "2026-05-p02", _TEST_SEED, 1, 115, 2_070, 1, 0),
+    ]
+    resp = _submit(client, fixes2, _statement(fixes2, "2026-05-p02", _TEST_DAC))
+    assert resp.status_code == 409
+    assert "overlaps" in resp.json()["detail"]
+
+    # A disjoint window for the same device is fine.
+    fixes3 = [
+        _fix_for("dev-1", "2026-05-p03", _TEST_SEED, 0, 200, 3_000, 0, 0),
+        _fix_for("dev-1", "2026-05-p03", _TEST_SEED, 1, 210, 3_070, 1, 0),
+    ]
+    assert _submit(client, fixes3, _statement(fixes3, "2026-05-p03", _TEST_DAC)).status_code == 200
+
+
+def test_same_period_id_on_different_devices_is_not_a_collision():
+    client = TestClient(charger_app.app)
+    client.post("/settlement/reset")
+    _register_device(client)
+    assert client.post(
+        "/settlement/devices/register",
+        json={"device_id": "dev-2", "public_key_hex": _TEST_PUBLIC_KEY_BYTES_2.hex()},
+    ).status_code == 200
+
+    fixes1 = [_fix(0, 100, 1_000, 0, 0), _fix(1, 110, 1_070, 1, 0)]
+    assert _submit(client, fixes1, _statement(fixes1, "2026-05-p01", _TEST_DAC)).status_code == 200
+
+    # Device B reuses the same bare period_id; with (device_id, period_id)
+    # keying this must not be blocked (no cross-device DoS).
+    fixes2 = [
+        _fix_for("dev-2", "2026-05-p01", _TEST_SEED_2, 0, 100, 5_000, 0, 0),
+        _fix_for("dev-2", "2026-05-p01", _TEST_SEED_2, 1, 110, 5_070, 1, 0),
+    ]
+    assert _submit(client, fixes2, _statement(fixes2, "2026-05-p01", _TEST_DAC_2)).status_code == 200
+
+    # Per-device ledgers stay separate; the aggregate view sums them.
+    dev1 = client.get("/settlement/month/2026-05", params={"device_id": "dev-1"}).json()
+    dev2 = client.get("/settlement/month/2026-05", params={"device_id": "dev-2"}).json()
+    both = client.get("/settlement/month/2026-05").json()
+    assert dev1["periods"] == dev2["periods"] == 1
+    assert both["periods"] == 2
+
+
+def test_bad_or_conflicting_odometer_attestation_rejected():
+    from common.settlement import sign_monthly_odometer_attestation
+
+    client = TestClient(charger_app.app)
+    client.post("/settlement/reset")
+    _register_device(client)
+
+    # Signed by the wrong key.
+    bad = sign_monthly_odometer_attestation(
+        device_id="dev-1", month_id="2026-05",
+        odometer_start_m=0, odometer_end_m=100,
+        private_key_bytes=_TEST_SEED_2,
+    )
+    assert client.post("/settlement/month/attest", json=bad).status_code == 400
+
+    # Reconciliation requires an attestation.
+    assert client.get("/settlement/month/2026-05/reconcile", params={"device_id": "dev-1"}).status_code == 400
+
+    good = sign_monthly_odometer_attestation(
+        device_id="dev-1", month_id="2026-05",
+        odometer_start_m=0, odometer_end_m=100,
+        private_key_bytes=_TEST_SEED,
+    )
+    assert client.post("/settlement/month/attest", json=good).status_code == 200
+    # Conflicting re-attestation is rejected; identical replay is idempotent.
+    conflicting = sign_monthly_odometer_attestation(
+        device_id="dev-1", month_id="2026-05",
+        odometer_start_m=0, odometer_end_m=999,
+        private_key_bytes=_TEST_SEED,
+    )
+    assert client.post("/settlement/month/attest", json=conflicting).status_code == 409
+    assert client.post("/settlement/month/attest", json=good).status_code == 200
