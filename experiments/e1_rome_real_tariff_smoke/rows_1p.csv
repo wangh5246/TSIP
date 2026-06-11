@@ -1,0 +1,5 @@
+branch,dataset,distance_bucket_m,neighbor_radius_cells,len_claimed_fixes,savings_ratio,skip_reason
+no_zone_binding,rome:60:103-0-s96:p0,25,2,25,0.013451363157970617,
+no_continuity,rome:60:103-0-s96:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,rome:60:103-0-s96:p0,25,2,25,0.07760845431870936,
+no_cadence,rome:60:103-0-s96:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints

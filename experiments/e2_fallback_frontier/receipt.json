@@ -1,0 +1,72 @@
+{
+  "alphas": [
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9,
+    1.0,
+    1.1,
+    1.2
+  ],
+  "controlled_durations_sec": [
+    60,
+    120,
+    300
+  ],
+  "datasets": {
+    "geolife": 14,
+    "rome": 162
+  },
+  "epsilon_targets": [
+    0.0,
+    0.01,
+    0.05
+  ],
+  "fallback_rates_cents_per_m": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14
+  ],
+  "inputs": [
+    "/Users/wanghao/Desktop/risefl_mvp/data/e1_mechanism_ablation/geolife/geolife_medium_identity.jsonl",
+    "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/periods_60s.jsonl"
+  ],
+  "outputs": {
+    "alpha_frontier_by_dataset": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/alpha_frontier_by_dataset.csv",
+    "alpha_pareto_figure": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/fig_e2_pareto_alpha.png",
+    "alpha_period_rows": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/alpha_period_rows.csv",
+    "break_even_figure": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/fig_e2_break_even_cdf.png",
+    "break_even_intervals": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/break_even_intervals.csv",
+    "controlled_frontier_by_dataset": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/controlled_frontier_by_dataset.csv",
+    "controlled_outage_rows": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/controlled_outage_rows.csv",
+    "figure": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/fig_e2_fallback_frontier.png",
+    "forensic_edges": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/forensic_edges.csv",
+    "frontier_by_dataset": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/frontier_by_dataset.csv",
+    "frontier_combined": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/frontier_combined.csv",
+    "frontier_moving_by_dataset": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/frontier_moving_by_dataset.csv",
+    "frontier_moving_combined": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/frontier_moving_combined.csv",
+    "moving_figure": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/fig_e2_fallback_frontier_moving.png",
+    "period_rows": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/period_rows.csv",
+    "summary_by_dataset": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/summary_by_dataset.csv",
+    "summary_moving_by_dataset": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/summary_moving_by_dataset.csv",
+    "tab_e2_incentive_thresholds": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/tab_e2_incentive_thresholds.csv",
+    "tab_e2_outage_diagnostic": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/tab_e2_outage_diagnostic.csv"
+  },
+  "periods_loaded": 176
+}

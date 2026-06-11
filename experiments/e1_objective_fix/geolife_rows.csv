@@ -1,0 +1,57 @@
+branch,dataset,distance_bucket_m,neighbor_radius_cells,len_claimed_fixes,savings_ratio,skip_reason
+no_zone_binding,geolife:010:010-20080921224934-0:p0,25,2,25,0.25979005020538565,
+no_continuity,geolife:010:010-20080921224934-0:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:010:010-20080921224934-0:p0,25,2,25,0.09438612505705157,
+no_cadence,geolife:010:010-20080921224934-0:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,geolife:010:010-20080922234926-0:p0,25,2,25,0.26100687349061863,
+no_continuity,geolife:010:010-20080922234926-0:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:010:010-20080922234926-0:p0,25,2,25,0.09334943340144901,
+no_cadence,geolife:010:010-20080922234926-0:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,geolife:010:010-20080923231456-1:p0,25,2,25,0.0,
+no_continuity,geolife:010:010-20080923231456-1:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:010:010-20080923231456-1:p0,25,2,25,0.039889958734525444,
+no_cadence,geolife:010:010-20080923231456-1:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,geolife:010:010-20080923231456-1:p1,25,2,25,0.3574051407588739,
+no_continuity,geolife:010:010-20080923231456-1:p1,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:010:010-20080923231456-1:p1,25,2,25,0.09987760097919217,
+no_cadence,geolife:010:010-20080923231456-1:p1,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,geolife:010:010-20080924231334-1:p0,25,2,25,0.31126365054602184,
+no_continuity,geolife:010:010-20080924231334-1:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:010:010-20080924231334-1:p0,25,2,25,0.07251170046801872,
+no_cadence,geolife:010:010-20080924231334-1:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,geolife:010:010-20080925233430-0:p0,25,2,25,0.28310740354535974,
+no_continuity,geolife:010:010-20080925233430-0:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:010:010-20080925233430-0:p0,25,2,25,0.1083594021550226,
+no_cadence,geolife:010:010-20080925233430-0:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,geolife:010:010-20081005225112-1:p0,25,2,25,0.17859108420473307,
+no_continuity,geolife:010:010-20081005225112-1:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:010:010-20081005225112-1:p0,25,2,25,0.14171711612548157,
+no_cadence,geolife:010:010-20081005225112-1:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,geolife:010:010-20081005225112-1:p1,25,2,25,0.4,
+no_continuity,geolife:010:010-20081005225112-1:p1,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:010:010-20081005225112-1:p1,25,2,25,0.04490177736202058,
+no_cadence,geolife:010:010-20081005225112-1:p1,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,geolife:010:010-20081006234930-0:p0,25,2,25,0.2817079155857814,
+no_continuity,geolife:010:010-20081006234930-0:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:010:010-20081006234930-0:p0,25,2,25,0.08252120872186777,
+no_cadence,geolife:010:010-20081006234930-0:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,geolife:010:010-20081008231209-1:p0,25,2,25,0.28629668595476065,
+no_continuity,geolife:010:010-20081008231209-1:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:010:010-20081008231209-1:p0,25,2,25,0.07298790110468174,
+no_cadence,geolife:010:010-20081008231209-1:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,geolife:010:010-20081009224923-1:p0,25,2,25,0.2712871287128713,
+no_continuity,geolife:010:010-20081009224923-1:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:010:010-20081009224923-1:p0,25,2,25,0.08737623762376237,
+no_cadence,geolife:010:010-20081009224923-1:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,geolife:010:010-20081012224836-1:p0,25,2,25,0.26238914971309335,
+no_continuity,geolife:010:010-20081012224836-1:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:010:010-20081012224836-1:p0,25,2,25,0.1057207442183968,
+no_cadence,geolife:010:010-20081012224836-1:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,geolife:153:153-20080822093429-0:p0,25,2,25,0.4,
+no_continuity,geolife:153:153-20080822093429-0:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:153:153-20080822093429-0:p0,25,2,25,0.05045045045045045,
+no_cadence,geolife:153:153-20080822093429-0:p0,25,2,24,0.0,
+no_zone_binding,geolife:163:163-20070617061223-0:p0,25,2,25,0.2211792314461719,
+no_continuity,geolife:163:163-20070617061223-0:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,geolife:163:163-20070617061223-0:p0,25,2,25,0.07709983377334506,
+no_cadence,geolife:163:163-20070617061223-0:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints

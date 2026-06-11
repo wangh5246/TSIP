@@ -1,0 +1,10 @@
+dataset,attack_branch,median_savings_ratio,p95_savings_ratio,median_period_fee_cents,revenue_leakage_per_10k_periods_cents_p95,tsip_detection_outcome,spotcheck_detection_outcome
+rome,no_cadence,0.0,0.001102718200363897,172327.0,1900281.193141093,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv
+rome,no_continuity_osnma_lifted,0.025464673777387363,0.11661779616891836,172327.0,200963949.60401195,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv
+rome,no_zone_binding,0.0020081709707477757,0.021166536987406705,172327.0,36475658.19428835,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv
+porto,no_cadence,0.0,0.0,7115.0,0.0,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv
+porto,no_continuity_osnma_lifted,0.050324453667850266,0.12937898089171976,7115.0,9205314.490445862,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv
+porto,no_zone_binding,0.0,0.0,7115.0,0.0,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv
+tdrive,no_cadence,0.0,0.0,254790,0.0,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv
+tdrive,no_continuity_osnma_lifted,0.005769457200047097,0.005769457200047097,254790,14700000.0,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv
+tdrive,no_zone_binding,0.0034145767102319556,0.0034145767102319556,254790,8700000.0,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv

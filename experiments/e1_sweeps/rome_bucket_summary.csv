@@ -1,0 +1,9 @@
+dataset,branch,distance_bucket_m,neighbor_radius_cells,n,skip_count,min_savings,mean_savings,median_savings,p95_savings
+rome,no_continuity,10,2,162,0,0.0,0.0,0.0,0.0
+rome,no_continuity,100,2,162,0,0.0,0.0,0.0,0.0
+rome,no_continuity,25,2,162,0,0.0,0.0,0.0,0.0
+rome,no_continuity,50,2,162,0,0.0,0.0,0.0,0.0
+rome,no_continuity_osnma_lifted,10,2,100,62,0.7296416938110749,0.9271357439255525,0.9515487410045481,0.9872351694915255
+rome,no_continuity_osnma_lifted,100,2,162,0,0.7386898298950416,0.9517452340846009,0.9736824237562676,1.0
+rome,no_continuity_osnma_lifted,25,2,134,28,0.744842562432139,0.9414956466446929,0.9647407804536434,0.9927225092788007
+rome,no_continuity_osnma_lifted,50,2,152,10,0.744842562432139,0.9478752529015546,0.9693427220160917,0.9951536299311815

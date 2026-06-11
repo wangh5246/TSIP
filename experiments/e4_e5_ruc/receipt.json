@@ -1,0 +1,59 @@
+{
+  "command": "script/run_e4_e5_ruc_experiments.py --max-privacy-periods 12 --graph-max-steps 8 --graph-max-states 50000",
+  "e1_rows_loaded": {
+    "geolife": 4,
+    "porto": 4,
+    "rome": 4,
+    "tdrive": 4
+  },
+  "e1_summaries": {
+    "geolife": "experiments/e1_objective_fix/geolife_summary.csv",
+    "porto": "experiments/e1_objective_fix/porto_summary.csv",
+    "rome": "experiments/e1_rome_real_tariff_ratio_fix/summary_162.csv",
+    "tdrive": "experiments/e1_objective_fix/tdrive_summary.csv"
+  },
+  "environment": {
+    "packages": {
+      "geopandas": false,
+      "networkx": false,
+      "numpy": true,
+      "osmnx": false,
+      "pandas": false,
+      "pyrosm": false,
+      "shapely": false
+    },
+    "rapidsnark": null,
+    "rapidsnark_prover": null
+  },
+  "inputs": {
+    "porto": {
+      "n_periods": 10,
+      "periods": "data/e1_mechanism_ablation/porto/periods_60s.jsonl",
+      "tariff": "data/e1_mechanism_ablation/porto/tariff_block.json"
+    },
+    "rome": {
+      "n_periods": 162,
+      "periods": "experiments/e1_rome_real_tariff_ratio_fix/periods_60s.jsonl",
+      "tariff": "experiments/e1_rome_real_tariff_ratio_fix/tariff_block.json"
+    },
+    "tdrive": {
+      "n_periods": 1,
+      "periods": "data/e1_mechanism_ablation/tdrive/periods_300s.jsonl",
+      "tariff": "data/e1_mechanism_ablation/tdrive/tariff_block.json"
+    }
+  },
+  "method_notes": [
+    "E4 uses observed_path_proxy_generous as the primary reconstructed spot-check road universe because pyrosm/osmnx are unavailable locally.",
+    "tariff_grid_proxy_context is reported as a context sensitivity, not the main generous baseline.",
+    "E5 reports both empirical anonymity among observed periods and graph-proxy resource-constrained path counts over observed tariff-grid transitions."
+  ],
+  "python": "3.12.13 (main, Mar  3 2026, 15:35:03) [Clang 21.1.4 ]",
+  "settings": {
+    "distance_bucket_m": 100,
+    "fee_bucket_cents": 5000,
+    "graph_max_states": 50000,
+    "graph_max_steps": 8,
+    "max_privacy_periods": 12,
+    "p_detect_target": 0.95
+  }
+}

@@ -1,0 +1,41 @@
+branch,dataset,distance_bucket_m,neighbor_radius_cells,len_claimed_fixes,savings_ratio,skip_reason
+no_zone_binding,porto:60:20000038-2-s7:p0,25,2,25,0.0,
+no_continuity,porto:60:20000038-2-s7:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,porto:60:20000038-2-s7:p0,25,2,25,0.049041462327240305,
+no_cadence,porto:60:20000038-2-s7:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,porto:60:20000100-6-s13:p0,25,2,25,0.0,
+no_continuity,porto:60:20000100-6-s13:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,porto:60:20000100-6-s13:p0,25,2,25,0.04490177736202058,
+no_cadence,porto:60:20000100-6-s13:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,porto:60:20000100-6-s13:p1,25,2,25,0.0,
+no_continuity,porto:60:20000100-6-s13:p1,25,2,25,0.0,
+no_continuity_osnma_lifted,porto:60:20000100-6-s13:p1,25,2,25,0.06142506142506143,
+no_cadence,porto:60:20000100-6-s13:p1,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,porto:60:20000257-2-s24:p0,25,2,25,0.0,
+no_continuity,porto:60:20000257-2-s24:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,porto:60:20000257-2-s24:p0,25,2,25,0.03712995484194681,
+no_cadence,porto:60:20000257-2-s24:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,porto:60:20000305-0-s17:p0,25,2,25,0.0,
+no_continuity,porto:60:20000305-0-s17:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,porto:60:20000305-0-s17:p0,25,2,25,0.05588822355289421,
+no_cadence,porto:60:20000305-0-s17:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,porto:60:20000305-0-s17:p1,25,2,25,0.0,
+no_continuity,porto:60:20000305-0-s17:p1,25,2,25,0.0,
+no_continuity_osnma_lifted,porto:60:20000305-0-s17:p1,25,2,25,0.12937898089171976,
+no_cadence,porto:60:20000305-0-s17:p1,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,porto:60:20000338-1-s40:p0,25,2,25,0.0,
+no_continuity,porto:60:20000338-1-s40:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,porto:60:20000338-1-s40:p0,25,2,25,0.047475961538461536,
+no_cadence,porto:60:20000338-1-s40:p0,25,2,23,0.0,
+no_zone_binding,porto:60:20000455-2-s144:p0,25,2,25,0.0,
+no_continuity,porto:60:20000455-2-s144:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,porto:60:20000455-2-s144:p0,25,2,25,0.045408678102926335,
+no_cadence,porto:60:20000455-2-s144:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,porto:60:20000496-3-s20:p0,25,2,25,0.0,
+no_continuity,porto:60:20000496-3-s20:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,porto:60:20000496-3-s20:p0,25,2,25,0.05343511450381679,
+no_cadence,porto:60:20000496-3-s20:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints
+no_zone_binding,porto:60:20000541-4-s20:p0,25,2,25,0.0,
+no_continuity,porto:60:20000541-4-s20:p0,25,2,25,0.0,
+no_continuity_osnma_lifted,porto:60:20000541-4-s20:p0,25,2,25,0.051607445008460234,
+no_cadence,porto:60:20000541-4-s20:p0,25,2,0,0.0,no feasible adversarial claim under enabled constraints

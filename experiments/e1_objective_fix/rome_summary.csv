@@ -1,0 +1,5 @@
+dataset,branch,distance_bucket_m,neighbor_radius_cells,n,skip_count,min_savings,mean_savings,median_savings,p95_savings
+rome,no_cadence,25,2,13,149,0.0,0.00014296836210237474,0.0,0.001322970067802216
+rome,no_continuity,25,2,162,0,0.0,0.0,0.0,0.0
+rome,no_continuity_osnma_lifted,25,2,132,30,0.0005356186395286556,0.039342744727423155,0.025779182053540628,0.12025316455696203
+rome,no_zone_binding,25,2,162,0,0.0,0.0,0.0,0.0
