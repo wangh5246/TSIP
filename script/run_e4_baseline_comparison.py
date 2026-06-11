@@ -77,6 +77,29 @@ def load_universes() -> dict[str, dict[str, int]]:
     return {"universes": out, "segments_per_driver": spd}
 
 
+def tee_billing_microbench_ms(runs: int = 50) -> float:
+    """Plain-CPU proxy for the in-enclave billing workload of Baseline T.
+
+    Times fee_for_period on the deterministic k6 demo period; the TEE design
+    runs the same tariff arithmetic inside the enclave, so this is a generous
+    (enclave-overhead-free) lower bound for its per-period compute.
+    """
+
+    import time
+
+    from common.eval_harness import HarnessParams
+    from common.settlement import fee_for_period
+    from script.prove_settlement_period_v5 import CADENCE_SEC, MAX_DT_SEC, TIER_VMAX_MPS, build_fixes, build_tariff
+
+    tariff = build_tariff()
+    fixes = build_fixes("2026-05-tee-bench")
+    _ = HarnessParams  # imported for parity with the prover script's parameters
+    t0 = time.perf_counter()
+    for _i in range(int(runs)):
+        fee_for_period(fixes, tariff, cadence_sec=CADENCE_SEC, tier_vmax_mps=TIER_VMAX_MPS, max_dt_sec=MAX_DT_SEC)
+    return (time.perf_counter() - t0) * 1000.0 / int(runs)
+
+
 def tsip_measured_costs() -> dict[str, float | int]:
     e6 = json.load(open(E6_RECEIPT))
     # Representative public statement byte size from the deterministic k6 demo.
@@ -217,6 +240,8 @@ def build_head_to_head(
         return f"{cams} @ omit {omit:.2f}"
 
     spotcheck_units = "; ".join(fmt_cams(omit) for omit in OMIT_FRACTIONS)
+    tee_ms = tee_billing_microbench_ms()
+    intervals_per_period = 24  # k6 profile; structural ZKLP predicate count
     common = {
         "comparison_anchor": "rome drivable graph, target P=0.95",
         "rome_drivable_segments": rome_segments,
@@ -243,13 +268,19 @@ def build_head_to_head(
             "baseline": "Baseline R: spot-check lineage (VPriv/PrETP/Milo), reconstructed",
             "enforcement": "roadside observation / random audits",
             "roadside_units_rome": spotcheck_units,
-            "detection_proof_violating": "probabilistic; P=0.95 needs the camera count at left",
+            "detection_proof_violating": (
+                "probabilistic; closed-form at left, empirical simulator in "
+                "baseline_r_detection_empirical.csv (rome rational omit 0.20 needs full observed universe)"
+            ),
             "detection_proof_consistent_relay": "not addressed by roadside observation",
             "detection_latency": "next audit/observation cycle",
             "client_cost_per_period": "commitments only (modeled as zero; generous)",
             "server_cost_per_period": "audit sampling (modeled as zero; generous)",
             "comm_bytes_per_period": "modeled as zero (generous)",
-            "route_privacy": "strong except segments revealed by observation/audits",
+            "route_privacy": (
+                "empirical: honest route visibility 1.0 at the equal-detection work point "
+                "(e5_leakage_spectrum.csv) — proof-equivalent detection forfeits route privacy"
+            ),
             "policy_in_tcb": "no",
             "sensing_trust": "none beyond OBU commitments",
             "compromise_blast_radius": "undetected fraud scales with uncovered segments",
@@ -262,9 +293,12 @@ def build_head_to_head(
             "detection_proof_violating": "n/a (bill computed inside TCB)",
             "detection_proof_consistent_relay": "same GNSS exposure as TSIP, unaudited",
             "detection_latency": "n/a",
-            "client_cost_per_period": "negligible compute (generous)",
+            "client_cost_per_period": (
+                f"billing arithmetic {tee_ms:.1f} ms plain-CPU proxy for in-enclave compute "
+                "(measured, enclave overhead excluded; generous)"
+            ),
             "server_cost_per_period": "attestation check (modeled as zero; generous)",
-            "comm_bytes_per_period": "bill + attestation quote (~1KB, modeled)",
+            "comm_bytes_per_period": f"bill {tsip['statement_bytes']} B equivalent + ~600 B quote (modeled)",
             "route_privacy": "strong while TEE holds",
             "policy_in_tcb": "YES: tariff + billing code inside TCB",
             "sensing_trust": "TEE + GNSS + odometer",
@@ -278,9 +312,12 @@ def build_head_to_head(
             "detection_proof_violating": "predicate-level only",
             "detection_proof_consistent_relay": "out of scope",
             "detection_latency": "per predicate query",
-            "client_cost_per_period": "one proof per predicate, not per settlement",
-            "server_cost_per_period": "per-predicate verification",
-            "comm_bytes_per_period": "per-predicate proof bytes",
+            "client_cost_per_period": (
+                f"structural: >= {intervals_per_period} zone-membership predicate proofs per period "
+                "(one per interval) vs one settlement proof in TSIP-RUC"
+            ),
+            "server_cost_per_period": f">= {intervals_per_period} predicate verifications per period",
+            "comm_bytes_per_period": f">= {intervals_per_period} x per-predicate proof bytes",
             "route_privacy": "predicate-minimal",
             "policy_in_tcb": "no",
             "sensing_trust": "scheme-dependent",

@@ -1,0 +1,71 @@
+{
+ "datasets": {
+  "geolife": {
+   "camera_budgets": [
+    1,
+    2,
+    5,
+    10,
+    20,
+    50,
+    100,
+    200,
+    370
+   ],
+   "periods": 53,
+   "universe_segments": 370
+  },
+  "porto": {
+   "camera_budgets": [
+    1,
+    2,
+    5,
+    10,
+    20,
+    42
+   ],
+   "periods": 9,
+   "universe_segments": 42
+  },
+  "rome": {
+   "camera_budgets": [
+    1,
+    2,
+    5,
+    10,
+    20,
+    50,
+    100,
+    196
+   ],
+   "periods": 123,
+   "universe_segments": 196
+  },
+  "tdrive": {
+   "camera_budgets": [
+    1
+   ],
+   "periods": 1,
+   "universe_segments": 1
+  }
+ },
+ "draws_uniform_random": 100,
+ "edge_fee_source": "fee_for_interval_values (billing single source of truth)",
+ "experiment": "Baseline R reconstructed spot-check simulator",
+ "omit_policies": [
+  "rational_topfee",
+  "random"
+ ],
+ "outputs": [
+  "baseline_r_detection_empirical.csv",
+  "baseline_r_privacy_leakage.csv",
+  "e5_leakage_spectrum.csv",
+  "fig_baseline_r_empirical_detection.png"
+ ],
+ "placements": [
+  "uniform_random",
+  "traffic_weighted_generous"
+ ],
+ "seed": 20260611,
+ "universe": "observed undirected tariff-grid segments (Tier-1 discipline: no map matching)"
+}
