@@ -4679,23 +4679,6 @@ bash experiments/run_utility_sweep.sh
 - `nebula/ldp/eiffel` 在系统中通过 `REPORT_PROTOCOL` 做兼容化上报，适合工程对齐与趋势比较。
 - 为避免审稿质疑 baseline fidelity，Nebula/LDP/EIFFeL 的主结果仍建议来自 `experiments/run_baselines.py` 的 standalone 仿真，系统兼容结果放附录。
 
-最新实测摘要（GeoLife，run_id=`20260412_151427`，`ROUNDS=10`，`WARMUP_ROUNDS=1`）：
-
-| Mode | MRR @10% | Jaccard @10% | RMSE @10% | MRR @50% | Jaccard @50% | RMSE @50% |
-|---|---:|---:|---:|---:|---:|---:|
-| full | 1.00 | 0.4518 | 5.66 | 1.00 | 0.4518 | 5.66 |
-| commit_only | 0.00 | 0.4479 | 5.61 | 0.00 | 0.4364 | 5.61 |
-| no_integ | 0.00 | 0.4441 | 5.65 | 0.00 | 0.4556 | 5.65 |
-| risefl | 0.00 | 0.4364 | 5.66 | 0.00 | 0.4518 | 5.66 |
-| nebula | 0.00 | 0.4518 | 5.65 | 0.00 | 0.4441 | 5.66 |
-| ldp | 0.00 | 0.4441 | 5.65 | 0.00 | 0.4479 | 5.65 |
-| eiffel | 0.00 | 0.4479 | 5.66 | 0.00 | 0.4441 | 5.66 |
-
-完整 7 模式 × 5 恶意率（35 行）结果文件：
-
-- `server_file/utility_sweep/utility_sweep_20260412_151427_with_jaccard_summary.csv`
-- `server_file/utility_sweep/utility_sweep_20260412_151427_with_jaccard.csv`
-
 ---
 
 ## 总结

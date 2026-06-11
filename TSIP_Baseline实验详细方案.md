@@ -1,5 +1,8 @@
 # TSIP Baseline 实验详细方案
 
+> **Archived / Superseded for TSIP-RUC（2026-06-11）**  
+> 本文档适用于 RUC pivot 之前的隐私保护位置聚合版 TSIP。这里的 RiseFL / Nebula / EIFFeL / Pure LDP / No-Integrity / Commit-Only baseline 矩阵用于聚合质量、DP utility 和恶意数据污染评估，**不适用于 TSIP-RUC 道路使用计费论文**。TSIP-RUC 的 baseline 体系以 `TSIP_RUC_完整设计文档_2026-06-10.md` 为准：E1 约束经济消融、E2 fallback 机制、E4 reconstructed spot-check、E5 policy-protected GPS / 组合侧信息泄漏。
+
 **6 个 Baseline × 4 类实验 = 完整对比矩阵**
 
 ---
@@ -21,6 +24,41 @@
 │ EIFFeL     │ ✅ 必做   │ ✅ 必做  │ ○ 可选   │ ✅ 必做  │ ○ 可选  │
 └────────────┴──────────┴──────────┴──────────┴──────────┴──────────┘
 ```
+
+## 工程进展（2026-04-12）
+
+已支持在系统级 `run_utility_sweep.sh` 里直接跑 7 种模式：
+
+- `full`
+- `commit_only`
+- `no_integ`
+- `risefl`
+- `nebula`
+- `ldp`
+- `eiffel`
+
+### 一键系统级 Utility Sweep（GeoLife 示例）
+
+```bash
+cd ~/risefl_mvp
+
+ROUNDS=10 \
+WARMUP_ROUNDS=1 \
+MALICIOUS_RATES="0.0 0.1 0.2 0.3 0.5" \
+TSIP_MODES="full commit_only no_integ risefl nebula ldp eiffel" \
+CLIENT_TRAJ_SOURCE=geolife \
+GEO_TRAJ_PATH=/app/experiments/geolife_tsip_ready_50u.jsonl \
+BUILD_SERVICES=0 \
+CLIENT_ZK_STEP_ENABLE=0 \
+SHUFFLER_ZK_STEP_ENABLE=0 \
+bash experiments/run_utility_sweep.sh 2>&1 | tee experiments/utility_sweep_geolife_allmodes.log
+```
+
+### 重要说明（论文写作需保留）
+
+- `full/commit_only/no_integ/risefl` 为系统真实协议路径（同一服务流水线，可信）。
+- `nebula/ldp/eiffel` 在系统里走的是“兼容报告模式（REPORT_PROTOCOL）”，用于统一流水线压测与趋势对比。
+- 论文主表建议仍以 `experiments/run_baselines.py` 的 standalone 结果作为 Nebula/LDP/EIFFeL 的主结论；系统兼容模式结果放附录或工程补充，避免“baseline 实现不忠实”质疑。
 
 ---
 
@@ -645,15 +683,61 @@ EIFFeL 的通信开销是 O(n·d)（每个客户端发送每个维度的 share�
 
 | Scheme | A1 TPR | A2 TPR | A5 TPR | Jaccard | FRR | Comm (KB) |
 |---|---:|---:|---:|---:|---:|---:|
-| TSIP (Full) | 1.00 | 1.00 | 1.00 | ~1.00 | 0.0402 | 2 |
-| Commit-Only | 0.00 | 1.00 | 1.00 | ~1.00 | 0.0000 | 1 |
-| No-Integrity | 0.00 | 0.00 | 0.00 | ~1.00* | 0.0000 | 1 |
+| TSIP (Full) | 1.00 | 1.00 | 1.00 | 0.4479 | 0.0402 | 2 |
+| Commit-Only | 0.00 | 1.00 | 1.00 | 0.4178 | 0.0000 | 1 |
+| No-Integrity | 0.00 | 0.00 | 0.00 | 0.4479 | 0.0000 | 1 |
 | Nebula | 0.00 | 0.00 | 0.00 | 0.8000 | 0.0000 | 2.7 |
 | Pure LDP | 0.00 | 0.00 | 0.00 | 0.0019 | 0.0000 | 0.01 |
 | EIFFeL-style | 0.00 | 0.00 | 0.00 | 0.7552 | 0.0000 | 40.0 |
+
+### GeoLife Utility Sweep 服务器复测（run_id=20260412_151427）
+
+数据文件：
+- `server_file/utility_sweep/utility_sweep_20260412_151427.csv`
+- `server_file/utility_sweep/utility_sweep_20260412_151427_with_jaccard.csv`
+- `server_file/utility_sweep/utility_sweep_20260412_151427_with_jaccard_summary.csv`
+
+| Mode | Malicious Rate | MRR | Jaccard (mean ± std) | RMSE |
+|---|---:|---:|---:|---:|
+| full | 0.00 | 0.00 | 0.4403 ± 0.0192 | 5.67 |
+| full | 0.10 | 1.00 | 0.4518 ± 0.0154 | 5.66 |
+| full | 0.20 | 1.00 | 0.4403 ± 0.0192 | 5.65 |
+| full | 0.30 | 1.00 | 0.4518 ± 0.0154 | 5.65 |
+| full | 0.50 | 1.00 | 0.4518 ± 0.0154 | 5.66 |
+| commit_only | 0.00 | 0.00 | 0.4556 ± 0.0115 | 5.53 |
+| commit_only | 0.10 | 0.00 | 0.4479 ± 0.0176 | 5.61 |
+| commit_only | 0.20 | 0.00 | 0.4403 ± 0.0192 | 5.62 |
+| commit_only | 0.30 | 0.00 | 0.4518 ± 0.0154 | 5.61 |
+| commit_only | 0.50 | 0.00 | 0.4364 ± 0.0188 | 5.61 |
+| no_integ | 0.00 | 0.00 | 0.4441 ± 0.0188 | 5.66 |
+| no_integ | 0.10 | 0.00 | 0.4441 ± 0.0188 | 5.65 |
+| no_integ | 0.20 | 0.00 | 0.4518 ± 0.0154 | 5.66 |
+| no_integ | 0.30 | 0.00 | 0.4441 ± 0.0188 | 5.65 |
+| no_integ | 0.50 | 0.00 | 0.4556 ± 0.0115 | 5.65 |
+| risefl | 0.00 | 0.00 | 0.4441 ± 0.0188 | 5.65 |
+| risefl | 0.10 | 0.00 | 0.4364 ± 0.0188 | 5.66 |
+| risefl | 0.20 | 0.00 | 0.4556 ± 0.0115 | 5.65 |
+| risefl | 0.30 | 0.00 | 0.4479 ± 0.0176 | 5.66 |
+| risefl | 0.50 | 0.00 | 0.4518 ± 0.0154 | 5.66 |
+| nebula | 0.00 | 0.00 | 0.4479 ± 0.0176 | 5.65 |
+| nebula | 0.10 | 0.00 | 0.4518 ± 0.0154 | 5.65 |
+| nebula | 0.20 | 0.00 | 0.4518 ± 0.0154 | 5.65 |
+| nebula | 0.30 | 0.00 | 0.4479 ± 0.0176 | 5.65 |
+| nebula | 0.50 | 0.00 | 0.4441 ± 0.0188 | 5.66 |
+| ldp | 0.00 | 0.00 | 0.4518 ± 0.0154 | 5.66 |
+| ldp | 0.10 | 0.00 | 0.4441 ± 0.0188 | 5.65 |
+| ldp | 0.20 | 0.00 | 0.4326 ± 0.0176 | 5.66 |
+| ldp | 0.30 | 0.00 | 0.4364 ± 0.0188 | 5.65 |
+| ldp | 0.50 | 0.00 | 0.4479 ± 0.0176 | 5.65 |
+| eiffel | 0.00 | 0.00 | 0.4556 ± 0.0115 | 5.66 |
+| eiffel | 0.10 | 0.00 | 0.4479 ± 0.0176 | 5.66 |
+| eiffel | 0.20 | 0.00 | 0.4443 ± 0.0250 | 5.65 |
+| eiffel | 0.30 | 0.00 | 0.4520 ± 0.0225 | 5.65 |
+| eiffel | 0.50 | 0.00 | 0.4441 ± 0.0188 | 5.66 |
 
 ### 直接可用结论
 
 - TSIP (Full) 在 A1 上达到 `100%` 恶意拦截，Commit-Only 和 No-Integrity 在 A1 上均为 `0%`，说明检测能力来自 ZK 距离约束而非仅承诺链。
 - 在这组设置下，Nebula、Pure LDP、EIFFeL-style 对 A1 的恶意拦截率均为 `0%`。
-- Utility 方面，T-Drive 与 GeoLife 的 baseline 表现差异明显（例如 Nebula: `0.0000` vs `0.8000`），后续论文应分别报告两数据集结果，不做混合平均。
+- Utility 方面，`20260412_151427` 已完成 7 模式 × 5 恶意率的系统级 sweep，主结果已同步到上表。
+- 旧批次中出现的 `full` 组 `FRR=1.0` 现象已判定为运行异常，已从“有效结果口径”移除。
