@@ -1309,12 +1309,15 @@ def _parse_float_list(raw: str, *, option_name: str, min_value: float | None = N
 
 
 def _dataset_name(path: Path) -> str:
-    name = path.name.lower()
-    parent = path.parent.name.lower()
-    if "geolife" in name or "geolife" in parent:
+    text = str(path).lower()
+    if "geolife" in text:
         return "geolife"
-    if "rome" in name or "roma" in name or "rome" in parent:
+    if "rome" in text or "roma" in text:
         return "rome"
+    if "porto" in text:
+        return "porto"
+    if "tdrive" in text or "t-drive" in text:
+        return "tdrive"
     return path.stem
 
 

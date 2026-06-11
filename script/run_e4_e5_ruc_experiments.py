@@ -23,6 +23,10 @@ from common.settlement import ReceiverFix, TariffTable  # noqa: E402
 
 
 DEFAULT_INPUTS = {
+    "geolife": (
+        ROOT_DIR / "data" / "e1_mechanism_ablation" / "geolife" / "geolife_medium_identity.jsonl",
+        ROOT_DIR / "data" / "e1_mechanism_ablation" / "geolife" / "tariff_block.json",
+    ),
     "rome": (
         ROOT_DIR / "experiments" / "e1_rome_real_tariff_ratio_fix" / "periods_60s.jsonl",
         ROOT_DIR / "experiments" / "e1_rome_real_tariff_ratio_fix" / "tariff_block.json",
@@ -279,7 +283,7 @@ def empirical_anonymity(records: list[PeriodRecord]) -> list[dict]:
     rows: list[dict] = []
     profiles = [
         {
-            "period_id": r.record["period_id"],
+            "period_id": str(r.record.get("period_id") or r.record.get("trip_id") or r.fixes[0].period_id),
             "fee_cents": r.fee_cents,
             "distance_m": r.distance_m,
             "fallback_intervals": r.fallback_intervals,
@@ -351,7 +355,7 @@ def graph_privacy_counts(
             rows.append(
                 {
                     "dataset": record.dataset,
-                    "period_id": record.record["period_id"],
+                    "period_id": str(record.record.get("period_id") or record.record.get("trip_id") or record.fixes[0].period_id),
                     "mode": mode,
                     "graph_proxy_path_count_cap1e12": count,
                     "graph_proxy_entropy_bits": math.log2(max(1, count)),
