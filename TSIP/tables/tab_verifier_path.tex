@@ -1,0 +1,28 @@
+\begin{table}[t]
+\centering
+\caption{Groth16/BN254 verifier-path comparison (TSIP-K6 circuit, 11 public
+inputs). \emph{snarkjs-CLI}: per-call subprocess; overhead dominated by Node.js
+startup and JSON parsing. \emph{snarkjs-pool}: persistent Node.js process,
+warm BN128 curve engine; pure BN254 pairing cost after JIT warm-up is
+$\approx$6\,ms. \emph{ark-rs}: native ark-groth16 Rust release build with
+parallel feature, 5 warmup\,+\,100 timed runs on the paper evaluation host.
+All measurements on the same Intel Xeon server.}
+\label{tab:verifier-path}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\columnwidth}{@{}l r r r@{}}
+\toprule
+path & mean & std & bottleneck / note \\
+\midrule
+snarkjs-CLI (subprocess)               & 1126.0\,ms & 82.0\,ms & Node.js startup + JSON parse \\
+snarkjs-pool (amortised)               &   24.2\,ms &     --   & BN128 engine init \\
+\quad pure BN254 pairing (JIT-warm)    &    6.0\,ms &  0.6\,ms & pairing computation \\
+\textbf{ark-rs native verifier}       & \textbf{1.37\,ms} & \textbf{0.11\,ms} & \textbf{native Rust release} \\
+rapidsnark C++ (artifact)              &     --     &     --   & prover-only binary; no verifier CLI \\
+\bottomrule
+\end{tabularx}
+{\footnotesize ark-groth16 v0.4 via ark-rs, \texttt{parallel} feature, \texttt{--release},
+same circuit/vkey as snarkjs paths.
+The snarkjs-pool pairing cost (6\,ms) is $4.4\times$ the ark-rs
+figure (1.37\,ms), consistent with WASM/JS overhead on BN254.}
+\end{table}

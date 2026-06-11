@@ -1,0 +1,21 @@
+\begin{table}[t]
+\centering
+\caption{Adaptive-boundary characterization. The attacker is given all public
+caps and chooses distances at or near the enforced boundary. Below-bound
+submissions are accepted by design; above-bound submissions are rejected.}
+\label{tab:adaptive-boundary}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\columnwidth}{@{}Y Y r Y@{}}
+\toprule
+predicate & attacker strategy & distance & reject rate \\
+\midrule
+Per-step E1 & just below cap & \SI{1960}{m} & 0\% (3/3 seeds) \\
+Per-step E1 & just above cap & \SI{2050}{m} & 100\% (3/3 seeds) \\
+Per-step E1 & boundary noise ($\pm\SI{5}{m}$) & 1975--1985\,m & 0\%--0\% (3/3 seeds) \\
+ADWC E5, $K{=}6$ & just below policy & \SI{6534}{m} & 0\% (3/3 seeds) \\
+ADWC E5, $K{=}6$ & just above policy & \SI{6666}{m} & 100\% (3/3 seeds) \\
+ADWC E5, $K{=}6$ & $0.99{\times}$cap/$K$ per round (saturation) & cumulative \SI{19.8}{km} & TPR 1.00 (3/3 seeds) \\
+\bottomrule
+\end{tabularx}
+\end{table}

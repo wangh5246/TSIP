@@ -1,0 +1,20 @@
+\begin{table}[t]
+\centering
+\caption{EA $(t,n)$ Byzantine/failure injection. \emph{accept rate} is the fraction of enrollments that still clear the $t$-of-$n$ threshold; \emph{threshold OK} is the fraction of anchor-committee verdicts that reach quorum. The system halts exactly at $f\ge t$, matching Theorem~3 (Bounded Sybil).}
+\label{tab:ea-fault}
+\small
+\begin{tabular}{lllll}
+\toprule
+$(t,n)$ & down anchors & fault type & accept rate & threshold OK \\
+\midrule
+(3,5) & 0 & malicious & 1.00 & 1.00 \\
+(3,5) & 0 & offline & 1.00 & 1.00 \\
+(3,5) & 1 & malicious & 0.00 & 1.00 \\
+(3,5) & 1 & offline & 1.00 & 1.00 \\
+(3,5) & 2 & malicious & 0.00 & 1.00 \\
+(3,5) & 2 & offline & 1.00 & 1.00 \\
+(3,5) & 3 & malicious & 0.00 & 0.00 \\
+(3,5) & 3 & offline & 0.00 & 0.00 \\
+\bottomrule
+\end{tabular}
+\end{table}

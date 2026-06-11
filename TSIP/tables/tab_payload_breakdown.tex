@@ -1,0 +1,25 @@
+\begin{table}[t]
+\centering
+\caption{Payload-size accounting for the default \textsc{TSIP-K6} artifact.
+The first two rows are cryptographic object sizes; the latter rows are
+implementation-wire sizes used by the prototype and tables in this paper.}
+\label{tab:payload-breakdown}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\columnwidth}{@{}l r Y@{}}
+\toprule
+layer & bytes & contents \\
+\midrule
+L1 proof object & 128 & compressed BN254 Groth16 tuple
+($A,C\in\mathbb{G}_1$, $B\in\mathbb{G}_2$) \\
+L1 public scalars & 416 & 13 public inputs $\times$ 32\,B \\
+L2 proof JSON & 804--806 & snarkjs \texttt{proof.json} with decimal coordinates,
+curve/protocol tags, and JSON punctuation \\
+L2 public JSON & 782--784 & snarkjs \texttt{public.json} for the same 13 signals \\
+L3 integrity pkg. & $\approx$2{,}000 & proof artifact + publics + chain
+metadata + authentication fields; used in Table~\ref{tab:ablation-headline} \\
+L4 full frame & 5{,}614 & L3 plus encrypted additive-share envelopes and
+prototype metadata; used in Table~\ref{tab:overhead-7schemes} \\
+\bottomrule
+\end{tabularx}
+\end{table}

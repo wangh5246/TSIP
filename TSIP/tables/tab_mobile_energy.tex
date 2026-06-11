@@ -1,0 +1,26 @@
+\begin{table}[t]
+\centering
+\caption{Mobile-edge single-proof cost. All rows use the
+\textsc{TSIP-K6} circuit (2{,}403 R1CS constraints, salted artifact),
+snarkjs/WASM in-browser prover, 100 timed runs after 1 warmup discard.
+Energy is estimated as $t_{\mathrm{mean}} \times \mathrm{TDP}_{\mathrm{est}}$;
+TDP proxies follow published SoC characterizations.}
+\label{tab:mobile-energy}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\columnwidth}{@{}l *{3}{>{\raggedleft\arraybackslash}X}@{}}
+\toprule
+device / profile & \shortstack{wallclock\\mean (ms)} & \shortstack{std\\(ms)} & \shortstack{energy\\(mJ, est.)} \\
+\midrule
+iPhone 16 Pro Max (A18 Pro)\textsuperscript{$\dagger$} & \textbf{297.1} & 15.5 & $\approx$832 \\
+Android-A (Xiaomi, 8 cores)\textsuperscript{$\ddagger$} & 395.3 & 26.7 & $\approx$1,107 \\
+Android-B (OPPO, 8 cores)\textsuperscript{$\ddagger$}   & 393.4 & 13.4 & $\approx$1,102 \\
+\bottomrule
+\end{tabularx}
+{\footnotesize
+$^\dagger$ iOS~26.4, Safari, measured 2026-04-28. TDP proxy: 2.80\,W.\\
+$^\ddagger$ Android~16, in-browser snarkjs/WASM, measured 2026-04-28. TDP proxy: 2.80\,W (Cortex-A78-class estimate).
+Android-A: Build/BP2A.250605.031.A3 (24122RKC7C).
+Android-B: Build/BP2A.250605.015 (PLQ110).
+All Android devices report 8 cores, 8\,GB RAM.}
+\end{table}

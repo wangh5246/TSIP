@@ -1,0 +1,30 @@
+\begin{table}[t]
+\centering
+\caption{Baseline DP systems on two real trajectory datasets, $\varepsilon{=}1.0$, 10 rounds. Cell values are mean $\pm$ std; higher Jaccard and lower RMSE are better.}
+\label{tab:baselines-summary}
+\small
+\begin{tabular}{lllll}
+\toprule
+dataset & baseline & $m$ & Jaccard & RMSE \\
+\midrule
+GeoLife & eiffel & 0.0 & 0.809 $\pm$ 0.113 & 2.301 $\pm$ 0.010 \\
+GeoLife & eiffel & 0.1 & 0.678 $\pm$ 0.082 & 2.330 $\pm$ 0.010 \\
+GeoLife & eiffel & 0.3 & 0.354 $\pm$ 0.017 & 2.378 $\pm$ 0.005 \\
+GeoLife & ldp & 0.0 & 0.004 $\pm$ 0.008 & 409.540 $\pm$ 0.001 \\
+GeoLife & ldp & 0.1 & 0.004 $\pm$ 0.008 & 409.540 $\pm$ 0.001 \\
+GeoLife & ldp & 0.3 & 0.002 $\pm$ 0.006 & 409.540 $\pm$ 0.001 \\
+GeoLife & nebula & 0.0 & 0.900 $\pm$ 0.200 & 2.326 $\pm$ 0.048 \\
+GeoLife & nebula & 0.1 & 1.000 $\pm$ 0.000 & 2.321 $\pm$ 0.041 \\
+GeoLife & nebula & 0.3 & 0.933 $\pm$ 0.200 & 2.390 $\pm$ 0.031 \\
+T-Drive & eiffel & 0.0 & 0.173 $\pm$ 0.018 & 0.291 $\pm$ 0.001 \\
+T-Drive & eiffel & 0.1 & 0.168 $\pm$ 0.021 & 0.292 $\pm$ 0.001 \\
+T-Drive & eiffel & 0.3 & 0.125 $\pm$ 0.019 & 0.298 $\pm$ 0.001 \\
+T-Drive & ldp & 0.0 & 0.005 $\pm$ 0.005 & 409.528 $\pm$ 0.002 \\
+T-Drive & ldp & 0.1 & 0.005 $\pm$ 0.005 & 409.528 $\pm$ 0.003 \\
+T-Drive & ldp & 0.3 & 0.003 $\pm$ 0.005 & 409.529 $\pm$ 0.002 \\
+T-Drive & nebula & 0.0 & 0.000 $\pm$ 0.000 & 0.316 $\pm$ 0.000 \\
+T-Drive & nebula & 0.1 & 0.000 $\pm$ 0.000 & 0.316 $\pm$ 0.000 \\
+T-Drive & nebula & 0.3 & 0.000 $\pm$ 0.000 & 0.316 $\pm$ 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}

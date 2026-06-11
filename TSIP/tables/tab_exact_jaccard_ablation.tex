@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\caption{Exact Jaccard rerun for TSIP utility ablation on GeoLife
+(\(\varepsilon{=}1.0\), 10\% A1 attackers, \(K{=}6\), \(G{=}30\) minutes,
+10 measured rounds after 6 warmup rounds). This rerun replaces the previous
+T-Drive placeholder values that all rounded to 1.0000 because that dataset is
+clamped by the 10\,km utility grid.}
+\label{tab:exact-jaccard-ablation}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\columnwidth}{@{}Y r r r r@{}}
+\toprule
+mode & MRR & Pipeline FRR & Jaccard & RMSE \\
+\midrule
+\textsc{TSIP-Full} & 1.0000 & 0.1136 & $0.3992 \pm 0.0179$ & $4.259 \pm 0.468$ \\
+\textsc{No-Integrity} & 0.0000 & 0.0000 & $0.4289 \pm 0.0227$ & $5.660 \pm 0.015$ \\
+\bottomrule
+\end{tabularx}
+\end{table}

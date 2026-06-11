@@ -1,0 +1,22 @@
+\begin{table}[t]
+\centering
+\caption{Constraint-level binding checks for the mode/tier layer
+(\textsc{TSIP-K6}, snarkjs-CLI verifier). C8 binds the hidden mode set to the
+public commitment, C9 enforces selected-mode membership, and C10 binds the
+mode disclosure tag. All tampered public signals or invalid witnesses are
+rejected.}
+\label{tab:mode-ablation}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\columnwidth}{@{}Y c c c@{}}
+\toprule
+test & constraint & expected & reject rate \\
+\midrule
+valid witness/public inputs & all C1--C16 & accept & -- \\
+tamper \texttt{modeset\_commitment} & C8 & reject & 1.000 \\
+select mode outside committed set & C9 & reject & 1.000 \\
+tamper \texttt{mode\_tag} & C10 & reject & 1.000 \\
+tamper \texttt{tier\_vmax\_sq} & C16 + registry check & reject & 1.000 \\
+\bottomrule
+\end{tabularx}
+\end{table}

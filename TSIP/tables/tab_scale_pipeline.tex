@@ -1,0 +1,18 @@
+\begin{table}[t]
+\centering
+\caption{Measured non-verifier pipeline scale sweep on synthetic clients
+(2 rounds, ZK/TSIP verification disabled). These measurements isolate
+aggregation and DP release from the verifier bottleneck characterized in
+Table~\ref{tab:scale-projection}.}
+\label{tab:scale-pipeline}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}r r r r r@{}}
+\toprule
+clients & rounds & valid & rejects & DP cells kept \\
+\midrule
+5{,}000 & 2 & 5{,}000 & 0 & 9{,}240.5 \\
+10{,}000 & 2 & 10{,}000 & 0 & 9{,}763 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,17 @@
+\begin{table}[t]
+\centering
+\caption{Raw inter-window session-gap sensitivity on the 50-user slices.
+$G$ is the session-break threshold in minutes. This table characterizes
+trace sparsity; pipeline FRR additionally depends on warmup and run length.}
+\label{tab:session-gap}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l r r r r@{}}
+\toprule
+dataset & $G{=}5$ & $G{=}15$ & $G{=}30$ & $G{=}60$ \\
+\midrule
+T-Drive & 16.79\% & 2.37\% & 1.10\% & 0.76\% \\
+GeoLife & 3.94\% & 2.56\% & 2.12\% & 1.82\% \\
+\bottomrule
+\end{tabular}
+\end{table}

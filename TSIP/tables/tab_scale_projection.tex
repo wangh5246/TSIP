@@ -1,0 +1,38 @@
+\begin{table}[t]
+\centering
+\caption{Round verification latency
+$T_{\mathrm{round}}(N,k)=\lceil N/k\rceil\,T_{\mathrm{single}}$
+across three verifier paths.
+\emph{snarkjs-CLI}: prototype subprocess ($T_{\mathrm{single}}{=}1126$\,ms).
+\emph{snarkjs-pool}: persistent Node.js pool ($T_{\mathrm{single}}{=}24$\,ms
+amortised; $\approx$6\,ms pure pairing).
+\emph{ark-rs}: ark-groth16 release build
+($T_{\mathrm{single}}{=}1.37$\,ms, Table~\ref{tab:verifier-path}).
+The $N{=}100$ CLI row, the cold-start $N{=}100$ snarkjs-pool row, and the
+warm-pool $N{=}1000$ snarkjs-pool row are
+\textbf{directly measured\textsuperscript{M}}; all others projected.
+$\Delta t{=}60$\,s window.}
+\label{tab:scale-projection}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}r r r r r r@{}}
+\toprule
+ & & \multicolumn{3}{c}{round latency (s)} & \\
+\cmidrule(lr){3-5}
+clients & workers & snarkjs-CLI & snarkjs-pool & ark-rs & ${\leq}60$\,s? \\
+\midrule
+100    & 8  & \textbf{25.6}\textsuperscript{M} & \textbf{4.1}\textsuperscript{M} & 0.02 & \checkmark \\
+\midrule
+1{,}000  & 8  & 140.8 &  \textbf{3.2}\textsuperscript{M} & 0.17 & IPC/Rust: \checkmark \\
+5{,}000  & 8  & 703.8 & 15.3 & 0.86 & IPC/Rust: \checkmark \\
+10{,}000 & 8  & 1407.5 & 30.4 & \textbf{1.7} & IPC/Rust: \checkmark \\
+10{,}000 & 1  & 11275  & 240  & \textbf{13.7} & Rust: \checkmark \\
+\bottomrule
+\end{tabular}
+{\footnotesize \textsuperscript{M} Directly measured.
+The $N{=}1000$ snarkjs-pool row uses a pre-warmed persistent pool; the
+$N{=}100$ snarkjs-pool row includes cold-start pool bootstrap.
+CLI path exceeds 60\,s for $N{>}50$ at any worker count.
+In-process path fits 60\,s up to $N{=}10{,}000$ with $k{=}8$.
+ark-rs fits 60\,s up to $N{=}10{,}000$ even with a single worker.}
+\end{table}

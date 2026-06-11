@@ -1,0 +1,16 @@
+\begin{table}[t]
+\centering
+\caption{TSIP mode ablation at $\varepsilon{=}5$, $m{=}0.1$. Only the \emph{full} pipeline attains 1.0 malicious-reject rate; removing the integrity layer (\emph{no-integ}) keeps utility but admits adversarial updates.}
+\label{tab:mode-ablation}
+\small
+\begin{tabular}{llllll}
+\toprule
+mode & malicious-reject & false-reject & Jaccard & RMSE & cells kept \\
+\midrule
+full & 1.000 & 0.0114 & 0.196 $\pm$ 0.196 & 3.713 $\pm$ 1.157 & 72.9 \\
+no-integ & 0.000 & 0.0000 & 0.448 $\pm$ 0.018 & 5.654 $\pm$ 0.004 & 161.3 \\
+nebula & 0.000 & 0.0000 & 1.000 $\pm$ 0.000 & 2.295 $\pm$ 0.006 & 1.0 \\
+ldp & 0.000 & 0.0000 & 0.000 $\pm$ 0.000 & 2.557 $\pm$ 0.000 & 0.0 \\
+\bottomrule
+\end{tabular}
+\end{table}

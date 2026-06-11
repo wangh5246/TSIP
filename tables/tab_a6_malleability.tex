@@ -1,0 +1,23 @@
+\begin{table}[t]
+\centering
+\caption{A6 anti-tamper coverage. Every commitment-internal field was subjected to bit-flip or replacement mutation (or an inconsistency between paired fields); every mutant was rejected by the TSIP verifier.}
+\label{tab:a6-malleability}
+\small
+\begin{tabular}{llrrrr}
+\toprule
+target & mutation & seeds & attempts & rejected & reject rate \\
+\midrule
+cap-policy (sq) & inconsistency & 3 & 3 & 3 & 100\% \\
+cap-policy vs tier-anchor & inflated cap & 3 & 3 & 3 & 100\% \\
+anchor hash & bit flip & 3 & 3 & 3 & 100\% \\
+anchor hash & replacement & 3 & 3 & 3 & 100\% \\
+mode tag & bit flip & 3 & 3 & 3 & 100\% \\
+mode tag & replacement & 3 & 3 & 3 & 100\% \\
+modeset commitment & bit flip & 3 & 3 & 3 & 100\% \\
+modeset commitment & replacement & 3 & 3 & 3 & 100\% \\
+tier-anchor cap & inconsistency & 3 & 3 & 3 & 100\% \\
+$v_{\max,\tau}^2$ & bit flip & 3 & 3 & 3 & 100\% \\
+$v_{\max,\tau}^2$ & replacement & 3 & 3 & 3 & 100\% \\
+\bottomrule
+\end{tabular}
+\end{table}
