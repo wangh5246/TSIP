@@ -95,6 +95,9 @@ Public signal 顺序(= `script/prove_settlement_period_v5.py` 的 `PUBLIC_SIGNAL
 | `python script/run_e4_baseline_comparison.py` | E4 检出曲线 / 等检出工作点 / R-T-Z head-to-head |
 | `python script/run_baseline_r_simulator.py` | Baseline R 经验 spot-check 仿真 + E5 泄漏光谱 |
 | `python script/run_cross_system_fairness.py` | 交叉对称评估:同攻击/同度量/同数据打两个系统 |
+| `python script/run_e0_billing_accuracy.py` | E0 诚实账单 vs 连续 GPS 真值(Rome 锚定) |
+| `python script/run_e1_tariff_spread.py` | E1 zone-binding ε vs tariff 极差曲线 |
+| `python script/run_e5_fee_bucketing.py` | E5 statement-bucketing 匿名度缓解曲线 |
 | `python script/bench_rapidsnark.py` | E6 rapidsnark prover 实测(需先编译 rapidsnark) |
 
 性能口径提醒(2026-06-11 更新):`snarkjs` 与 `rapidsnark` 均为 measured;rapidsnark median 1.389s/proof(5 runs,arm64 本机编译),receipt 见 `experiments/e6_rapidsnark/receipt.json`。

@@ -1,0 +1,19 @@
+{
+ "cadence_sec": {
+  "porto": 60,
+  "rome": 60
+ },
+ "datasets": {
+  "rome": {
+   "multi_zone_runs": 0,
+   "runs": 300,
+   "zone_homogeneous_share": 1.0
+  }
+ },
+ "experiment": "E0 honest billing accuracy",
+ "skipped": {
+  "geolife": "tariff_block.json has no geo anchor; synthetic per-cell tariff has zero quantization error by construction",
+  "porto": "opt-in via --datasets porto; raw trajectories in a ~1.7GB zip are cost-prohibitive to stream here",
+  "tdrive": "no local raw trajectory file; single-period dataset, not an E0 anchor"
+ }
+}
