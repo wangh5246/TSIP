@@ -1,0 +1,47 @@
+{
+  "cadences_sec": [
+    60,
+    120,
+    300
+  ],
+  "datasets": {
+    "geolife": 14,
+    "porto": 8,
+    "rome": 66
+  },
+  "distance_bucket_m": 100,
+  "experiment": "E3 proof-consistent relay/meaconing residual",
+  "granularities": [
+    "coarse",
+    "medium",
+    "fine"
+  ],
+  "inputs": [
+    "data/e1_mechanism_ablation/geolife/geolife_medium_identity.jsonl",
+    "experiments/e1_rome_real_tariff_ratio_fix/periods_60s.jsonl",
+    "data/e1_mechanism_ablation/porto/periods_60s.jsonl",
+    "data/e1_mechanism_ablation/tdrive/periods_300s.jsonl"
+  ],
+  "min_distance_m": 500,
+  "outputs": {
+    "figure": "experiments/e3_relay_residual_all4/fig_e3_relay_residual.png",
+    "forensic_paths": "experiments/e3_relay_residual_all4/e3_forensic_paths.csv",
+    "period_rows": "experiments/e3_relay_residual_all4/e3_period_rows.csv",
+    "summary": "experiments/e3_relay_residual_all4/tab_e3_residual_by_granularity.csv"
+  },
+  "payload_mode_semantics": {
+    "cell": "cell-center abstraction with one distance-bucket odometer projection tolerance",
+    "intra_cell": "conservative upper bound: relay radius expanded by half-cell diagonal and payload odometer tolerance adds half a cell on top of projection tolerance"
+  },
+  "payload_modes": [
+    "cell",
+    "intra_cell"
+  ],
+  "periods_loaded": 88,
+  "relay_radii_m": [
+    0,
+    100,
+    200,
+    400
+  ]
+}
