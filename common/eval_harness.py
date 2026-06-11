@@ -8,7 +8,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Callable, Iterable
 
-from common.settlement import ReceiverFix, TariffTable, fee_for_period
+from common.settlement import ReceiverFix, TariffTable, fee_for_interval_values, fee_for_period
 
 
 class Constraint(StrEnum):
@@ -30,6 +30,7 @@ class HarnessParams:
     cell_size_m: int = 100
     distance_bucket_m: int = 100
     odometer_tolerance_m: int = 0
+    fallback_rate_cents_per_m: int | None = None
 
 
 @dataclass(frozen=True)
@@ -59,6 +60,7 @@ def compute_bill(
         cadence_sec=int(params.cadence_sec),
         tier_vmax_mps=int(params.tier_vmax_mps),
         max_dt_sec=int(params.max_dt_sec),
+        fallback_rate_cents_per_m=params.fallback_rate_cents_per_m,
     )
 
 
@@ -139,6 +141,16 @@ def adversary_min_fee(
     cells = sorted(set(candidate_cells or default_cells))
     if not cells:
         raise ValueError("candidate cell set is empty")
+    cell_set = set(cells)
+    distance_cache: dict[tuple[int, int], float] = {}
+
+    def distance_by_cell(a: int, b: int) -> float:
+        key = (a, b) if a <= b else (b, a)
+        cached = distance_cache.get(key)
+        if cached is None:
+            cached = _cell_distance_by_idx_m(tariff, a, b, params.cell_size_m)
+            distance_cache[key] = cached
+        return cached
 
     honest = compute_bill(true_fixes, tariff, params)
     honest_fee = int(honest["total_fee_cents"])
@@ -167,22 +179,25 @@ def adversary_min_fee(
 
     if Constraint.ODOMETER not in enabled_set:
         parked = _parked_claim(true_fixes, tariff)
+        bill = compute_bill(parked, tariff, params)
+        min_fee = int(bill["total_fee_cents"])
         return AdversaryResult(
-            min_fee_cents=0,
+            min_fee_cents=min_fee,
             honest_fee_cents=honest_fee,
-            savings_ratio=0.0 if honest_fee <= 0 else 1.0,
+            savings_ratio=0.0 if honest_fee <= 0 else max(0.0, (honest_fee - min_fee) / honest_fee),
             claimed_fixes=parked,
             total_distance_m=0,
         )
 
     if Constraint.CONTINUITY not in enabled_set and Constraint.OSNMA not in enabled_set:
-        min_rate = min(int(rate) for rate in tariff.zone_rates_cents_per_m.values())
-        min_fee = target_distance_m * min_rate
+        parked = _parked_claim(true_fixes, tariff, preserve_odometer=True)
+        bill = compute_bill(parked, tariff, params)
+        min_fee = int(bill["total_fee_cents"])
         return AdversaryResult(
             min_fee_cents=min_fee,
             honest_fee_cents=honest_fee,
             savings_ratio=0.0 if honest_fee <= 0 else max(0.0, (honest_fee - min_fee) / honest_fee),
-            claimed_fixes=_parked_claim(true_fixes, tariff, preserve_odometer=True),
+            claimed_fixes=parked,
             total_distance_m=target_distance_m,
         )
 
@@ -196,6 +211,7 @@ def adversary_min_fee(
 
     if len(allowed_cells_by_fix) != len(true_fixes):
         raise ValueError("allowed_cells_by_fix length must match true_fixes")
+    allowed_cell_lists = [sorted(set(allowed) & cell_set) for allowed in allowed_cells_by_fix]
 
     bucket_m = max(1, int(params.distance_bucket_m))
     target_bucket = int(round(target_distance_m / bucket_m)) if Constraint.ODOMETER in enabled_set else None
@@ -204,7 +220,7 @@ def adversary_min_fee(
         max_bucket = 0
 
     start_states: list[tuple[int, tuple[int, int, int]]] = []
-    for cell in sorted(allowed_cells_by_fix[0] & set(cells)):
+    for cell in allowed_cell_lists[0]:
         start_states.append((0, (0, int(cell), 0)))
     if not start_states:
         raise ValueError("no feasible start cells")
@@ -233,8 +249,8 @@ def adversary_min_fee(
                 continue
             if Constraint.MAX_DT in enabled_set and dt > int(params.max_dt_sec):
                 continue
-            for next_cell in sorted(allowed_cells_by_fix[j] & set(cells)):
-                dist_m = _cell_distance_by_idx_m(tariff, cell, next_cell, params.cell_size_m)
+            for next_cell in allowed_cell_lists[j]:
+                dist_m = distance_by_cell(cell, next_cell)
                 if Constraint.CONTINUITY in enabled_set and dist_m > int(params.tier_vmax_mps) * dt:
                     continue
                 next_bucket = bucket
@@ -242,8 +258,19 @@ def adversary_min_fee(
                     next_bucket = bucket + int(round(dist_m / bucket_m))
                     if next_bucket > max_bucket:
                         continue
-                rate = tariff.rate_for_zone(tariff.zone_for_cell(cell))
-                next_cost = cost + int(round(dist_m)) * int(rate)
+                edge_fee = int(
+                    fee_for_interval_values(
+                        dt_sec=dt,
+                        odo_delta_m=int(round(dist_m)),
+                        cell_idx=cell,
+                        tariff=tariff,
+                        cadence_sec=int(params.cadence_sec),
+                        tier_vmax_mps=int(params.tier_vmax_mps),
+                        max_dt_sec=int(params.max_dt_sec) if Constraint.MAX_DT in enabled_set else None,
+                        fallback_rate_cents_per_m=params.fallback_rate_cents_per_m,
+                    )["fee_cents"]
+                )
+                next_cost = cost + edge_fee
                 next_state = (j, int(next_cell), next_bucket)
                 if next_cost < best.get(next_state, 1 << 120):
                     best[next_state] = next_cost
@@ -255,7 +282,7 @@ def adversary_min_fee(
 
     path_states = _reconstruct_path(parent, final_state)
     claimed = _states_to_fixes(path_states, true_fixes, tariff, params)
-    min_fee = int(best[final_state])
+    min_fee = int(compute_bill(claimed, tariff, params)["total_fee_cents"])
     savings = 0.0 if honest_fee <= 0 else max(0.0, (honest_fee - min_fee) / honest_fee)
     return AdversaryResult(
         min_fee_cents=min_fee,
@@ -429,7 +456,15 @@ def _all_cells_by_fix(true_fixes: list[ReceiverFix], tariff: TariffTable) -> lis
 def write_e1_forensic_csv(rows: Iterable[dict[str, str | int | float]], path: Path) -> int:
     """Write E1 forensic rows with a stable schema and return row count."""
 
-    fieldnames = ["branch", "dataset", "len_claimed_fixes", "savings_ratio", "skip_reason"]
+    fieldnames = [
+        "branch",
+        "dataset",
+        "distance_bucket_m",
+        "neighbor_radius_cells",
+        "len_claimed_fixes",
+        "savings_ratio",
+        "skip_reason",
+    ]
     materialized = list(rows)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as fh:

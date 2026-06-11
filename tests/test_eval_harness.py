@@ -66,6 +66,23 @@ def test_compute_bill_delegates_to_settlement_fee_logic():
     assert bill["private_zone_distance_m"] == {20: 100}
 
 
+def test_compute_bill_passes_fallback_rate_override_to_settlement():
+    params = HarnessParams(
+        cadence_sec=60,
+        tier_vmax_mps=10,
+        cell_size_m=100,
+        distance_bucket_m=100,
+        fallback_rate_cents_per_m=2,
+    )
+    fixes = [_fix(0, 0, 0, 1, 0), _fix(1, 120, 100, 2, 0)]
+
+    bill = compute_bill(fixes, _tariff(), params)
+
+    assert bill["fallback_intervals"] == 1
+    assert bill["fallback_distance_m"] == 1200
+    assert bill["total_fee_cents"] == 2400
+
+
 def test_check_constraints_catches_odometer_continuity_and_osnma_relaxations():
     params = HarnessParams(cadence_sec=60, tier_vmax_mps=1, cell_size_m=100, distance_bucket_m=100)
     true_fixes = [_fix(0, 0, 0, 0, 0), _fix(1, 50, 100, 1, 0)]
@@ -164,7 +181,7 @@ def test_adversary_without_continuity_moves_distance_to_cheapest_zone():
     assert result.savings_ratio == 0.8
 
 
-def test_adversary_without_cadence_can_drop_expensive_middle_fix():
+def test_adversary_without_cadence_keeps_middle_fix_when_fallback_fee_dominates():
     params = HarnessParams(cadence_sec=60, tier_vmax_mps=33, cell_size_m=100, distance_bucket_m=100)
     fixes = [
         _fix(0, 0, 0, 0, 0),
@@ -180,8 +197,28 @@ def test_adversary_without_cadence_can_drop_expensive_middle_fix():
     )
 
     assert result.honest_fee_cents == 600
-    assert result.min_fee_cents == 200
-    assert [(f.cell_x, f.cell_y) for f in result.claimed_fixes] == [(0, 0), (2, 0)]
+    assert result.min_fee_cents == compute_bill(result.claimed_fixes, _tariff(), params)["total_fee_cents"]
+    assert result.min_fee_cents == 600
+    assert [(f.cell_x, f.cell_y) for f in result.claimed_fixes] == [(0, 0), (1, 0), (2, 0)]
+
+
+def test_adversary_objective_uses_billing_fallback_for_lifted_claim():
+    params = HarnessParams(cadence_sec=60, tier_vmax_mps=33, cell_size_m=100, distance_bucket_m=100)
+    fixes = [_fix(0, 0, 0, 0, 0), _fix(1, 120, 100, 1, 0)]
+    allowed = [{_tariff().cell_index(0, 0)}, {_tariff().cell_index(1, 0)}]
+
+    result = adversary_min_fee(
+        fixes,
+        _tariff(),
+        enabled=ALL_CONSTRAINTS - {Constraint.CONTINUITY},
+        params=params,
+        allowed_cells_by_fix=allowed,
+    )
+    bill = compute_bill(result.claimed_fixes, _tariff(), params)
+
+    assert bill["fallback_intervals"] == 1
+    assert result.min_fee_cents == bill["total_fee_cents"]
+    assert result.savings_ratio == 0.0
 
 
 def test_e1_row_uses_fast_odometer_relaxation_and_relay_candidates_are_local():
@@ -217,5 +254,5 @@ def test_e1_forensic_rows_record_claim_length_savings_and_skip_reason(tmp_path: 
     output = tmp_path / "e1_forensic.csv"
     assert write_e1_forensic_csv(rows, output) == 7
     assert output.read_text(encoding="utf-8").splitlines()[0] == (
-        "branch,dataset,len_claimed_fixes,savings_ratio,skip_reason"
+        "branch,dataset,distance_bucket_m,neighbor_radius_cells,len_claimed_fixes,savings_ratio,skip_reason"
     )

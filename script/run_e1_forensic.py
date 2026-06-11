@@ -51,7 +51,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tier-vmax-mps", type=int, default=33)
     parser.add_argument("--cell-size-m", type=int, default=100)
     parser.add_argument("--distance-bucket-m", type=int, default=None)
+    parser.add_argument(
+        "--distance-bucket-ms",
+        default=None,
+        help="Comma-separated distance bucket sweep; default falls back to --distance-bucket-m/cell size.",
+    )
     parser.add_argument("--neighbor-radius-cells", type=int, default=2)
+    parser.add_argument(
+        "--neighbor-radius-cells-list",
+        default=None,
+        help="Comma-separated lifted attack radius sweep; default falls back to --neighbor-radius-cells.",
+    )
     parser.add_argument("--audit-output", type=Path, default=None)
     parser.add_argument("--audit-top-k", type=int, default=3)
     parser.add_argument("--branches", default=None, help="Comma-separated branch filter; default runs all branches.")
@@ -60,12 +70,17 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    params = HarnessParams(
-        cadence_sec=args.cadence_sec,
-        max_dt_sec=args.max_dt_sec,
-        tier_vmax_mps=args.tier_vmax_mps,
-        cell_size_m=args.cell_size_m,
-        distance_bucket_m=args.distance_bucket_m or args.cell_size_m,
+    distance_bucket_ms = _parse_int_list(
+        args.distance_bucket_ms,
+        fallback=args.distance_bucket_m or args.cell_size_m,
+        option_name="--distance-bucket-ms",
+        min_value=1,
+    )
+    neighbor_radius_cells_values = _parse_int_list(
+        args.neighbor_radius_cells_list,
+        fallback=args.neighbor_radius_cells,
+        option_name="--neighbor-radius-cells-list",
+        min_value=0,
     )
     branch_names = _parse_branches(args.branches)
     rows: list[dict[str, str | int | float]] = []
@@ -76,33 +91,52 @@ def main() -> int:
         for record in _load_records(path, args.max_users):
             periods = _periods_from_record(record, periods_per_user=args.periods_per_user, max_dt_sec=args.max_dt_sec)
             for period_idx, fixes in enumerate(periods):
-                if input_tariff is not None:
-                    tariff = input_tariff
-                    lifted = _lifted_cells_from_tariff(
-                        fixes,
-                        tariff,
-                        radius_cells=args.neighbor_radius_cells,
-                        cell_size_m=args.cell_size_m,
-                    )
-                else:
-                    tariff, lifted = _record_tariff_and_lifted_cells(
-                        record,
-                        fixes,
-                        radius_cells=args.neighbor_radius_cells,
-                        cell_size_m=args.cell_size_m,
-                    )
                 label = _period_label(dataset, record, period_idx)
-                period_rows = e1_forensic_rows(
-                    fixes,
-                    tariff,
-                    params,
-                    dataset=label,
-                    lifted_allowed_cells_by_fix=lifted,
-                    branch_names=branch_names,
-                )
-                rows.extend(row for row in period_rows if row["branch"] != "no_max_dt")
-                if args.audit_output is not None:
-                    audit_rows.extend(_audit_continuity_pair(label, fixes, tariff, params, lifted))
+                for distance_bucket_m in distance_bucket_ms:
+                    params = HarnessParams(
+                        cadence_sec=args.cadence_sec,
+                        max_dt_sec=args.max_dt_sec,
+                        tier_vmax_mps=args.tier_vmax_mps,
+                        cell_size_m=args.cell_size_m,
+                        distance_bucket_m=distance_bucket_m,
+                    )
+                    for neighbor_radius_cells in neighbor_radius_cells_values:
+                        if input_tariff is not None:
+                            tariff = input_tariff
+                            lifted = _lifted_cells_from_tariff(
+                                fixes,
+                                tariff,
+                                radius_cells=neighbor_radius_cells,
+                                cell_size_m=args.cell_size_m,
+                            )
+                        else:
+                            tariff, lifted = _record_tariff_and_lifted_cells(
+                                record,
+                                fixes,
+                                radius_cells=neighbor_radius_cells,
+                                cell_size_m=args.cell_size_m,
+                            )
+                        sweep_fields = {
+                            "distance_bucket_m": int(distance_bucket_m),
+                            "neighbor_radius_cells": int(neighbor_radius_cells),
+                        }
+                        period_rows = e1_forensic_rows(
+                            fixes,
+                            tariff,
+                            params,
+                            dataset=label,
+                            lifted_allowed_cells_by_fix=lifted,
+                            branch_names=branch_names,
+                        )
+                        for row in period_rows:
+                            if row["branch"] == "no_max_dt":
+                                continue
+                            row.update(sweep_fields)
+                            rows.append(row)
+                        if args.audit_output is not None:
+                            for audit_row in _audit_continuity_pair(label, fixes, tariff, params, lifted):
+                                audit_row.update(sweep_fields)
+                                audit_rows.append(audit_row)
     count = write_e1_forensic_csv(rows, args.output)
     _write_summary(rows, args.summary)
     if args.audit_output is not None:
@@ -275,13 +309,36 @@ def _zone_for_cell(cell: int, grid_w: int) -> int:
     return 20 if ((x // 3) + (y // 3)) % 2 else 10
 
 
+def _parse_int_list(raw: str | None, *, fallback: int, option_name: str, min_value: int) -> list[int]:
+    if raw is None or not str(raw).strip():
+        values = [int(fallback)]
+    else:
+        values = []
+        for part in str(raw).split(","):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                values.append(int(part))
+            except ValueError as exc:
+                raise ValueError(f"{option_name} must be a comma-separated list of integers") from exc
+    if not values:
+        raise ValueError(f"{option_name} must contain at least one integer")
+    bad = [value for value in values if value < int(min_value)]
+    if bad:
+        raise ValueError(f"{option_name} values must be >= {int(min_value)}: {bad}")
+    return values
+
+
 def _write_summary(rows: list[dict[str, str | int | float]], path: Path) -> None:
-    grouped: dict[tuple[str, str], list[float]] = {}
-    skip_counts: dict[tuple[str, str], int] = {}
+    grouped: dict[tuple[str, str, str, str], list[float]] = {}
+    skip_counts: dict[tuple[str, str, str, str], int] = {}
     for row in rows:
         dataset = str(row["dataset"]).split(":", 1)[0]
         branch = str(row["branch"])
-        key = (dataset, branch)
+        distance_bucket_m = str(row.get("distance_bucket_m", ""))
+        neighbor_radius_cells = str(row.get("neighbor_radius_cells", ""))
+        key = (dataset, branch, distance_bucket_m, neighbor_radius_cells)
         if row.get("skip_reason"):
             skip_counts[key] = skip_counts.get(key, 0) + 1
             continue
@@ -293,6 +350,8 @@ def _write_summary(rows: list[dict[str, str | int | float]], path: Path) -> None
             fieldnames=[
                 "dataset",
                 "branch",
+                "distance_bucket_m",
+                "neighbor_radius_cells",
                 "n",
                 "skip_count",
                 "min_savings",
@@ -308,6 +367,8 @@ def _write_summary(rows: list[dict[str, str | int | float]], path: Path) -> None
                 {
                     "dataset": key[0],
                     "branch": key[1],
+                    "distance_bucket_m": key[2],
+                    "neighbor_radius_cells": key[3],
                     "n": len(values),
                     "skip_count": skip_counts.get(key, 0),
                     "min_savings": min(values) if values else "",
@@ -381,13 +442,16 @@ def _audit_continuity_pair(
     out: list[dict[str, Any]] = []
     for branch, enabled, allowed in branches:
         try:
-            result = adversary_min_fee(
-                fixes,
-                tariff,
-                enabled=enabled,
-                params=params,
-                allowed_cells_by_fix=allowed,
-            )
+            if branch == "no_continuity_osnma_lifted" and lifted_attack is not None:
+                result = lifted_attack
+            else:
+                result = adversary_min_fee(
+                    fixes,
+                    tariff,
+                    enabled=enabled,
+                    params=params,
+                    allowed_cells_by_fix=allowed,
+                )
             honest_bill = compute_bill(fixes, tariff, params)
             attack_bill = compute_bill(result.claimed_fixes, tariff, params)
             replay_claim = lifted_attack.claimed_fixes if branch == "no_continuity" and lifted_attack else result.claimed_fixes
@@ -569,6 +633,8 @@ def _write_audit(rows: list[dict[str, Any]], path: Path, *, top_k: int) -> None:
             {
                 "dataset": row["dataset"],
                 "branch": row["branch"],
+                "distance_bucket_m": row.get("distance_bucket_m"),
+                "neighbor_radius_cells": row.get("neighbor_radius_cells"),
                 "honest_fee_cents": row.get("honest_fee_cents"),
                 "attack_fee_cents": row.get("attack_fee_cents"),
                 "savings_ratio": row.get("savings_ratio"),

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -19,6 +21,8 @@ from script.prove_settlement_period_v5 import (
     CADENCE_SEC,
     CELL_SIZE,
     MAX_DT_SEC,
+    PUBLIC_SIGNAL_COUNT,
+    PUBLIC_SIGNAL_ORDER,
     SETTLEMENT_PROFILE,
     TIER_VMAX_MPS,
     build_fixes,
@@ -27,6 +31,7 @@ from script.prove_settlement_period_v5 import (
     build_raw_witness_input_for_fixes,
     build_tariff,
 )
+from services.charger import app as charger_app
 
 WASM = (
     ROOT_DIR
@@ -35,6 +40,29 @@ WASM = (
     / "settlement_period_v5_k6_js"
     / "settlement_period_v5_k6.wasm"
 )
+SNARKJS = shutil.which("snarkjs")
+WRAPPER = ROOT_DIR / "circuits" / "settlement_period_v5_k6.circom"
+SYM = ROOT_DIR / "zk" / "settlement_period_v5_k6" / "settlement_period_v5_k6.sym"
+VKEY = ROOT_DIR / "zk" / "settlement_period_v5_k6" / "verification_key.json"
+
+
+def wrapper_public_order() -> list[str]:
+    text = WRAPPER.read_text(encoding="utf-8")
+    match = re.search(r"component\s+main\s*\{public\s*\[(.*?)\]\}\s*=", text, flags=re.S)
+    assert match is not None
+    return re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", match.group(1))
+
+
+def sym_public_order() -> list[str]:
+    order: list[str] = []
+    for line in SYM.read_text(encoding="utf-8").splitlines():
+        signal = line.rsplit(",", 1)[-1]
+        if not signal.startswith("main."):
+            continue
+        order.append(signal.removeprefix("main."))
+        if len(order) == PUBLIC_SIGNAL_COUNT:
+            return order
+    return order
 
 
 def run_wtns(input_json: dict[str, object]) -> subprocess.CompletedProcess[str]:
@@ -43,13 +71,34 @@ def run_wtns(input_json: dict[str, object]) -> subprocess.CompletedProcess[str]:
         witness_path = Path(td) / "witness.wtns"
         input_path.write_text(json.dumps(input_json, sort_keys=True), encoding="utf-8")
         return subprocess.run(
-            ["snarkjs", "wtns", "calculate", str(WASM), str(input_path), str(witness_path)],
+            [str(SNARKJS), "wtns", "calculate", str(WASM), str(input_path), str(witness_path)],
             cwd=ROOT_DIR,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
         )
+
+
+def test_public_signal_layout_matches_wrapper_prover_artifact_and_charger():
+    input_json, _submission = build_input()
+
+    assert PUBLIC_SIGNAL_COUNT == 21
+    assert wrapper_public_order() == PUBLIC_SIGNAL_ORDER
+    assert list(input_json)[:PUBLIC_SIGNAL_COUNT] == PUBLIC_SIGNAL_ORDER
+
+    if SYM.exists():
+        assert sym_public_order() == PUBLIC_SIGNAL_ORDER
+    if VKEY.exists():
+        assert json.loads(VKEY.read_text(encoding="utf-8"))["nPublic"] == PUBLIC_SIGNAL_COUNT
+
+    assert charger_app._TIME_SIGNAL_LAYOUT == [
+        (PUBLIC_SIGNAL_ORDER.index("period_start_time"), "period_start_time"),
+        (PUBLIC_SIGNAL_ORDER.index("period_end_time"), "period_end_time"),
+        (PUBLIC_SIGNAL_ORDER.index("month_id"), "month_id_field"),
+        (PUBLIC_SIGNAL_ORDER.index("month_start_time"), "month_start_time"),
+        (PUBLIC_SIGNAL_ORDER.index("month_end_time"), "month_end_time"),
+    ]
 
 
 def test_build_input_includes_time_window_and_canonical_month_public_signals():
@@ -125,7 +174,7 @@ def test_raw_witness_builder_requires_compiled_fix_count():
         build_raw_witness_input_for_fixes(fixes[:-1], build_tariff(), params=params)
 
 
-@pytest.mark.skipif(not WASM.exists(), reason="settlement v5 WASM is not compiled")
+@pytest.mark.skipif(not WASM.exists() or SNARKJS is None, reason="settlement v5 WASM/snarkjs is not available")
 def test_witness_rejects_terminal_fix_cell_separated_from_terminal_geometry():
     period_id = f"2026-05-v5-{SETTLEMENT_PROFILE}"
     fixes = build_fixes(period_id)
@@ -141,7 +190,7 @@ def test_witness_rejects_terminal_fix_cell_separated_from_terminal_geometry():
     assert result.returncode != 0, result.stdout
 
 
-@pytest.mark.skipif(not WASM.exists(), reason="settlement v5 WASM is not compiled")
+@pytest.mark.skipif(not WASM.exists() or SNARKJS is None, reason="settlement v5 WASM/snarkjs is not available")
 def test_witness_rejects_in_range_terminal_cell_teleport_at_step_continuity():
     period_id = f"2026-05-v5-{SETTLEMENT_PROFILE}"
     tariff = build_tariff()

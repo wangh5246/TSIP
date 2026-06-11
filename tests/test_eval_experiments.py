@@ -10,8 +10,10 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from common.eval_experiments import (
+    bill_with_declared_outages,
     e2_fallback_penalty,
     e2_pareto_frontier,
+    e2_withholding_min_fee,
     e3_soundness_check,
     e4_deterrence_to_pd,
     e4_required_cameras,
@@ -92,9 +94,14 @@ def test_inject_outages_drops_unavailable_fix_and_uses_circuit_style_fallback():
 
 def test_pareto_frontier_zeroes_withholding_at_max_zone_rate():
     params = HarnessParams(cadence_sec=60, tier_vmax_mps=10)
+    fixes = [
+        _fix(0, 0, 0, 0),
+        _fix(1, 60, 600, 1),
+        _fix(2, 120, 1200, 2),
+    ]
 
     rows = e2_pareto_frontier(
-        [_fixes()],
+        [fixes],
         _tariff(),
         params,
         lambda fix: "open_sky",
@@ -105,6 +112,32 @@ def test_pareto_frontier_zeroes_withholding_at_max_zone_rate():
     assert rows[0]["withholding_gain_median"] > 0
     assert rows[1]["ge_max_zone_rate"] is True
     assert rows[1]["withholding_gain_median"] == 0
+
+
+def test_declared_outage_and_withholding_use_settlement_fallback_branch():
+    params = HarnessParams(cadence_sec=60, tier_vmax_mps=10)
+    fixes = [_fix(0, 0, 0, 1), _fix(1, 60, 600, 2)]
+
+    bill = bill_with_declared_outages(
+        fixes,
+        _tariff(),
+        params,
+        [0],
+        fallback_rate_cents_per_m=2,
+    )
+    attack = e2_withholding_min_fee(
+        fixes,
+        _tariff(),
+        params,
+        fallback_rate_cents_per_m=2,
+    )
+
+    assert bill["total_fee_cents"] == 1200
+    assert bill["fallback_intervals"] == 1
+    assert bill["speed_bound_ok"] is True
+    assert attack["truthful_fee_cents"] == 3000
+    assert attack["strategic_min_fee_cents"] == 1200
+    assert attack["declared_outage_edges"] == [0]
 
 
 def test_e4_camera_model_and_deterrence_threshold():

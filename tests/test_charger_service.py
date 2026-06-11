@@ -16,7 +16,9 @@ from common.settlement import (
     ReceiverFix,
     TariffTable,
     build_period_public_statement,
+    field_from_text,
     make_device_attestation_commitment,
+    sign_receiver_root_attestation,
     sign_receiver_fix,
 )
 from services.charger import app as charger_app
@@ -64,6 +66,45 @@ def _register_device(client: TestClient) -> None:
     )
     assert resp.status_code == 200
     assert resp.json()["device_attestation_commitment"] == _TEST_DAC
+
+
+def _public_signals(public: dict[str, object]) -> list[str]:
+    return [
+        str(public["receiver_fix_root"]),
+        str(public["tariff_root"]),
+        str(public["interval_commitment_root"]),
+        str(public["period_id_field"]),
+        str(public["tariff_version"]),
+        str(field_from_text(str(public["device_attestation_commitment"]))),
+        str(public["total_fee_cents"]),
+        str(public["total_distance_m"]),
+        str(public["fallback_intervals"]),
+        str(public["cadence_sec"]),
+        str(public["tier_vmax_mps"]),
+        str(public["tier_vmax_sq"]),
+        str(public["mode_vmax_sq"]),
+        str(public["cap_policy_sq"]),
+        str(public["max_zone_rate_cents_per_m"]),
+        str(public["max_dt_sec"]),
+        str(public["period_start_time"]),
+        str(public["period_end_time"]),
+        str(public["month_id_field"]),
+        str(public["month_start_time"]),
+        str(public["month_end_time"]),
+    ]
+
+
+def _proof_only_payload(public: dict[str, object]) -> dict[str, object]:
+    return {
+        "public_statement": public,
+        "proof": {},
+        "public_signals": _public_signals(public),
+        "root_attestation": sign_receiver_root_attestation(
+            public_statement=public,
+            device_id="dev-1",
+            private_key_bytes=_TEST_SEED,
+        ),
+    }
 
 
 def test_charger_accepts_period_and_aggregates_month():
@@ -200,6 +241,105 @@ def test_charger_binds_proof_time_window_public_signals_to_statement():
     signals[-1] = str(int(signals[-1]) - 1)
     with pytest.raises(ValueError, match="time-window public signals"):
         charger_app._validate_zk_time_signals(public, signals)
+
+
+def test_charger_accepts_proof_only_period_without_raw_fixes():
+    client = TestClient(charger_app.app)
+    client.post("/settlement/reset")
+    _register_device(client)
+
+    fixes = [_fix(0, 1_777_593_600, 1_000, 0, 0), _fix(1, 1_777_593_900, 1_070, 1, 0)]
+    public = build_period_public_statement(
+        fixes=fixes,
+        tariff=_tariff(),
+        period_id="2026-05-p01",
+        month_id="2026-05",
+        cadence_sec=300,
+        tier_vmax_mps=33,
+        device_attestation_commitment=_TEST_DAC,
+    )
+
+    resp = client.post("/settlement/period/proof-only", json=_proof_only_payload(public))
+
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["accepted_public"]["receiver_fix_root"] == public["receiver_fix_root"]
+    assert body["accepted_public"]["total_fee_cents"] == public["total_fee_cents"]
+    month = client.get("/settlement/month/2026-05").json()
+    assert month["periods"] == 1
+    assert month["total_fee_cents"] == public["total_fee_cents"]
+
+
+def test_charger_rejects_proof_only_payload_with_raw_fixes_field():
+    client = TestClient(charger_app.app)
+    client.post("/settlement/reset")
+    _register_device(client)
+
+    fixes = [_fix(0, 1_777_593_600, 1_000, 0, 0), _fix(1, 1_777_593_900, 1_070, 1, 0)]
+    public = build_period_public_statement(
+        fixes=fixes,
+        tariff=_tariff(),
+        period_id="2026-05-p01",
+        month_id="2026-05",
+        cadence_sec=300,
+        tier_vmax_mps=33,
+        device_attestation_commitment=_TEST_DAC,
+    )
+    payload = {**_proof_only_payload(public), "fixes": [fix.to_dict() for fix in fixes]}
+
+    resp = client.post("/settlement/period/proof-only", json=payload)
+
+    assert resp.status_code == 422
+
+
+def test_charger_rejects_proof_only_public_signal_drift():
+    client = TestClient(charger_app.app)
+    client.post("/settlement/reset")
+    _register_device(client)
+
+    fixes = [_fix(0, 1_777_593_600, 1_000, 0, 0), _fix(1, 1_777_593_900, 1_070, 1, 0)]
+    public = build_period_public_statement(
+        fixes=fixes,
+        tariff=_tariff(),
+        period_id="2026-05-p01",
+        month_id="2026-05",
+        cadence_sec=300,
+        tier_vmax_mps=33,
+        device_attestation_commitment=_TEST_DAC,
+    )
+    payload = _proof_only_payload(public)
+    signals = list(payload["public_signals"])
+    signals[0] = str(int(signals[0]) + 1)
+    payload["public_signals"] = signals
+
+    resp = client.post("/settlement/period/proof-only", json=payload)
+
+    assert resp.status_code == 400
+    assert "public signals" in resp.json()["detail"]
+
+
+def test_charger_rejects_proof_only_bad_root_attestation():
+    client = TestClient(charger_app.app)
+    client.post("/settlement/reset")
+    _register_device(client)
+
+    fixes = [_fix(0, 1_777_593_600, 1_000, 0, 0), _fix(1, 1_777_593_900, 1_070, 1, 0)]
+    public = build_period_public_statement(
+        fixes=fixes,
+        tariff=_tariff(),
+        period_id="2026-05-p01",
+        month_id="2026-05",
+        cadence_sec=300,
+        tier_vmax_mps=33,
+        device_attestation_commitment=_TEST_DAC,
+    )
+    payload = _proof_only_payload(public)
+    payload["root_attestation"] = {**payload["root_attestation"], "signature": "invalid"}
+
+    resp = client.post("/settlement/period/proof-only", json=payload)
+
+    assert resp.status_code == 400
+    assert "root attestation" in resp.json()["detail"]
 
 
 def test_charger_rejects_unregistered_device():

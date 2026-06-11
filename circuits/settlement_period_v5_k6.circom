@@ -17,6 +17,12 @@ include "settlement_period_v5_base.circom";
 // [12] mode_vmax_sq
 // [13] cap_policy_sq
 // [14] max_zone_rate_cents_per_m
+// [15] max_dt_sec
+// [16] period_start_time
+// [17] period_end_time
+// [18] month_id
+// [19] month_start_time
+// [20] month_end_time
 //
 // Core RUC prototype profile:
 // - 25 signed fixes = 24 intervals
@@ -37,5 +43,11 @@ component main {public [
     tier_vmax_sq,
     mode_vmax_sq,
     cap_policy_sq,
-    max_zone_rate_cents_per_m
+    max_zone_rate_cents_per_m,
+    max_dt_sec,
+    period_start_time,
+    period_end_time,
+    month_id,
+    month_start_time,
+    month_end_time
 ]} = SettlementPeriodV5(25, 8, 6);

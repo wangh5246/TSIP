@@ -19,8 +19,10 @@ SNARK_FIELD = 218882428718392752222464057452572750885483644004160343436982041865
 
 SETTLEMENT_FIX_DOMAIN = "tsip_settlement_receiver_fix_v1"
 SETTLEMENT_PUBLIC_DOMAIN = "tsip_settlement_public_v1"
+SETTLEMENT_ROOT_ATTESTATION_DOMAIN = "tsip_settlement_receiver_root_attestation_v1"
 SETTLEMENT_MAX_DT_SEC = 600
 SETTLEMENT_PERIOD_MAX_SEC = 14_400
+SETTLEMENT_CAP_POLICY_SQ = 3_000_000_000
 
 
 def canonical_json(obj: Any) -> str:
@@ -89,6 +91,64 @@ def make_device_attestation_commitment(public_key_bytes: bytes) -> str:
     and reject any submission whose device_attestation_commitment does not match.
     """
     return _b64url(public_key_bytes)
+
+
+def compute_public_statement_commitment(public_statement: dict[str, Any]) -> str:
+    """Return the canonical commitment over a public statement body."""
+
+    body = dict(public_statement)
+    body.pop("statement_commitment", None)
+    return str(field_from_text(canonical_json(body)))
+
+
+def verify_public_statement_commitment(public_statement: dict[str, Any]) -> bool:
+    return str(public_statement.get("statement_commitment", "")) == compute_public_statement_commitment(public_statement)
+
+
+def receiver_root_attestation_payload(*, public_statement: dict[str, Any], device_id: str) -> dict[str, Any]:
+    return {
+        "domain_sep": SETTLEMENT_ROOT_ATTESTATION_DOMAIN,
+        "device_id": str(device_id),
+        "period_id": str(public_statement["period_id"]),
+        "receiver_fix_root": str(public_statement["receiver_fix_root"]),
+        "device_attestation_commitment": str(public_statement["device_attestation_commitment"]),
+        "statement_commitment": str(public_statement["statement_commitment"]),
+    }
+
+
+def sign_receiver_root_attestation(
+    *,
+    public_statement: dict[str, Any],
+    device_id: str,
+    private_key_bytes: bytes,
+) -> dict[str, str]:
+    """Sign the receiver root and public-statement commitment.
+
+    This is the proof-only submission gate: the charger verifies this signature
+    against the registered device key instead of receiving every raw fix.
+    """
+
+    payload = receiver_root_attestation_payload(public_statement=public_statement, device_id=device_id)
+    private_key = Ed25519PrivateKey.from_private_bytes(private_key_bytes)
+    sig = private_key.sign(canonical_json(payload).encode("utf-8"))
+    return {"device_id": str(device_id), "signature": _b64url(sig)}
+
+
+def verify_receiver_root_attestation(
+    *,
+    public_statement: dict[str, Any],
+    attestation: dict[str, Any],
+    public_key_bytes: bytes,
+) -> bool:
+    try:
+        device_id = str(attestation["device_id"])
+        sig = _b64url_decode(str(attestation["signature"]))
+        payload = receiver_root_attestation_payload(public_statement=public_statement, device_id=device_id)
+        public_key = Ed25519PublicKey.from_public_bytes(public_key_bytes)
+        public_key.verify(sig, canonical_json(payload).encode("utf-8"))
+        return True
+    except (InvalidSignature, Exception):
+        return False
 
 
 @dataclass(frozen=True)
@@ -359,6 +419,7 @@ def fee_for_period(
     cadence_sec: int,
     tier_vmax_mps: int,
     max_dt_sec: int = SETTLEMENT_MAX_DT_SEC,
+    fallback_rate_cents_per_m: int | None = None,
     dac_field: int = 0,
 ) -> dict[str, Any]:
     if len(fixes) < 2:
@@ -371,26 +432,25 @@ def fee_for_period(
     interval_commitments: list[int] = []
     for prev, curr in zip(fixes, fixes[1:]):
         dt = int(curr.auth_gnss_time) - int(prev.auth_gnss_time)
-        if dt <= 0:
-            raise ValueError("non-positive authenticated time delta")
-        if dt > int(max_dt_sec):
-            raise ValueError("authenticated time delta exceeds maximum")
         odo_delta = int(curr.odometer_reading_m) - int(prev.odometer_reading_m)
-        if odo_delta < 0:
-            raise ValueError("negative odometer delta")
-        if odo_delta > dt * int(tier_vmax_mps):
-            raise ValueError("odometer delta exceeds tier speed budget")
         cell_idx = tariff.cell_index(prev.cell_x, prev.cell_y)
-        zone_id = tariff.zone_for_cell(cell_idx)
-        zone_rate = tariff.rate_for_zone(zone_id)
-        if dt > int(cadence_sec):
-            charged_distance = int(math.ceil(dt * int(tier_vmax_mps)))
-            fee = charged_distance * tariff.max_zone_rate_cents_per_m
-            fallback_distance += charged_distance
+        interval = fee_for_interval_values(
+            dt_sec=dt,
+            odo_delta_m=odo_delta,
+            cell_idx=cell_idx,
+            tariff=tariff,
+            cadence_sec=cadence_sec,
+            tier_vmax_mps=tier_vmax_mps,
+            max_dt_sec=max_dt_sec,
+            fallback_rate_cents_per_m=fallback_rate_cents_per_m,
+        )
+        zone_id = int(interval["zone_id"])
+        zone_rate = int(interval["zone_rate_cents_per_m"])
+        fee = int(interval["fee_cents"])
+        if bool(interval["fallback"]):
+            fallback_distance += int(interval["charged_distance_m"])
             fallback_intervals += 1
         else:
-            charged_distance = odo_delta
-            fee = odo_delta * zone_rate
             private_zone_distance[zone_id] = private_zone_distance.get(zone_id, 0) + odo_delta
         total_distance += odo_delta
         total_fee += fee
@@ -417,6 +477,50 @@ def fee_for_period(
     }
 
 
+def fee_for_interval_values(
+    *,
+    dt_sec: int,
+    odo_delta_m: int,
+    cell_idx: int,
+    tariff: TariffTable,
+    cadence_sec: int,
+    tier_vmax_mps: int,
+    max_dt_sec: int | None = SETTLEMENT_MAX_DT_SEC,
+    fallback_rate_cents_per_m: int | None = None,
+    fallback_override: bool | None = None,
+) -> dict[str, int | bool]:
+    dt = int(dt_sec)
+    odo_delta = int(odo_delta_m)
+    if dt <= 0:
+        raise ValueError("non-positive authenticated time delta")
+    if max_dt_sec is not None and dt > int(max_dt_sec):
+        raise ValueError("authenticated time delta exceeds maximum")
+    if odo_delta < 0:
+        raise ValueError("negative odometer delta")
+    if odo_delta > dt * int(tier_vmax_mps):
+        raise ValueError("odometer delta exceeds tier speed budget")
+    zone_id = tariff.zone_for_cell(int(cell_idx))
+    zone_rate = tariff.rate_for_zone(zone_id)
+    fallback = bool(dt > int(cadence_sec) if fallback_override is None else fallback_override)
+    if fallback:
+        charged_distance = int(math.ceil(dt * int(tier_vmax_mps)))
+        rate = tariff.max_zone_rate_cents_per_m if fallback_rate_cents_per_m is None else int(fallback_rate_cents_per_m)
+        fee = charged_distance * rate
+    else:
+        charged_distance = odo_delta
+        fee = odo_delta * zone_rate
+    return {
+        "fee_cents": int(fee),
+        "charged_distance_m": int(charged_distance),
+        "fallback": bool(fallback),
+        "zone_id": int(zone_id),
+        "zone_rate_cents_per_m": int(zone_rate),
+        "fallback_rate_cents_per_m": int(
+            tariff.max_zone_rate_cents_per_m if fallback_rate_cents_per_m is None else fallback_rate_cents_per_m
+        ),
+    }
+
+
 def build_period_public_statement(
     *,
     fixes: list[ReceiverFix],
@@ -426,6 +530,8 @@ def build_period_public_statement(
     cadence_sec: int,
     tier_vmax_mps: int,
     max_dt_sec: int = SETTLEMENT_MAX_DT_SEC,
+    mode_vmax_sq: int | None = None,
+    cap_policy_sq: int = SETTLEMENT_CAP_POLICY_SQ,
     device_attestation_commitment: str,
     reveal_total_miles: bool = True,
     tariff_tree_depth: int | None = None,
@@ -452,6 +558,7 @@ def build_period_public_statement(
     public = {
         "domain_sep": SETTLEMENT_PUBLIC_DOMAIN,
         "period_id": str(period_id),
+        "period_id_field": field_from_text(str(period_id)),
         "month_id": str(month_id),
         "month_id_field": month_id_field,
         "month_start_time": month_start_time,
@@ -460,6 +567,12 @@ def build_period_public_statement(
         "period_end_time": period_end_time,
         "max_dt_sec": int(max_dt_sec),
         "tariff_version": int(tariff.tariff_version),
+        "cadence_sec": int(cadence_sec),
+        "tier_vmax_mps": int(tier_vmax_mps),
+        "tier_vmax_sq": int(tier_vmax_mps) * int(tier_vmax_mps),
+        "mode_vmax_sq": int(mode_vmax_sq) if mode_vmax_sq is not None else int(tier_vmax_mps) * int(tier_vmax_mps),
+        "cap_policy_sq": int(cap_policy_sq),
+        "max_zone_rate_cents_per_m": int(tariff.max_zone_rate_cents_per_m),
         "receiver_fix_root": str(fix_root),
         "tariff_root": str(tariff.root(tariff_tree_depth)),
         "interval_commitment_root": str(fee["interval_commitment_root"]),
@@ -469,7 +582,7 @@ def build_period_public_statement(
     }
     if reveal_total_miles:
         public["total_distance_m"] = int(fee["total_distance_m"])
-    public["statement_commitment"] = str(field_from_text(canonical_json(public)))
+    public["statement_commitment"] = compute_public_statement_commitment(public)
     return public
 
 

@@ -13,7 +13,7 @@ from common.eval_harness import (
     check_constraints,
     compute_bill,
 )
-from common.settlement import ReceiverFix, TariffTable
+from common.settlement import ReceiverFix, TariffTable, fee_for_interval_values
 
 
 DEFAULT_OUTAGE_RATES: dict[str, float] = {
@@ -104,6 +104,139 @@ def e2_fallback_penalty(
     }
 
 
+def bill_with_declared_outages(
+    fixes: list[ReceiverFix],
+    tariff: TariffTable,
+    params: HarnessParams,
+    outage_edges: Iterable[int],
+    *,
+    fallback_rate_cents_per_m: int | None = None,
+) -> dict:
+    """Bill true intervals while forcing selected edges through fallback."""
+
+    outage_set = {int(edge) for edge in outage_edges}
+    total_fee = 0
+    exact_fee = 0
+    total_distance = 0
+    fallback_distance = 0
+    fallback_intervals = 0
+    private_zone_distance: dict[int, int] = {}
+    min_speed_bound_slack_m: int | None = None
+    for edge_idx, (prev, curr) in enumerate(zip(fixes, fixes[1:])):
+        dt = int(curr.auth_gnss_time) - int(prev.auth_gnss_time)
+        odo_delta = int(curr.odometer_reading_m) - int(prev.odometer_reading_m)
+        cell_idx = tariff.cell_index(prev.cell_x, prev.cell_y)
+        exact = fee_for_interval_values(
+            dt_sec=dt,
+            odo_delta_m=odo_delta,
+            cell_idx=cell_idx,
+            tariff=tariff,
+            cadence_sec=int(params.cadence_sec),
+            tier_vmax_mps=int(params.tier_vmax_mps),
+            max_dt_sec=int(params.max_dt_sec),
+            fallback_override=False,
+        )
+        interval = fee_for_interval_values(
+            dt_sec=dt,
+            odo_delta_m=odo_delta,
+            cell_idx=cell_idx,
+            tariff=tariff,
+            cadence_sec=int(params.cadence_sec),
+            tier_vmax_mps=int(params.tier_vmax_mps),
+            max_dt_sec=int(params.max_dt_sec),
+            fallback_rate_cents_per_m=fallback_rate_cents_per_m,
+            fallback_override=edge_idx in outage_set,
+        )
+        exact_fee += int(exact["fee_cents"])
+        total_fee += int(interval["fee_cents"])
+        total_distance += odo_delta
+        if bool(interval["fallback"]):
+            charged_distance = int(interval["charged_distance_m"])
+            fallback_distance += charged_distance
+            fallback_intervals += 1
+            slack = charged_distance - odo_delta
+            min_speed_bound_slack_m = slack if min_speed_bound_slack_m is None else min(min_speed_bound_slack_m, slack)
+        else:
+            zone_id = int(interval["zone_id"])
+            private_zone_distance[zone_id] = private_zone_distance.get(zone_id, 0) + odo_delta
+    return {
+        "total_fee_cents": int(total_fee),
+        "exact_fee_cents": int(exact_fee),
+        "total_distance_m": int(total_distance),
+        "fallback_distance_m": int(fallback_distance),
+        "fallback_intervals": int(fallback_intervals),
+        "private_zone_distance_m": dict(sorted(private_zone_distance.items())),
+        "speed_bound_ok": min_speed_bound_slack_m is None or min_speed_bound_slack_m >= 0,
+        "min_speed_bound_slack_m": "" if min_speed_bound_slack_m is None else int(min_speed_bound_slack_m),
+    }
+
+
+def e2_withholding_min_fee(
+    fixes: list[ReceiverFix],
+    tariff: TariffTable,
+    params: HarnessParams,
+    *,
+    fallback_rate_cents_per_m: int,
+) -> dict:
+    """Solve the per-interval outage-declaration min-fee problem."""
+
+    truthful = bill_with_declared_outages(
+        fixes,
+        tariff,
+        params,
+        [],
+        fallback_rate_cents_per_m=int(fallback_rate_cents_per_m),
+    )
+    truthful_fee = int(truthful["total_fee_cents"])
+    selected_edges: list[int] = []
+    strategic_fee = 0
+    min_speed_bound_slack_m: int | None = None
+    for edge_idx, (prev, curr) in enumerate(zip(fixes, fixes[1:])):
+        dt = int(curr.auth_gnss_time) - int(prev.auth_gnss_time)
+        odo_delta = int(curr.odometer_reading_m) - int(prev.odometer_reading_m)
+        cell_idx = tariff.cell_index(prev.cell_x, prev.cell_y)
+        exact = fee_for_interval_values(
+            dt_sec=dt,
+            odo_delta_m=odo_delta,
+            cell_idx=cell_idx,
+            tariff=tariff,
+            cadence_sec=int(params.cadence_sec),
+            tier_vmax_mps=int(params.tier_vmax_mps),
+            max_dt_sec=int(params.max_dt_sec),
+            fallback_override=False,
+        )
+        fallback = fee_for_interval_values(
+            dt_sec=dt,
+            odo_delta_m=odo_delta,
+            cell_idx=cell_idx,
+            tariff=tariff,
+            cadence_sec=int(params.cadence_sec),
+            tier_vmax_mps=int(params.tier_vmax_mps),
+            max_dt_sec=int(params.max_dt_sec),
+            fallback_rate_cents_per_m=int(fallback_rate_cents_per_m),
+            fallback_override=True,
+        )
+        exact_fee = int(exact["fee_cents"])
+        fallback_fee = int(fallback["fee_cents"])
+        if fallback_fee < exact_fee:
+            selected_edges.append(edge_idx)
+            strategic_fee += fallback_fee
+            slack = int(fallback["charged_distance_m"]) - odo_delta
+            min_speed_bound_slack_m = slack if min_speed_bound_slack_m is None else min(min_speed_bound_slack_m, slack)
+        else:
+            strategic_fee += exact_fee
+    gain = 0.0 if truthful_fee <= 0 else max(0.0, (truthful_fee - strategic_fee) / truthful_fee)
+    return {
+        "truthful_fee_cents": int(truthful_fee),
+        "strategic_min_fee_cents": int(strategic_fee),
+        "withholding_gain": float(gain),
+        "declared_outage_edges": selected_edges,
+        "declared_outage_intervals": len(selected_edges),
+        "speed_bound_ok": min_speed_bound_slack_m is None or min_speed_bound_slack_m >= 0,
+        "min_speed_bound_slack_m": "" if min_speed_bound_slack_m is None else int(min_speed_bound_slack_m),
+    }
+
+
 def e2_pareto_frontier(
     trajectories: Iterable[list[ReceiverFix]],
     tariff: TariffTable,
@@ -114,7 +247,7 @@ def e2_pareto_frontier(
     outage_rates: dict[str, float] | None = None,
     seed: int = 0,
 ) -> list[dict]:
-    """Compare honest fallback penalty with rate-only withholding benefit."""
+    """Compare honest fallback penalty with per-interval withholding benefit."""
 
     rng = random.Random(seed)
     rows: list[dict] = []
@@ -123,16 +256,30 @@ def e2_pareto_frontier(
         honest_penalties: list[float] = []
         withholding_gains: list[float] = []
         for fixes in trajectories:
-            honest = max(1, int(compute_bill(fixes, tariff, params)["total_fee_cents"]))
+            exact = bill_with_declared_outages(
+                fixes,
+                tariff,
+                params,
+                [],
+                fallback_rate_cents_per_m=int(fallback_rate),
+            )
+            honest = max(1, int(exact["total_fee_cents"]))
             outage = inject_outages(fixes, env_labeler, outage_rates=outage_rates, rng=rng)
-            fallback_bill = _bill_with_fallback_rate(outage.kept_fixes, tariff, params, fallback_rate)
+            fallback_bill = int(
+                compute_bill(
+                    outage.kept_fixes,
+                    tariff,
+                    replace(params, fallback_rate_cents_per_m=int(fallback_rate)),
+                )["total_fee_cents"]
+            )
             honest_penalties.append((fallback_bill - honest) / honest)
-            gain = 0
-            for prev, curr in zip(fixes, fixes[1:]):
-                odo_delta = int(curr.odometer_reading_m) - int(prev.odometer_reading_m)
-                zone = tariff.zone_for_cell(tariff.cell_index(prev.cell_x, prev.cell_y))
-                gain += max(0, tariff.rate_for_zone(zone) - int(fallback_rate)) * odo_delta
-            withholding_gains.append(gain / honest)
+            attack = e2_withholding_min_fee(
+                fixes,
+                tariff,
+                params,
+                fallback_rate_cents_per_m=int(fallback_rate),
+            )
+            withholding_gains.append(float(attack["withholding_gain"]))
         rows.append(
             {
                 "fallback_rate_cents_per_m": int(fallback_rate),
@@ -231,23 +378,6 @@ def e4_deterrence_to_pd(expected_saving: float, fine: float) -> float:
     if expected_saving < 0 or fine <= 0:
         raise ValueError("expected_saving must be non-negative and fine must be positive")
     return min(float(expected_saving) / float(fine), 0.999)
-
-
-def _bill_with_fallback_rate(
-    fixes: list[ReceiverFix],
-    tariff: TariffTable,
-    params: HarnessParams,
-    fallback_rate: int,
-) -> int:
-    total = 0
-    for prev, curr in zip(fixes, fixes[1:]):
-        dt = int(curr.auth_gnss_time) - int(prev.auth_gnss_time)
-        if dt > int(params.cadence_sec):
-            total += math.ceil(dt * int(params.tier_vmax_mps)) * int(fallback_rate)
-        else:
-            zone = tariff.zone_for_cell(tariff.cell_index(prev.cell_x, prev.cell_y))
-            total += (int(curr.odometer_reading_m) - int(prev.odometer_reading_m)) * tariff.rate_for_zone(zone)
-    return total
 
 
 def _percentile(values: list[float], q: float) -> float:
