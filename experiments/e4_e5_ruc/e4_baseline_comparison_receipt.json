@@ -24,10 +24,10 @@
   "client_prove_ms_rapidsnark": 1389.24,
   "client_prove_ms_snarkjs": 7133.64,
   "client_witness_ms": 742.42,
-  "comm_bytes_per_period": 1972,
+  "comm_bytes_per_period": 1971,
   "proof_bytes_rapidsnark": 709,
   "proof_bytes_snarkjs": 805,
   "server_verify_ms": 455.82,
-  "statement_bytes": 1047
+  "statement_bytes": 1046
  }
 }

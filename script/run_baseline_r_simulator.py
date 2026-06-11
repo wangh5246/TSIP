@@ -43,7 +43,7 @@ from common.settlement import fee_for_interval_values  # noqa: E402
 from script.run_e4_e5_ruc_experiments import DEFAULT_INPUTS, PeriodRecord, load_all_records  # noqa: E402
 
 E4_DIR = ROOT_DIR / "experiments" / "e4_e5_ruc"
-CAMERA_BUDGET_GRID = (1, 2, 5, 10, 20, 50, 100, 200, 500)
+CAMERA_BUDGET_GRID = (1, 2, 5, 10, 20, 50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 500)
 OMIT_FRACTIONS = (0.10, 0.20)
 OMIT_POLICIES = ("rational_topfee", "random")
 PLACEMENTS = ("uniform_random", "traffic_weighted_generous")

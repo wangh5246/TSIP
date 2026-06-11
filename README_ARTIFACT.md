@@ -21,6 +21,7 @@ python -m pytest
 ```bash
 python -m pytest tests/test_eval_harness.py tests/test_eval_experiments.py \
   tests/test_run_e1_forensic.py tests/test_run_e4_e5_ruc_experiments.py \
+  tests/test_run_e4_baseline_comparison.py tests/test_run_baseline_r_simulator.py \
   tests/test_build_rome_parking_tariff_geojson.py tests/test_trajectory_preprocess.py
 ```
 
@@ -91,6 +92,8 @@ Public signal 顺序(= `script/prove_settlement_period_v5.py` 的 `PUBLIC_SIGNAL
 | `python script/run_e4_e5_ruc_experiments.py` | E4 spot-check proxy + E5 anonymity set |
 | `python script/prove_settlement_period_v5.py` | E6 单 period witness/prove/verify 实测 |
 | `python script/build_e4_drivable_graph.py` | E4 真实路网宇宙(需 osmium-tool + pyrosm) |
+| `python script/run_e4_baseline_comparison.py` | E4 检出曲线 / 等检出工作点 / R-T-Z head-to-head |
+| `python script/run_baseline_r_simulator.py` | Baseline R 经验 spot-check 仿真 + E5 泄漏光谱 |
 | `python script/bench_rapidsnark.py` | E6 rapidsnark prover 实测(需先编译 rapidsnark) |
 
 性能口径提醒(2026-06-11 更新):`snarkjs` 与 `rapidsnark` 均为 measured;rapidsnark median 1.389s/proof(5 runs,arm64 本机编译),receipt 见 `experiments/e6_rapidsnark/receipt.json`。

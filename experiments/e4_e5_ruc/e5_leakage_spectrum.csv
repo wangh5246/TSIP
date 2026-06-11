@@ -1,6 +1,6 @@
 dataset,system,route_visibility_to_charger,infrastructure,note
 geolife,policy_protected_gps_collection,1.0,0 roadside; full trajectory upload,privacy by policy/access control only
-geolife,spot_check_lineage_baseline_r,1.0,370 cameras (traffic-weighted; empirical P>=0.95 @ rational omit 0.20),honest drivers observed at every covered segment
+geolife,spot_check_lineage_baseline_r,0.963809,350 cameras (traffic-weighted; empirical P>=0.95 @ rational omit 0.20),honest drivers observed at every covered segment
 geolife,tsip_ruc_proof_only,0.0,0 roadside,charger sees leakage profile L only; anonymity sets in e5_empirical_anonymity.csv
 porto,policy_protected_gps_collection,1.0,0 roadside; full trajectory upload,privacy by policy/access control only
 porto,spot_check_lineage_baseline_r,1.0,42 cameras (traffic-weighted; empirical P>=0.95 @ rational omit 0.20),honest drivers observed at every covered segment

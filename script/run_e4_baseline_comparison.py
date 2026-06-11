@@ -34,7 +34,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from common.settlement import canonical_json  # noqa: E402
+from common.settlement import canonical_json, fee_for_interval_values  # noqa: E402
 
 E4_DIR = ROOT_DIR / "experiments" / "e4_e5_ruc"
 E6_RECEIPT = ROOT_DIR / "experiments" / "e6_rapidsnark" / "receipt.json"
@@ -77,26 +77,37 @@ def load_universes() -> dict[str, dict[str, int]]:
     return {"universes": out, "segments_per_driver": spd}
 
 
-def tee_billing_microbench_ms(runs: int = 50) -> float:
+def tee_billing_microbench_ms(runs: int = 200) -> float:
     """Plain-CPU proxy for the in-enclave billing workload of Baseline T.
 
-    Times fee_for_period on the deterministic k6 demo period; the TEE design
-    runs the same tariff arithmetic inside the enclave, so this is a generous
-    (enclave-overhead-free) lower bound for its per-period compute.
+    Times only the tariff/billing arithmetic (fee_for_interval_values over the
+    deterministic k6 demo period). Commitment hashing is deliberately excluded:
+    a TEE billing design attests its output instead of building a Poseidon
+    chain, and including hashing would unfairly inflate the baseline's cost.
+    Enclave transition overhead is also excluded (generous).
     """
 
     import time
 
-    from common.eval_harness import HarnessParams
-    from common.settlement import fee_for_period
     from script.prove_settlement_period_v5 import CADENCE_SEC, MAX_DT_SEC, TIER_VMAX_MPS, build_fixes, build_tariff
 
     tariff = build_tariff()
     fixes = build_fixes("2026-05-tee-bench")
-    _ = HarnessParams  # imported for parity with the prover script's parameters
     t0 = time.perf_counter()
     for _i in range(int(runs)):
-        fee_for_period(fixes, tariff, cadence_sec=CADENCE_SEC, tier_vmax_mps=TIER_VMAX_MPS, max_dt_sec=MAX_DT_SEC)
+        total = 0
+        for prev, curr in zip(fixes, fixes[1:]):
+            total += int(
+                fee_for_interval_values(
+                    dt_sec=int(curr.auth_gnss_time) - int(prev.auth_gnss_time),
+                    odo_delta_m=int(curr.odometer_reading_m) - int(prev.odometer_reading_m),
+                    cell_idx=tariff.cell_index(prev.cell_x, prev.cell_y),
+                    tariff=tariff,
+                    cadence_sec=CADENCE_SEC,
+                    tier_vmax_mps=TIER_VMAX_MPS,
+                    max_dt_sec=MAX_DT_SEC,
+                )["fee_cents"]
+            )
     return (time.perf_counter() - t0) * 1000.0 / int(runs)
 
 
@@ -294,7 +305,7 @@ def build_head_to_head(
             "detection_proof_consistent_relay": "same GNSS exposure as TSIP, unaudited",
             "detection_latency": "n/a",
             "client_cost_per_period": (
-                f"billing arithmetic {tee_ms:.1f} ms plain-CPU proxy for in-enclave compute "
+                f"billing arithmetic {tee_ms:.3f} ms plain-CPU proxy for in-enclave compute "
                 "(measured, enclave overhead excluded; generous)"
             ),
             "server_cost_per_period": "attestation check (modeled as zero; generous)",
