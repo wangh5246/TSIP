@@ -1,0 +1,19 @@
+{
+ "experiment": "E6 rapidsnark measured prover time",
+ "profile": "k6",
+ "proof_json_bytes": 709,
+ "prover_binary": "/tmp/rapidsnark/package_macos_arm64/bin/prover",
+ "public_signal_count": 21,
+ "rapidsnark_prove_ms": [
+  2157.35,
+  1388.38,
+  1389.24,
+  1340.8,
+  1508.09
+ ],
+ "rapidsnark_prove_ms_median": 1389.24,
+ "rapidsnark_prove_ms_min": 1340.8,
+ "runs": 5,
+ "snarkjs_verify_ms": 455.82,
+ "witness_ms_snarkjs": 742.42
+}

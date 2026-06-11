@@ -1,4 +1,7 @@
 dataset,attack_branch,median_savings_ratio,p95_savings_ratio,median_period_fee_cents,revenue_leakage_per_10k_periods_cents_p95,tsip_detection_outcome,spotcheck_detection_outcome
+geolife,no_cadence,0.0,0.0,18230,0.0,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv
+geolife,no_continuity_osnma_lifted,0.08494872317281507,0.14171711612548157,18230,25835030.26967529,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv
+geolife,no_zone_binding,0.2764975221493263,0.4,18230,72920000.0,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv
 rome,no_cadence,0.0,0.001102718200363897,172327.0,1900281.193141093,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv
 rome,no_continuity_osnma_lifted,0.025464673777387363,0.11661779616891836,172327.0,200963949.60401195,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv
 rome,no_zone_binding,0.0020081709707477757,0.021166536987406705,172327.0,36475658.19428835,deterministic reject if proof-violating; E3 quantifies proof-consistent residual,probabilistic and delayed; see e4_spotcheck_summary.csv

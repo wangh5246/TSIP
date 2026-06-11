@@ -1,5 +1,5 @@
 {
-  "command": "script/run_e4_e5_ruc_experiments.py --max-privacy-periods 12 --graph-max-steps 8 --graph-max-states 50000",
+  "command": "script/run_e4_e5_ruc_experiments.py",
   "e1_rows_loaded": {
     "geolife": 4,
     "porto": 4,
@@ -15,17 +15,22 @@
   "environment": {
     "packages": {
       "geopandas": false,
-      "networkx": false,
+      "networkx": true,
       "numpy": true,
       "osmnx": false,
-      "pandas": false,
+      "pandas": true,
       "pyrosm": false,
       "shapely": false
     },
-    "rapidsnark": null,
+    "rapidsnark": "/Users/wanghao/.local/bin/rapidsnark",
     "rapidsnark_prover": null
   },
   "inputs": {
+    "geolife": {
+      "n_periods": 53,
+      "periods": "data/e1_mechanism_ablation/geolife/geolife_medium_identity.jsonl",
+      "tariff": "data/e1_mechanism_ablation/geolife/tariff_block.json"
+    },
     "porto": {
       "n_periods": 10,
       "periods": "data/e1_mechanism_ablation/porto/periods_60s.jsonl",
@@ -47,13 +52,13 @@
     "tariff_grid_proxy_context is reported as a context sensitivity, not the main generous baseline.",
     "E5 reports both empirical anonymity among observed periods and graph-proxy resource-constrained path counts over observed tariff-grid transitions."
   ],
-  "python": "3.12.13 (main, Mar  3 2026, 15:35:03) [Clang 21.1.4 ]",
+  "python": "3.12.7 | packaged by Anaconda, Inc. | (main, Oct  4 2024, 08:28:27) [Clang 14.0.6 ]",
   "settings": {
     "distance_bucket_m": 100,
     "fee_bucket_cents": 5000,
     "graph_max_states": 50000,
     "graph_max_steps": 8,
-    "max_privacy_periods": 12,
+    "max_privacy_periods": 24,
     "p_detect_target": 0.95
   }
 }

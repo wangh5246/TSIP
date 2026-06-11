@@ -1,0 +1,76 @@
+{
+  "alphas": [
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9,
+    1.0,
+    1.1,
+    1.2
+  ],
+  "controlled_durations_sec": [
+    60,
+    120,
+    300
+  ],
+  "datasets": {
+    "geolife": 14,
+    "porto": 10,
+    "rome": 162,
+    "tdrive": 1
+  },
+  "epsilon_targets": [
+    0.0,
+    0.01,
+    0.05
+  ],
+  "fallback_rates_cents_per_m": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14
+  ],
+  "inputs": [
+    "data/e1_mechanism_ablation/geolife/geolife_medium_identity.jsonl",
+    "experiments/e1_rome_real_tariff_ratio_fix/periods_60s.jsonl",
+    "data/e1_mechanism_ablation/porto/periods_60s.jsonl",
+    "data/e1_mechanism_ablation/tdrive/periods_300s.jsonl"
+  ],
+  "outputs": {
+    "alpha_frontier_by_dataset": "experiments/e2_fallback_frontier_all4/alpha_frontier_by_dataset.csv",
+    "alpha_pareto_figure": "experiments/e2_fallback_frontier_all4/fig_e2_pareto_alpha.png",
+    "alpha_period_rows": "experiments/e2_fallback_frontier_all4/alpha_period_rows.csv",
+    "break_even_figure": "experiments/e2_fallback_frontier_all4/fig_e2_break_even_cdf.png",
+    "break_even_intervals": "experiments/e2_fallback_frontier_all4/break_even_intervals.csv",
+    "controlled_frontier_by_dataset": "experiments/e2_fallback_frontier_all4/controlled_frontier_by_dataset.csv",
+    "controlled_outage_rows": "experiments/e2_fallback_frontier_all4/controlled_outage_rows.csv",
+    "figure": "experiments/e2_fallback_frontier_all4/fig_e2_fallback_frontier.png",
+    "forensic_edges": "experiments/e2_fallback_frontier_all4/forensic_edges.csv",
+    "frontier_by_dataset": "experiments/e2_fallback_frontier_all4/frontier_by_dataset.csv",
+    "frontier_combined": "experiments/e2_fallback_frontier_all4/frontier_combined.csv",
+    "frontier_moving_by_dataset": "experiments/e2_fallback_frontier_all4/frontier_moving_by_dataset.csv",
+    "frontier_moving_combined": "experiments/e2_fallback_frontier_all4/frontier_moving_combined.csv",
+    "moving_figure": "experiments/e2_fallback_frontier_all4/fig_e2_fallback_frontier_moving.png",
+    "period_rows": "experiments/e2_fallback_frontier_all4/period_rows.csv",
+    "summary_by_dataset": "experiments/e2_fallback_frontier_all4/summary_by_dataset.csv",
+    "summary_moving_by_dataset": "experiments/e2_fallback_frontier_all4/summary_moving_by_dataset.csv",
+    "tab_e2_incentive_thresholds": "experiments/e2_fallback_frontier_all4/tab_e2_incentive_thresholds.csv",
+    "tab_e2_outage_diagnostic": "experiments/e2_fallback_frontier_all4/tab_e2_outage_diagnostic.csv"
+  },
+  "periods_loaded": 187
+}

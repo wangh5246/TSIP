@@ -1,4 +1,8 @@
 dataset,expected_saving_source,expected_saving_ratio,median_period_fee_cents,detection_probability,deterrence_fine_as_fee_multiple,deterrence_fine_cents
+geolife,max_e1_branch_p95_savings_ratio,0.4,18230,0.1,4.0,72920.0
+geolife,max_e1_branch_p95_savings_ratio,0.4,18230,0.25,1.6,29168.0
+geolife,max_e1_branch_p95_savings_ratio,0.4,18230,0.5,0.8,14584.0
+geolife,max_e1_branch_p95_savings_ratio,0.4,18230,0.95,0.4210526315789474,7675.789473684211
 rome,max_e1_branch_p95_savings_ratio,0.11661779616891836,172327.0,0.1,1.1661779616891836,200963.94960401193
 rome,max_e1_branch_p95_savings_ratio,0.11661779616891836,172327.0,0.25,0.46647118467567344,80385.57984160478
 rome,max_e1_branch_p95_savings_ratio,0.11661779616891836,172327.0,0.5,0.23323559233783672,40192.78992080239
