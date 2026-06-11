@@ -45,8 +45,13 @@ from script.run_e4_e5_ruc_experiments import DEFAULT_INPUTS, PeriodRecord, load_
 E4_DIR = ROOT_DIR / "experiments" / "e4_e5_ruc"
 CAMERA_BUDGET_GRID = (1, 2, 5, 10, 20, 50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 500)
 OMIT_FRACTIONS = (0.10, 0.20)
-OMIT_POLICIES = ("rational_topfee", "random")
-PLACEMENTS = ("uniform_random", "traffic_weighted_generous")
+# adaptive_uncovered: the omitter knows the camera set and hides only uncovered
+# segments — detection probability is zero by construction; the interesting
+# output is the undetected saving that partial coverage leaves on the table.
+OMIT_POLICIES = ("rational_topfee", "random", "adaptive_uncovered")
+# fee_weighted_adversary_aware: defender best response to a rational top-fee
+# omitter — cameras go to the highest-fee segments first.
+PLACEMENTS = ("uniform_random", "traffic_weighted_generous", "fee_weighted_adversary_aware")
 
 
 def segment_key(a: int, b: int) -> tuple[int, int]:
@@ -82,6 +87,7 @@ def omitted_segments(
     omit_fraction: float,
     policy: str,
     rng: random.Random,
+    cameras: frozenset[tuple[int, int]] = frozenset(),
 ) -> list[tuple[int, int]]:
     if not segments:
         return []
@@ -91,12 +97,17 @@ def omitted_segments(
         return [key for key, _fee in ranked[:k]]
     if policy == "random":
         return [key for key, _fee in rng.sample(segments, k)]
+    if policy == "adaptive_uncovered":
+        uncovered = [item for item in segments if item[0] not in cameras]
+        ranked = sorted(uncovered, key=lambda item: (-item[1], item[0]))
+        return [key for key, _fee in ranked[:k]]
     raise ValueError(policy)
 
 
 def camera_sets(
     universe: list[tuple[int, int]],
     traffic: Counter,
+    fee_weight: Counter,
     cameras: int,
     placement: str,
     rng: random.Random,
@@ -105,6 +116,9 @@ def camera_sets(
     cams = min(int(cameras), len(universe))
     if placement == "traffic_weighted_generous":
         ranked = sorted(universe, key=lambda key: (-traffic[key], key))
+        return [frozenset(ranked[:cams])]
+    if placement == "fee_weighted_adversary_aware":
+        ranked = sorted(universe, key=lambda key: (-fee_weight[key], key))
         return [frozenset(ranked[:cams])]
     if placement == "uniform_random":
         return [frozenset(rng.sample(universe, cams)) for _ in range(int(draws))]
@@ -135,8 +149,11 @@ def main() -> None:
             receipt_datasets[dataset] = {"skipped": "no movement segments"}
             continue
         traffic: Counter = Counter()
+        fee_weight: Counter = Counter()
         for _record, segs in per_period:
             traffic.update(key for key, _fee in segs)
+            for key, fee in segs:
+                fee_weight[key] += fee
         universe = sorted(traffic)
         budgets = sorted({c for c in CAMERA_BUDGET_GRID if c <= len(universe)} | {len(universe)})
         receipt_datasets[dataset] = {
@@ -148,7 +165,7 @@ def main() -> None:
         equal_detection: dict[str, int | None] = {}
         for placement in PLACEMENTS:
             for cameras in budgets:
-                sets = camera_sets(universe, traffic, cameras, placement, rng, int(args.draws))
+                sets = camera_sets(universe, traffic, fee_weight, cameras, placement, rng, int(args.draws))
                 visibility: list[float] = []
                 observed_counts: list[int] = []
                 for cams in sets:
@@ -172,12 +189,20 @@ def main() -> None:
                     for omit in OMIT_FRACTIONS:
                         caught = 0
                         trials = 0
+                        omitted_fee_ratios: list[float] = []
+                        undetected_fee_ratios: list[float] = []
                         for cams in sets:
                             for _record, segs in per_period:
-                                omitted = omitted_segments(segs, omit, omit_policy, rng)
+                                omitted = omitted_segments(segs, omit, omit_policy, rng, cameras=cams)
+                                total_fee = sum(fee for _key, fee in segs)
+                                omitted_fee = sum(fee for key, fee in segs if key in set(omitted))
+                                ratio = omitted_fee / total_fee if total_fee else 0.0
+                                omitted_fee_ratios.append(ratio)
                                 trials += 1
                                 if any(key in cams for key in omitted):
                                     caught += 1
+                                else:
+                                    undetected_fee_ratios.append(ratio)
                         p_emp = caught / trials if trials else 0.0
                         detection_rows.append(
                             {
@@ -187,6 +212,14 @@ def main() -> None:
                                 "omit_fraction": omit,
                                 "cameras": cameras,
                                 "empirical_p_detect": round(p_emp, 6),
+                                "p_detect_30_periods": round(1.0 - (1.0 - p_emp) ** 30, 6),
+                                "mean_omitted_fee_ratio": round(statistics.fmean(omitted_fee_ratios), 6)
+                                if omitted_fee_ratios
+                                else 0.0,
+                                "mean_undetected_fee_ratio": round(statistics.fmean(undetected_fee_ratios), 6)
+                                if undetected_fee_ratios
+                                else 0.0,
+                                "undetected_share": round(len(undetected_fee_ratios) / trials, 6) if trials else 0.0,
                                 "trials": trials,
                                 "tsip_p_detect_proof_violating": 1.0,
                                 "tsip_cameras": 0,

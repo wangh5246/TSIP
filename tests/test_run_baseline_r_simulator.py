@@ -71,13 +71,37 @@ def test_rational_omission_hides_most_expensive_segment() -> None:
 def test_full_universe_cameras_always_detect() -> None:
     segs = period_segments(_record())
     universe = [key for key, _fee in segs]
-    cams = camera_sets(universe, Counter(universe), len(universe), "traffic_weighted_generous", random.Random(0), 1)
+    cams = camera_sets(
+        universe, Counter(universe), Counter(), len(universe), "traffic_weighted_generous", random.Random(0), 1
+    )
     omitted = omitted_segments(segs, 0.2, "random", random.Random(1))
     assert any(key in cams[0] for key in omitted)
 
 
 def test_uniform_random_draw_count_and_size() -> None:
     universe = [(0, 1), (1, 3), (2, 3), (0, 2)]
-    draws = camera_sets(universe, Counter(universe), 2, "uniform_random", random.Random(0), 7)
+    draws = camera_sets(universe, Counter(universe), Counter(), 2, "uniform_random", random.Random(0), 7)
     assert len(draws) == 7
     assert all(len(d) == 2 for d in draws)
+
+
+def test_adaptive_omitter_evades_partial_coverage_with_positive_saving() -> None:
+    # Cameras on the most expensive segment; the adaptive omitter hides the
+    # cheaper uncovered one — never detected, still saves money.
+    segs = period_segments(_record())
+    fee_weight = Counter({key: fee for key, fee in segs})
+    universe = [key for key, _fee in segs]
+    cams = camera_sets(universe, Counter(universe), fee_weight, 1, "fee_weighted_adversary_aware", random.Random(0), 1)
+    assert cams[0] == frozenset({segment_key(2, 3)})  # highest-fee segment covered
+    omitted = omitted_segments(segs, 0.2, "adaptive_uncovered", random.Random(0), cameras=cams[0])
+    assert omitted == [segment_key(0, 2)]  # hides the uncovered segment instead
+    assert not any(key in cams[0] for key in omitted)  # zero detection
+    assert dict(segs)[segment_key(0, 2)] > 0  # but positive undetected saving
+
+
+def test_adaptive_omitter_under_full_coverage_has_no_evasion() -> None:
+    segs = period_segments(_record())
+    universe = [key for key, _fee in segs]
+    full = frozenset(universe)
+    omitted = omitted_segments(segs, 0.2, "adaptive_uncovered", random.Random(0), cameras=full)
+    assert omitted == []  # nothing uncovered left to hide

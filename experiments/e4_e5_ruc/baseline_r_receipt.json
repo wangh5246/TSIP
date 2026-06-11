@@ -65,7 +65,8 @@
  "experiment": "Baseline R reconstructed spot-check simulator",
  "omit_policies": [
   "rational_topfee",
-  "random"
+  "random",
+  "adaptive_uncovered"
  ],
  "outputs": [
   "baseline_r_detection_empirical.csv",
@@ -75,7 +76,8 @@
  ],
  "placements": [
   "uniform_random",
-  "traffic_weighted_generous"
+  "traffic_weighted_generous",
+  "fee_weighted_adversary_aware"
  ],
  "seed": 20260611,
  "universe": "observed undirected tariff-grid segments (Tier-1 discipline: no map matching)"
