@@ -1,5 +1,0 @@
-circuit,prover,constraints,iterations,prove_ms_avg,verify_ms_avg,proof_bytes
-tsip_step,snarkjs,70,1,1469.553,1376.0,803
-tsip_main_v3_k6,snarkjs,2667,1,2539.77,2588.81,805
-tsip_step,rapidsnark,70,1,1470.232,1252.24,704
-tsip_main_v3_k6,rapidsnark,2667,1,542.043,2331.168,708

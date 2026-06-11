@@ -1,7 +1,0 @@
-scheme,a1_tpr,a2_tpr,a5_tpr,jaccard,frr,comm_kb,epsilon,malicious_rate,attack_type,dataset,n_rounds,n_users,source
-TSIP (Full),1.00,1.00,1.00,1.0000,0.0402,2,1.0,0.1,boundary_teleport_7200m,T-Drive,10,50,system_results
-Commit-Only,0.00,1.00,1.00,1.0000,0.0000,1,1.0,0.1,boundary_teleport_7200m,T-Drive,10,50,system_results
-No-Integrity,0.00,0.00,0.00,1.0000,0.0000,1,1.0,0.1,boundary_teleport_7200m,T-Drive,10,50,system_results
-Nebula,0.00,0.00,0.00,0.0000,0.0000,2.7,1.0,0.1,boundary_teleport_7200m,T-Drive,10,50,standalone_baseline
-Pure LDP,0.00,0.00,0.00,0.0040,0.0000,0.01,1.0,0.1,boundary_teleport_7200m,T-Drive,10,50,standalone_baseline
-EIFFeL-style,0.00,0.00,0.00,0.1699,0.0000,40.0,1.0,0.1,boundary_teleport_7200m,T-Drive,10,50,standalone_baseline

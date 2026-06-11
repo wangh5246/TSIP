@@ -1,3 +1,0 @@
-profile,witness_ms_mean,witness_ms_std,groth16_prove_ms_mean,groth16_prove_ms_std,fullprove_ms_mean,fullprove_ms_std,witness_pct_of_full,prove_pct_of_full
-k6,593.220,186.998,2018.928,922.966,1944.585,614.092,30.506,103.823
-k30,478.924,22.657,1273.846,47.108,1563.064,219.277,30.640,81.497

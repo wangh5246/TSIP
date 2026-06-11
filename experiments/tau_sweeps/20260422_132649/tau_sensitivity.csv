@@ -1,2 +1,0 @@
-tau,tau2,attack_type,malicious_rate,n_seeds,avg_tpr_attack,std_tpr_attack,ci95_tpr_attack,avg_benign_frr,std_benign_frr,ci95_benign_frr
-1,1,gradual_drift,0.10,1,1.000000,0.000000,0.000000,0.192000,0.000000,0.000000

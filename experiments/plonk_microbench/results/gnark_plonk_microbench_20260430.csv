@@ -1,3 +1,0 @@
-system,backend,constraints,public_inputs,secret_inputs,internal_vars,setup_ms,prove_mean_ms,prove_std_ms,verify_mean_ms,verify_std_ms,proof_bytes,pk_bytes,vk_bytes,iterations,notes
-gnark,groth16_bn254,2667,11,1,2666,324.012,27.380,6.653,1.966,0.467,164,307815,684,10,constraint-matched synthetic circuit; 11 public inputs; gnark Groth16 over BN254
-gnark,plonk_bn254_kzg,2667,11,1,2666,42.933,120.172,8.326,2.286,0.351,520,296576,34328,10,constraint-matched synthetic circuit; 11 public inputs; gnark PLONK over BN254/KZG; unsafe test SRS for benchmarking only

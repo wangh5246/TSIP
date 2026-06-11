@@ -1,7 +1,0 @@
-Path,Mean,Std,Runs,Notes
-Client proof generation K6,1651.2 ms,182.6,10,snarkjs/WASM
-Client proof generation K30,1517.8 ms,108.9,10,snarkjs/WASM
-Shuffler Groth16 verify,1053.4 ms,125.6,10,proof only; TSIP-K6
-Shuffler full accept path,1048.2 ms,142.5,10,proof + commitment checks
-Aggregator share validation,1.9 ms,0.1,10,dense/VDAF validation
-Decoder aggregation,7.1 ms,1.4,10,aggregate + DP

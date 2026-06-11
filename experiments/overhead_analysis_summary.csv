@@ -1,8 +1,0 @@
-scheme_key,scheme_label,client_compute_ms,server_verify_ms,comm_bytes_per_client_round,comm_time_ms,e2e_ms,comm_profile,bandwidth_mbps,prover,zk_benchmark_csv
-full,TSIP (Full),1171.0443994613997,1067.5172299998776,5614,4.4912,2243.0528294612773,system,10.0,rapidsnark,/Users/wanghao/Desktop/risefl_mvp/experiments/zk_benchmark_20260324_125350.csv
-commit_only,Commit-Only,758.4373994613998,0.21322999987751245,3860,3.088,761.7386294612772,system,10.0,rapidsnark,/Users/wanghao/Desktop/risefl_mvp/experiments/zk_benchmark_20260324_125350.csv
-no_integ,No-Integrity,10.863238014280796,0.01130364602431655,2700,2.16,13.034541660305113,system,10.0,rapidsnark,/Users/wanghao/Desktop/risefl_mvp/experiments/zk_benchmark_20260324_125350.csv
-risefl,RiseFL,11.082023434573784,0.0021076458506286144,2772,2.2176,13.301731080424414,system,10.0,rapidsnark,/Users/wanghao/Desktop/risefl_mvp/experiments/zk_benchmark_20260324_125350.csv
-nebula,Nebula,11.075360409449786,0.0005477266944944859,2700,2.16,13.23590813614428,system,10.0,rapidsnark,/Users/wanghao/Desktop/risefl_mvp/experiments/zk_benchmark_20260324_125350.csv
-ldp,Pure LDP,10.439249995397404,0.0005144133232533932,2700,2.16,12.599764408720658,system,10.0,rapidsnark,/Users/wanghao/Desktop/risefl_mvp/experiments/zk_benchmark_20260324_125350.csv
-eiffel,EIFFeL-style,10.968585935188457,0.00010677101090550423,2700,2.16,13.128692706199363,system,10.0,rapidsnark,/Users/wanghao/Desktop/risefl_mvp/experiments/zk_benchmark_20260324_125350.csv

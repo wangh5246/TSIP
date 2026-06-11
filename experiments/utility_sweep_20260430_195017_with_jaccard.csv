@@ -1,2 +1,0 @@
-mode,malicious_rate,round_idx,malicious_reject_rate,false_reject_rate,jaccard,rmse,relative_error,cells_kept_post,dump_file
-full,0.0,1,0.0,0.0,0.0,0.033166247903554,0.9999999992222222,0,full_mal0.0_r1.json

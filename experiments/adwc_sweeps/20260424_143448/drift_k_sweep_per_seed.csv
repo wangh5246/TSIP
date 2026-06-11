@@ -1,6 +1,0 @@
-profile,k,policy_cap_m,drift_bias_ratio,malicious_rate,seed,avg_tpr,avg_frr,frr_a3_circuit,frr_session_timing,avg_drift_offset_m,round_csv,run_log
-k6,6,3300,0.20,0.10,1,1.000000,0.121740,0.000000,0.022135,12384.584000,experiments/round_metrics_20260424_143448.csv,/Users/wanghao/Desktop/risefl_mvp/experiments/adwc_sweeps/20260424_143448/drift_k6_k6_cap3300_bias0.20_m0.10_s1.log
-k6,6,3300,0.20,0.10,2,1.000000,0.131600,0.000000,0.030369,12144.968000,experiments/round_metrics_20260424_145005.csv,/Users/wanghao/Desktop/risefl_mvp/experiments/adwc_sweeps/20260424_143448/drift_k6_k6_cap3300_bias0.20_m0.10_s2.log
-k6,6,3300,0.20,0.10,3,1.000000,0.143980,0.000000,0.013089,11841.906000,experiments/round_metrics_20260424_150328.csv,/Users/wanghao/Desktop/risefl_mvp/experiments/adwc_sweeps/20260424_143448/drift_k6_k6_cap3300_bias0.20_m0.10_s3.log
-k6,6,3300,0.40,0.10,1,1.000000,0.146620,0.000000,0.022557,12566.566000,experiments/round_metrics_20260424_151558.csv,/Users/wanghao/Desktop/risefl_mvp/experiments/adwc_sweeps/20260424_143448/drift_k6_k6_cap3300_bias0.40_m0.10_s1.log
-k6,6,3300,0.40,0.10,2,1.000000,0.157060,0.000000,0.026177,12453.950000,experiments/round_metrics_20260424_152914.csv,/Users/wanghao/Desktop/risefl_mvp/experiments/adwc_sweeps/20260424_143448/drift_k6_k6_cap3300_bias0.40_m0.10_s2.log

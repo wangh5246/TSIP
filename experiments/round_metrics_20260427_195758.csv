@@ -1,4 +1,0 @@
-round_idx,round_id,total,valid_clients,rejected,malicious_total,malicious_reject_rate,false_reject_rate,received_A,received_R,cells_final,dp_ok,cells_kept_post,dp_error,gradual_drift_offset_avg_m,gradual_drift_offset_max_m,gradual_drift_terminal_offset_avg_m,gradual_drift_terminal_offset_max_m
-1,1291569746,50,40,10,6,1.0,0.0909,23,23,2002,true,169,"",12669.16,12762.3,12669.16,12762.3
-2,1291643641,50,43,7,3,0.6667,0.1064,40,40,3202,true,131,"",12659.14,12682.01,12659.14,12682.01
-3,1291717393,50,42,8,4,1.0,0.087,42,42,3335,true,64,"",12669.94,12726.17,12669.94,12726.17

@@ -1,2 +1,0 @@
-path,iterations,mean_ms,std_ms,p99_ms,notes
-snarkjs_node_cli,10,1802.05,399.41,2464.99,Subprocess snarkjs CLI; includes Node.js startup and JSON parsing overhead

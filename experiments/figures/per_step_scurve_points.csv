@@ -1,8 +1,0 @@
-distance_m,reject_rate,prove_ms,source
-1000,0.0,1488.4,circuit_fullprove
-1500,0.0,1621.2,circuit_fullprove
-1900,0.0,1426.6,circuit_fullprove
-1980,0.0,1495.3,circuit_fullprove
-2050,1.0,399.2,circuit_fullprove
-2400,1.0,376.8,circuit_fullprove
-3000,1.0,396.1,circuit_fullprove

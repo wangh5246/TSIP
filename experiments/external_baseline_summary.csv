@@ -1,4 +1,0 @@
-baseline,class,A1,A2a,A3,A5,A6,exact_jaccard,frr,proof_size_bytes,prover_s,verifier_s,verifier_note,adapter_status
-PRIO3-BASELINE,external fidelity-exact,0.0,0.0,0.0,0.0,1.0,0.4211,0.0,167376,0.00219,0.000811,Prio3Histogram native Rust,ok
-ROFL-ANALOGUE,external fidelity-exact analogue,0.9,0.0,0.0,0.0,1.0,0.3846,0.0,608,0.00265,0.000412,Bulletproofs,ok
-CORGI-GEOIND,utility-only geo-indistinguishability,0.0,0.0,0.0,0.0,0.0,0.3333,0.0,,,,no integrity,native-octave-matrix
