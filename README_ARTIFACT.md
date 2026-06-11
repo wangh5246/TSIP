@@ -71,10 +71,13 @@ Public signal 顺序(= `script/prove_settlement_period_v5.py` 的 `PUBLIC_SIGNAL
 | `experiments/e1_objective_fix/` | E1 | 权威(objective/billing drift 修复后) |
 | `experiments/e1_rome_real_tariff_ratio_fix/` | E1 Rome 官方 tariff | 权威 |
 | `experiments/e1_E1_FINAL_README.md` | E1 memo | 可引用数字清单 |
-| `experiments/e2_fallback_frontier/` | E2 | 权威 |
-| `experiments/e3_relay_residual_full/` | E3 全量 sweep | 权威(2026-06-11) |
+| `experiments/e2_fallback_frontier/` | E2 anchor(GeoLife/Rome) | 权威 |
+| `experiments/e2_fallback_frontier_all4/` | E2 四数据集覆盖(+Porto/T-Drive) | 权威(2026-06-11) |
+| `experiments/e3_relay_residual_all4/` | E3 四数据集全量 sweep | 权威(2026-06-11) |
+| `experiments/e3_relay_residual_full/` | E3 GeoLife+Rome 全量 | 被 all4 取代,保留 |
 | `experiments/e3_relay_residual/` | E3 首版 | 保留为 first-version 样本 |
-| `experiments/e4_e5_ruc/` | E4/E5 proxy | 权威(observed-grid generous proxy) |
+| `experiments/e4_e5_ruc/` | E4/E5(proxy + 真实 drivable graph + GeoLife) | 权威(2026-06-11) |
+| `experiments/e6_rapidsnark/` | E6 rapidsnark 实测 | 权威(2026-06-11,median 1.389s/proof) |
 
 **不要引用**:`experiments/e1_sweeps/` 的 pre-fix Rome `0.94` 诊断、`experiments/e1_rome_real_tariff_smoke/` 的旧 `3/5/6` mapping;`TSIP_Baseline实验详细方案.md` 适用于 pivot 前聚合版 TSIP(已加 archived banner)。
 
@@ -87,5 +90,7 @@ Public signal 顺序(= `script/prove_settlement_period_v5.py` 的 `PUBLIC_SIGNAL
 | `python script/run_e3_relay_residual.py --output-dir … --workers 8` | E3 residual sweep(默认即全量口径) |
 | `python script/run_e4_e5_ruc_experiments.py` | E4 spot-check proxy + E5 anonymity set |
 | `python script/prove_settlement_period_v5.py` | E6 单 period witness/prove/verify 实测 |
+| `python script/build_e4_drivable_graph.py` | E4 真实路网宇宙(需 osmium-tool + pyrosm) |
+| `python script/bench_rapidsnark.py` | E6 rapidsnark prover 实测(需先编译 rapidsnark) |
 
-性能口径提醒:论文只把 `snarkjs` 计为 measured;`rapidsnark` 本机未安装,所有 rapidsnark 数字标 extrapolated。
+性能口径提醒(2026-06-11 更新):`snarkjs` 与 `rapidsnark` 均为 measured;rapidsnark median 1.389s/proof(5 runs,arm64 本机编译),receipt 见 `experiments/e6_rapidsnark/receipt.json`。

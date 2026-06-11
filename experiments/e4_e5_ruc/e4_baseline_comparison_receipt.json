@@ -1,0 +1,33 @@
+{
+ "detection_model": "P = 1 - exp(-coverage * omit_fraction * segments_per_driver); same as e4_required_cameras",
+ "experiment": "E4 baseline comparison settings",
+ "generous_baseline_assumptions": [
+  "cameras observe their segment with zero error",
+  "camera coverage draws are independent across observed segments",
+  "audit, dispute, and false-positive costs for spot-check are zero",
+  "spot-check communication overhead is zero bytes (favoring the baseline)",
+  "TEE attestation infrastructure and remote-attestation cost are zero"
+ ],
+ "model_caveat": "e4_required_cameras caps coverage at 1.0; when omit_fraction*segments_per_driver is small, the 0.95 target is unreachable at any camera count (e.g. rome omit 0.10, S=24: max P=0.909). Earlier summary rows reporting full coverage as meeting the target should be read with reachable_at_full_coverage from e4_equal_detection_workpoints.csv.",
+ "outputs": [
+  "e4_detection_curve.csv",
+  "e4_equal_detection_workpoints.csv",
+  "e4_baseline_head_to_head.csv",
+  "fig_e4_enforcement_exchange_rate.png"
+ ],
+ "sources": {
+  "road_universes": "experiments/e4_e5_ruc/e4_spotcheck_summary.csv + e4_drivable_receipt.json",
+  "tsip_costs": "experiments/e6_rapidsnark/receipt.json + design doc \u00a715.1 snarkjs run"
+ },
+ "tsip_measured_costs": {
+  "attestation_bytes": 120,
+  "client_prove_ms_rapidsnark": 1389.24,
+  "client_prove_ms_snarkjs": 7133.64,
+  "client_witness_ms": 742.42,
+  "comm_bytes_per_period": 1972,
+  "proof_bytes_rapidsnark": 709,
+  "proof_bytes_snarkjs": 805,
+  "server_verify_ms": 455.82,
+  "statement_bytes": 1047
+ }
+}
