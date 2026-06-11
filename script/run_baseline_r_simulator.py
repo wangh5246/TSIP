@@ -82,6 +82,32 @@ def period_segments(record: PeriodRecord) -> list[tuple[tuple[int, int], int]]:
     return sorted(fees.items())
 
 
+def period_full_fee(record: PeriodRecord) -> int:
+    """Full honest period bill: every interval, including intra-cell movement.
+
+    Saving ratios must use this denominator. Movement segments alone are only
+    a share of the bill (Rome cell-level: ~11%), so dividing omitted fees by
+    movement fees overstates the omitter's relative gain — the same hazard
+    class as the E1 objective/billing drift.
+    """
+
+    tariff, params = record.tariff, record.params
+    total = 0
+    for prev, curr in zip(record.fixes, record.fixes[1:]):
+        total += int(
+            fee_for_interval_values(
+                dt_sec=int(curr.auth_gnss_time) - int(prev.auth_gnss_time),
+                odo_delta_m=int(curr.odometer_reading_m) - int(prev.odometer_reading_m),
+                cell_idx=tariff.cell_index(prev.cell_x, prev.cell_y),
+                tariff=tariff,
+                cadence_sec=params.cadence_sec,
+                tier_vmax_mps=params.tier_vmax_mps,
+                max_dt_sec=params.max_dt_sec,
+            )["fee_cents"]
+        )
+    return total
+
+
 def omitted_segments(
     segments: list[tuple[tuple[int, int], int]],
     omit_fraction: float,
@@ -143,23 +169,28 @@ def main() -> None:
     receipt_datasets: dict[str, dict] = {}
 
     for dataset, records in sorted(records_by_dataset.items()):
-        per_period = [(record, period_segments(record)) for record in records]
-        per_period = [(record, segs) for record, segs in per_period if segs]
+        per_period = [(record, period_segments(record), period_full_fee(record)) for record in records]
+        per_period = [(record, segs, full_fee) for record, segs, full_fee in per_period if segs and full_fee > 0]
         if not per_period:
             receipt_datasets[dataset] = {"skipped": "no movement segments"}
             continue
         traffic: Counter = Counter()
         fee_weight: Counter = Counter()
-        for _record, segs in per_period:
+        for _record, segs, _full_fee in per_period:
             traffic.update(key for key, _fee in segs)
             for key, fee in segs:
                 fee_weight[key] += fee
         universe = sorted(traffic)
+        movement_fee_share = sum(sum(f for _k, f in segs) for _r, segs, _ff in per_period) / sum(
+            ff for _r, _s, ff in per_period
+        )
         budgets = sorted({c for c in CAMERA_BUDGET_GRID if c <= len(universe)} | {len(universe)})
         receipt_datasets[dataset] = {
             "periods": len(per_period),
             "universe_segments": len(universe),
             "camera_budgets": budgets,
+            "movement_fee_share_of_full_bill": round(movement_fee_share, 6),
+            "saving_ratio_denominator": "full period bill (all intervals incl. intra-cell)",
         }
 
         equal_detection: dict[str, int | None] = {}
@@ -169,7 +200,7 @@ def main() -> None:
                 visibility: list[float] = []
                 observed_counts: list[int] = []
                 for cams in sets:
-                    for _record, segs in per_period:
+                    for _record, segs, _full_fee in per_period:
                         seen = sum(1 for key, _fee in segs if key in cams)
                         visibility.append(seen / len(segs))
                         observed_counts.append(seen)
@@ -192,11 +223,10 @@ def main() -> None:
                         omitted_fee_ratios: list[float] = []
                         undetected_fee_ratios: list[float] = []
                         for cams in sets:
-                            for _record, segs in per_period:
+                            for _record, segs, full_fee in per_period:
                                 omitted = omitted_segments(segs, omit, omit_policy, rng, cameras=cams)
-                                total_fee = sum(fee for _key, fee in segs)
                                 omitted_fee = sum(fee for key, fee in segs if key in set(omitted))
-                                ratio = omitted_fee / total_fee if total_fee else 0.0
+                                ratio = omitted_fee / full_fee if full_fee else 0.0
                                 omitted_fee_ratios.append(ratio)
                                 trials += 1
                                 if any(key in cams for key in omitted):

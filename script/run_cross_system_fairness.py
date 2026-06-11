@@ -188,7 +188,31 @@ def main() -> None:
                     }
                 )
 
-        # C) spot-check leakage in the E5 anonymity-set metric.
+        # C) spot-check leakage in the E5 anonymity-set metric, with the TSIP
+        # proof-only number recomputed on the SAME moving-period pool so the
+        # two systems are compared over an identical pool size.
+        moving_ids = {
+            str(record.record.get("period_id") or record.record.get("trip_id") or record.fixes[0].period_id)
+            for record, _segs in per_period
+        }
+        tsip_same_pool = [
+            int(row["empirical_anonymity_set"])
+            for row in csv.DictReader(open(E4_DIR / "e5_empirical_anonymity.csv"))
+            if row["dataset"] == dataset and row["mode"] == "zone_priced_statement" and row["period_id"] in moving_ids
+        ]
+        if tsip_same_pool:
+            sizes = sorted(tsip_same_pool)
+            anonymity_rows.append(
+                {
+                    "dataset": dataset,
+                    "observer": "tsip_proof_only_zone_priced_same_pool",
+                    "cameras": 0,
+                    "median_anonymity_set": statistics.median(sizes),
+                    "p95_anonymity_set": sizes[max(0, int(0.95 * len(sizes)) - 1)],
+                    "n_periods": len(sizes),
+                    "metric_note": "same moving-period pool as the spot-check rows below",
+                }
+            )
         for cameras in (50, len(universe)):
             cams = camera_sets(
                 universe, traffic, fee_weight, cameras, "traffic_weighted_generous", rng, 1
@@ -202,7 +226,7 @@ def main() -> None:
                     "median_anonymity_set": statistics.median(sizes),
                     "p95_anonymity_set": sizes[max(0, int(0.95 * len(sizes)) - 1)],
                     "n_periods": len(sizes),
-                    "metric_note": "segment-only observation, no timestamps (generous); TSIP rows in e5_empirical_anonymity.csv",
+                    "metric_note": "segment-only observation, no timestamps (generous); same pool as TSIP row above",
                 }
             )
 

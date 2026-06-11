@@ -19,7 +19,9 @@
     350,
     370
    ],
+   "movement_fee_share_of_full_bill": 0.966242,
    "periods": 53,
+   "saving_ratio_denominator": "full period bill (all intervals incl. intra-cell)",
    "universe_segments": 370
   },
   "porto": {
@@ -31,7 +33,9 @@
     20,
     42
    ],
+   "movement_fee_share_of_full_bill": 0.677686,
    "periods": 9,
+   "saving_ratio_denominator": "full period bill (all intervals incl. intra-cell)",
    "universe_segments": 42
   },
   "rome": {
@@ -49,14 +53,18 @@
     175,
     196
    ],
+   "movement_fee_share_of_full_bill": 0.146985,
    "periods": 123,
+   "saving_ratio_denominator": "full period bill (all intervals incl. intra-cell)",
    "universe_segments": 196
   },
   "tdrive": {
    "camera_budgets": [
     1
    ],
+   "movement_fee_share_of_full_bill": 0.008536,
    "periods": 1,
+   "saving_ratio_denominator": "full period bill (all intervals incl. intra-cell)",
    "universe_segments": 1
   }
  },

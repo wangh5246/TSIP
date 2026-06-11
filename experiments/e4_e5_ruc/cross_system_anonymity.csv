@@ -1,9 +1,13 @@
 dataset,observer,cameras,median_anonymity_set,p95_anonymity_set,n_periods,metric_note
-geolife,spot_check_cameras,50,1,53,53,"segment-only observation, no timestamps (generous); TSIP rows in e5_empirical_anonymity.csv"
-geolife,spot_check_cameras,370,1,1,53,"segment-only observation, no timestamps (generous); TSIP rows in e5_empirical_anonymity.csv"
-porto,spot_check_cameras,42,1,1,9,"segment-only observation, no timestamps (generous); TSIP rows in e5_empirical_anonymity.csv"
-porto,spot_check_cameras,42,1,1,9,"segment-only observation, no timestamps (generous); TSIP rows in e5_empirical_anonymity.csv"
-rome,spot_check_cameras,50,5,123,123,"segment-only observation, no timestamps (generous); TSIP rows in e5_empirical_anonymity.csv"
-rome,spot_check_cameras,196,1,24,123,"segment-only observation, no timestamps (generous); TSIP rows in e5_empirical_anonymity.csv"
-tdrive,spot_check_cameras,1,1,1,1,"segment-only observation, no timestamps (generous); TSIP rows in e5_empirical_anonymity.csv"
-tdrive,spot_check_cameras,1,1,1,1,"segment-only observation, no timestamps (generous); TSIP rows in e5_empirical_anonymity.csv"
+geolife,tsip_proof_only_zone_priced_same_pool,0,1,4,53,same moving-period pool as the spot-check rows below
+geolife,spot_check_cameras,50,1,53,53,"segment-only observation, no timestamps (generous); same pool as TSIP row above"
+geolife,spot_check_cameras,370,1,1,53,"segment-only observation, no timestamps (generous); same pool as TSIP row above"
+porto,tsip_proof_only_zone_priced_same_pool,0,2,3,9,same moving-period pool as the spot-check rows below
+porto,spot_check_cameras,42,1,1,9,"segment-only observation, no timestamps (generous); same pool as TSIP row above"
+porto,spot_check_cameras,42,1,1,9,"segment-only observation, no timestamps (generous); same pool as TSIP row above"
+rome,tsip_proof_only_zone_priced_same_pool,0,3,6,123,same moving-period pool as the spot-check rows below
+rome,spot_check_cameras,50,5,123,123,"segment-only observation, no timestamps (generous); same pool as TSIP row above"
+rome,spot_check_cameras,196,1,24,123,"segment-only observation, no timestamps (generous); same pool as TSIP row above"
+tdrive,tsip_proof_only_zone_priced_same_pool,0,1,1,1,same moving-period pool as the spot-check rows below
+tdrive,spot_check_cameras,1,1,1,1,"segment-only observation, no timestamps (generous); same pool as TSIP row above"
+tdrive,spot_check_cameras,1,1,1,1,"segment-only observation, no timestamps (generous); same pool as TSIP row above"

@@ -1,9 +1,9 @@
 {
  "baseline_client_commitment_ms_reference_impl": {
-  "geolife": 24.169,
-  "porto": 56.66,
-  "rome": 55.091,
-  "tdrive": 55.711
+  "geolife": 24.33,
+  "porto": 59.668,
+  "rome": 55.058,
+  "tdrive": 55.985
  },
  "experiment": "cross-system symmetric fairness evaluation",
  "note_on_B": "Python reference implementation; native Poseidon is orders faster, which is generous to the baseline. Either way it is far below the TSIP prove time it replaces in the head-to-head table.",

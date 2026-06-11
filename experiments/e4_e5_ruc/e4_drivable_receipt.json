@@ -2,10 +2,10 @@
  "datasets": {
   "porto": {
    "bbox_lon_lat": [
-    -8.625516563319996,
-    41.14081288948754,
-    -8.601626985453304,
-    41.15879932160592
+    -8.623127605533327,
+    41.14261153269938,
+    -8.604015943239974,
+    41.15700067839408
    ],
    "block": {
     "cell_size_m": 100,
@@ -15,18 +15,18 @@
     "origin_lon": -8.6291,
     "width": 16
    },
-   "drivable_road_km": 75.99,
-   "edge_count": 902,
+   "drivable_road_km": 51.978,
+   "edge_count": 674,
    "pbf": "dataset/osm/portugal-latest.osm.pbf",
-   "segments_100m": 760,
+   "segments_100m": 520,
    "tariff_area_km2": 2.5600000000000005
   },
   "rome": {
    "bbox_lon_lat": [
-    12.47102543476808,
-    41.892008140728976,
-    12.495191687369909,
-    41.909994572847346
+    12.473442060028264,
+    41.89380678394081,
+    12.492775062109725,
+    41.90819592963551
    ],
    "block": {
     "cell_size_m": 100,
@@ -36,18 +36,18 @@
     "origin_lon": 12.4964,
     "width": 16
    },
-   "drivable_road_km": 97.347,
-   "edge_count": 1355,
+   "drivable_road_km": 58.197,
+   "edge_count": 842,
    "pbf": "dataset/osm/centro-latest.osm.pbf",
-   "segments_100m": 973,
+   "segments_100m": 582,
    "tariff_area_km2": 2.5600000000000005
   },
   "tdrive": {
    "bbox_lon_lat": [
-    116.41677870267301,
-    39.90240135678817,
-    116.45898286470158,
-    39.93477693460124
+    116.41912337834127,
+    39.9042,
+    116.45663818903333,
+    39.932978291389404
    ],
    "block": {
     "cell_size_m": 100,
@@ -57,15 +57,15 @@
     "origin_lon": 116.4074,
     "width": 32
    },
-   "drivable_road_km": 270.831,
-   "edge_count": 1167,
+   "drivable_road_km": 232.79,
+   "edge_count": 958,
    "pbf": "dataset/osm/beijing.osm.pbf",
-   "segments_100m": 2708,
+   "segments_100m": 2328,
    "tariff_area_km2": 10.240000000000002
   }
  },
  "experiment": "E4 drivable-graph road universe",
- "margin_m": 200.0,
+ "margin_m": 0.0,
  "segment_unit_m": 100.0,
  "skipped": {
   "geolife": "tariff_block.json has no block geo anchor; Beijing graph evidence comes from tdrive"
