@@ -50,6 +50,7 @@ services:
       TSIP_TIER_DEFAULT: "${TSIP_TIER_DEFAULT:-transit}"
       TSIP_ALLOWED_MODES: "${TSIP_ALLOWED_MODES:-walk,bike,vehicle,transit}"
       TSIP_EA_REQUIRE: "${TSIP_EA_REQUIRE:-1}"
+      TSIP_EA_THRESHOLD: "${TSIP_EA_THRESHOLD:-1}"
       TSIP_EA_PUBKEYS: "${TSIP_EA_PUBKEYS:-ea-dev:b74d9156553132240a79cf426f509823691faaf97c29f13d0da7a3e137bdc649}"
       TSIP_EA_ALLOW_EXPIRED_SEC: "${TSIP_EA_ALLOW_EXPIRED_SEC:-0}"
       # P3: min aggregators (trust model)
@@ -66,8 +67,11 @@ services:
       SHUFFLER_COMMITTEE_TIMEOUT_SEC: "${SHUFFLER_COMMITTEE_TIMEOUT_SEC:-3}"
       SHUFFLER_COMMITTEE_ATTEST_PATH: "${SHUFFLER_COMMITTEE_ATTEST_PATH:-/committee/attest}"
       SHUFFLER_COMMITTEE_TOKEN: "${SHUFFLER_COMMITTEE_TOKEN:-}"
+    volumes:
+      - ./zk:/app/zk
+      - ./common:/app/common
     ports:
-      - "8001:8001"
+      - "${SHUFFLER_HOST_PORT:-8001}:8001"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3).read()"]
       interval: 10s
@@ -120,6 +124,7 @@ services:
       TSIP_TIER_DEFAULT: "${TSIP_TIER_DEFAULT:-transit}"
       TSIP_ALLOWED_MODES: "${TSIP_ALLOWED_MODES:-walk,bike,vehicle,transit}"
       TSIP_EA_REQUIRE: "${TSIP_EA_REQUIRE:-1}"
+      TSIP_EA_THRESHOLD: "${TSIP_EA_THRESHOLD:-1}"
       TSIP_EA_PUBKEYS: "${TSIP_EA_PUBKEYS:-ea-dev:b74d9156553132240a79cf426f509823691faaf97c29f13d0da7a3e137bdc649}"
       TSIP_EA_ALLOW_EXPIRED_SEC: "${TSIP_EA_ALLOW_EXPIRED_SEC:-0}"
       TSIP_MAX_GAP_WINDOWS: "${TSIP_MAX_GAP_WINDOWS:-2}"
@@ -139,6 +144,9 @@ services:
       SHUFFLER_COMMITTEE_TIMEOUT_SEC: "${SHUFFLER_COMMITTEE_TIMEOUT_SEC:-3}"
       SHUFFLER_COMMITTEE_ATTEST_PATH: "${SHUFFLER_COMMITTEE_ATTEST_PATH:-/committee/attest}"
       SHUFFLER_COMMITTEE_TOKEN: "${SHUFFLER_COMMITTEE_TOKEN:-}"
+    volumes:
+      - ./zk:/app/zk
+      - ./common:/app/common
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3).read()"]
       interval: 10s
@@ -191,6 +199,7 @@ services:
       TSIP_TIER_DEFAULT: "${TSIP_TIER_DEFAULT:-transit}"
       TSIP_ALLOWED_MODES: "${TSIP_ALLOWED_MODES:-walk,bike,vehicle,transit}"
       TSIP_EA_REQUIRE: "${TSIP_EA_REQUIRE:-1}"
+      TSIP_EA_THRESHOLD: "${TSIP_EA_THRESHOLD:-1}"
       TSIP_EA_PUBKEYS: "${TSIP_EA_PUBKEYS:-ea-dev:b74d9156553132240a79cf426f509823691faaf97c29f13d0da7a3e137bdc649}"
       TSIP_EA_ALLOW_EXPIRED_SEC: "${TSIP_EA_ALLOW_EXPIRED_SEC:-0}"
       TSIP_MAX_GAP_WINDOWS: "${TSIP_MAX_GAP_WINDOWS:-2}"
@@ -210,6 +219,9 @@ services:
       SHUFFLER_COMMITTEE_TIMEOUT_SEC: "${SHUFFLER_COMMITTEE_TIMEOUT_SEC:-3}"
       SHUFFLER_COMMITTEE_ATTEST_PATH: "${SHUFFLER_COMMITTEE_ATTEST_PATH:-/committee/attest}"
       SHUFFLER_COMMITTEE_TOKEN: "${SHUFFLER_COMMITTEE_TOKEN:-}"
+    volumes:
+      - ./zk:/app/zk
+      - ./common:/app/common
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3).read()"]
       interval: 10s
@@ -222,7 +234,7 @@ services:
       context: .
       dockerfile: services/aggregator_a/Dockerfile
     ports:
-      - "8002:8002"
+      - "${AGGREGATOR_A_HOST_PORT:-8002}:8002"
     environment:
       AGG_R_BASE: "http://aggregator_r:8003/dump_share"
       DECODE_ENABLE: "1"
@@ -280,7 +292,7 @@ services:
         SHUFFLER_COMMITTEE_THRESHOLD: "${SHUFFLER_COMMITTEE_THRESHOLD:-1}"
         SHUFFLER_COMMITTEE_KEYS: "${SHUFFLER_COMMITTEE_KEYS:-s1:shuffler_sign_s1,s2:shuffler_sign_s2,s3:shuffler_sign_s3}"
     ports:
-      - "8003:8003"
+      - "${AGGREGATOR_R_HOST_PORT:-8003}:8003"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8003/health', timeout=3).read()"]
       interval: 10s
@@ -303,7 +315,7 @@ services:
       AUDIT_CALLER_TOKEN: "audit_caller_v1"
       AUDIT_TTL_SECONDS: "300"
     ports:
-      - "8010:8010"
+      - "${DECODER_HOST_PORT:-8010}:8010"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8010/health', timeout=3).read()"]
       interval: 10s
@@ -362,6 +374,7 @@ services:
       TSIP_PROVER: "${TSIP_PROVER:-rapidsnark}"
       TSIP_WASM: "/app/zk/tsip_main_v3_${TSIP_CIRCUIT_PROFILE:-k6}/tsip_main_v3_${TSIP_CIRCUIT_PROFILE:-k6}_js/tsip_main_v3_${TSIP_CIRCUIT_PROFILE:-k6}.wasm"
       TSIP_ZKEY: "/app/zk/tsip_main_v3_${TSIP_CIRCUIT_PROFILE:-k6}/tsip_main_v3_${TSIP_CIRCUIT_PROFILE:-k6}_final.zkey"
+      TSIP_EA_SIGNING_KEYS: "${TSIP_EA_SIGNING_KEYS:-}"
       TSIP_EA_SIGNING_SK: "${TSIP_EA_SIGNING_SK:-53e7ddc909b2f3c63b919a65ba44081d7589bae0f6bb87a653cad4fd850a4ef4}"
       TSIP_EA_KID: "${TSIP_EA_KID:-ea-dev}"
       TSIP_EA_EXP_SEC: "${TSIP_EA_EXP_SEC:-86400}"

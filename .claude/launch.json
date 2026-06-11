@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "Mobile Bench",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8090", "--directory", "mobile_bench"],
+      "port": 8090
+    },
+    {
       "name": "Full Stack",
       "runtimeExecutable": "docker",
       "runtimeArgs": ["compose", "up", "shuffler", "aggregator_a", "aggregator_r", "decoder"],

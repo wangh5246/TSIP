@@ -10,28 +10,40 @@ __pycache__/
 # Build artifacts
 build/
 zk/hello/
-zk/settlement_period_v5_k6/*.r1cs
-zk/settlement_period_v5_k6/*.sym
-zk/settlement_period_v5_k6/*.zkey
-zk/settlement_period_v5_k6/*_js/
-!zk/settlement_period_v5_k6/verification_key.json
 
 # Local experiment logs
 *.log
 .env
 
-# Local OSM vector extracts
-dataset/osm/*.pbf
-dataset/osm/*.part
-dataset/osm/*.complete
-
-# Virtual environments
+# Virtualenv
 .venv/
-venv/
 
-# Claude Code agent worktrees / local state
+# Raw and processed datasets (reproduce via script/prepare_* / download_osm_vectors.sh)
+dataset/
+data/processed/
+data/processed_check/
+data/processed_grid32_check/
+data/processed_k6_compat/
+
+# External baseline repos (pivot-era, vendored clones)
+baselines/
+
+# Agent scratch
+.agents/
 .claude/worktrees/
 
-# Rust build artifacts (vendored baselines / external benches)
-target/
-**/target/
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.run.xml
+main.out
+TSIP/main.out
+TSIP/tmp_pages/
+TSIP/tmp_end_pages/
+
+# Scratch
+y.json

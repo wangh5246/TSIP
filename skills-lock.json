@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "mao-zedong-perspective": {
+      "source": "leezythu/maoxuan-skill",
+      "sourceType": "github",
+      "computedHash": "e7ad6aabcc5b8e099e4e4d11f2716085d9cfe015a0d7031ca65f4b71d520e578"
+    }
+  }
+}
