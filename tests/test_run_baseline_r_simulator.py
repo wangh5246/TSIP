@@ -105,3 +105,39 @@ def test_adaptive_omitter_under_full_coverage_has_no_evasion() -> None:
     full = frozenset(universe)
     omitted = omitted_segments(segs, 0.2, "adaptive_uncovered", random.Random(0), cameras=full)
     assert omitted == []  # nothing uncovered left to hide
+
+
+def test_tsip_bill_with_omission_is_never_cheaper() -> None:
+    from script.run_cross_system_fairness import tsip_bill_with_omission
+
+    record = _record()
+    segs = period_segments(record)
+    for omitted in ([segment_key(0, 2)], [segment_key(2, 3)], [k for k, _f in segs]):
+        bill = tsip_bill_with_omission(record, set(omitted))
+        assert bill["omitter_fee_cents"] >= bill["honest_fee_cents"]
+
+
+def test_tsip_omission_gap_merge_flags_outage_declaration() -> None:
+    from common.eval_harness import HarnessParams
+    from script.run_cross_system_fairness import tsip_bill_with_omission
+    from script.run_e4_e5_ruc_experiments import PeriodRecord
+    from common.settlement import ReceiverFix, TariffTable
+
+    tariff = TariffTable(tariff_version=1, grid_w=2, cell_zones={0: 0, 1: 0, 2: 1, 3: 1}, zone_rates_cents_per_m={0: 1, 1: 5})
+    # Three consecutive 350s movement intervals; omitting the middle two merges a 700s gap > max_dt 600.
+    coords = [(0, 0), (0, 1), (1, 1), (1, 0)]
+    fixes = [
+        ReceiverFix(
+            device_id="dev", period_id="p", fix_seq=i, auth_gnss_time=_MAY_2026_START + 350 * i,
+            cell_x=x, cell_y=y, osnma_status="authenticated", odometer_reading_m=100 * i, nonce=f"n{i}",
+        )
+        for i, (x, y) in enumerate(coords)
+    ]
+    record = PeriodRecord(
+        dataset="t", record={}, fixes=fixes, tariff=tariff,
+        params=HarnessParams(cadence_sec=300, max_dt_sec=600, tier_vmax_mps=33),
+        fee_cents=0, distance_m=0, fallback_intervals=0, n_intervals=3,
+    )
+    bill = tsip_bill_with_omission(record, {segment_key(2, 3), segment_key(1, 3)})
+    assert bill["needs_outage_declaration"] is True
+    assert bill["omitter_fee_cents"] >= bill["honest_fee_cents"]

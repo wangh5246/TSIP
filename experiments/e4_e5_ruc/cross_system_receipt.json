@@ -1,0 +1,21 @@
+{
+ "baseline_client_commitment_ms_reference_impl": {
+  "geolife": 24.169,
+  "porto": 56.66,
+  "rome": 55.091,
+  "tdrive": 55.711
+ },
+ "experiment": "cross-system symmetric fairness evaluation",
+ "note_on_B": "Python reference implementation; native Poseidon is orders faster, which is generous to the baseline. Either way it is far below the TSIP prove time it replaces in the head-to-head table.",
+ "outputs": [
+  "cross_system_omission_vs_tsip.csv",
+  "cross_system_anonymity.csv"
+ ],
+ "same_conditions": {
+  "adversary": "identical omission strategies and fractions, same RNG seed discipline",
+  "billing_oracle": "fee_for_interval_values + protocol fallback rule",
+  "data": "identical period records and tariffs as Baseline R simulator (DEFAULT_INPUTS)",
+  "privacy_metric": "E5 empirical anonymity set on both systems"
+ },
+ "seed": 20260611
+}
