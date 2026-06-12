@@ -6,9 +6,10 @@ tariff footprint with osmium, loads the drivable network with pyrosm, and
 recomputes the E4 spot-check camera requirement against the real road
 universe instead of the observed-path proxy.
 
-GeoLife is skipped: its tariff_block.json predates the block-metadata schema
-and records no geo anchor, so its footprint cannot be placed on the map.
-The Beijing graph evidence comes from the T-Drive block.
+GeoLife uses the centred-grid anchor recovered on 2026-06-12: the builtin
+Beijing geometry (tariff_at_granularity) reproduces its archived cell_zones
+byte-for-byte, so its footprint is the 10km x 10km grid centred on the city
+origin. T-Drive provides the density-peak block on the same Beijing PBF.
 
 Segment unit: the proxy counts observed 100m tariff-grid transitions, so the
 real graph is normalized to 100m segments (road_length_m / 100) to keep
@@ -102,6 +103,24 @@ def proxy_segments_per_driver() -> dict[str, int]:
     return out
 
 
+def geolife_bbox(margin_m: float) -> tuple[float, float, float, float]:
+    """GeoLife footprint: the 10km x 10km centred grid recovered from the
+    builtin Beijing geometry (verified byte-identical cell_zones)."""
+
+    from common.osm_vectors import tariff_at_granularity
+
+    g = tariff_at_granularity("beijing", "medium", grid_w=100, cell_size_m=100)
+    half = 100 * 100 / 2.0 + margin_m
+
+    def lat(north: float) -> float:
+        return g.origin_lat + math.degrees(north / EARTH_RADIUS_M)
+
+    def lon(east: float) -> float:
+        return g.origin_lon + math.degrees(east / (EARTH_RADIUS_M * math.cos(math.radians(g.origin_lat))))
+
+    return (lon(-half), lat(-half), lon(half), lat(half))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Compute E4 camera requirements on the real drivable graph.")
     parser.add_argument("--out-dir", default=str(ROOT_DIR / "experiments" / "e4_e5_ruc"))
@@ -119,17 +138,23 @@ def main() -> None:
         "tool": "osmium extract + pyrosm get_network(driving)",
         "segment_unit_m": SEGMENT_UNIT_M,
         "margin_m": float(args.margin_m),
-        "skipped": {"geolife": "tariff_block.json has no block geo anchor; Beijing graph evidence comes from tdrive"},
+        "notes": {"geolife": "centred-grid anchor recovered 2026-06-12; footprint is the full 10km x 10km tariff grid"},
         "datasets": {},
     }
 
     with tempfile.TemporaryDirectory(prefix="e4_clips_") as tmp:
-        for dataset, pbf in PBF_BY_DATASET.items():
+        jobs = dict(PBF_BY_DATASET)
+        jobs["geolife"] = ROOT_DIR / "dataset" / "osm" / "beijing.osm.pbf"
+        for dataset, pbf in jobs.items():
             if not pbf.exists():
                 receipt["datasets"][dataset] = {"error": f"missing PBF {pbf}"}
                 continue
-            block = json.load(open(TARIFF_BLOCKS[dataset]))["block"]
-            bbox = footprint_bbox(block, margin_m=float(args.margin_m))
+            if dataset == "geolife":
+                bbox = geolife_bbox(float(args.margin_m))
+                block = {"width": 100, "cell_size_m": 100, "anchor": "builtin beijing centred grid (recovered 2026-06-12)"}
+            else:
+                block = json.load(open(TARIFF_BLOCKS[dataset]))["block"]
+                bbox = footprint_bbox(block, margin_m=float(args.margin_m))
             clip = Path(tmp) / f"{dataset}.osm.pbf"
             clip_pbf(pbf, bbox, clip)
             stats = drivable_stats(clip)

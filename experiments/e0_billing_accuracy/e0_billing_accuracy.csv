@@ -1,2 +1,4 @@
 dataset,n_runs,cadence_sec,mean_signed_error,median_abs_error,p95_abs_error,max_abs_error,p05_signed,p95_signed
 rome,300,60,-0.0,0.0,0.0,0.0,-0.0,0.0
+geolife,300,60,0.002634,0.0,0.106485,0.388259,-0.060988,0.050459
+porto,300,60,-0.0,0.0,0.0,0.0,-0.0,0.0

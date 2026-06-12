@@ -1,5 +1,23 @@
 {
  "datasets": {
+  "geolife": {
+   "bbox_lon_lat": [
+    116.34878310829365,
+    39.85923391970407,
+    116.46601689170635,
+    39.94916608029594
+   ],
+   "block": {
+    "anchor": "builtin beijing centred grid (recovered 2026-06-12)",
+    "cell_size_m": 100,
+    "width": 100
+   },
+   "drivable_road_km": 1695.28,
+   "edge_count": 8081,
+   "pbf": "dataset/osm/beijing.osm.pbf",
+   "segments_100m": 16953,
+   "tariff_area_km2": 100.0
+  },
   "porto": {
    "bbox_lon_lat": [
     -8.623127605533327,
@@ -66,9 +84,9 @@
  },
  "experiment": "E4 drivable-graph road universe",
  "margin_m": 0.0,
- "segment_unit_m": 100.0,
- "skipped": {
-  "geolife": "tariff_block.json has no block geo anchor; Beijing graph evidence comes from tdrive"
+ "notes": {
+  "geolife": "centred-grid anchor recovered 2026-06-12; footprint is the full 10km x 10km tariff grid"
  },
+ "segment_unit_m": 100.0,
  "tool": "osmium extract + pyrosm get_network(driving)"
 }

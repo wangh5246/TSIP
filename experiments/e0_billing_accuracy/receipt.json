@@ -1,9 +1,20 @@
 {
  "cadence_sec": {
+  "geolife": 60,
   "porto": 60,
   "rome": 60
  },
  "datasets": {
+  "geolife": {
+   "multi_zone_runs": 164,
+   "runs": 300,
+   "zone_homogeneous_share": 0.4533
+  },
+  "porto": {
+   "multi_zone_runs": 0,
+   "runs": 300,
+   "zone_homogeneous_share": 1.0
+  },
   "rome": {
    "multi_zone_runs": 0,
    "runs": 300,

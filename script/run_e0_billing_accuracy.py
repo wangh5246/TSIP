@@ -40,25 +40,58 @@ from common.settlement import TariffTable  # noqa: E402
 from common.trajectory_preprocess import (  # noqa: E402
     TariffBlock,
     haversine_m,
-    iter_geolife_driving_raw_points,
-    iter_porto_raw_points,
-    iter_rome_raw_points,
+    iter_geolife_driving_trips,
+    iter_porto_trips,
+    iter_rome_trips,
     project_xy_m,
     select_real_points_by_cadence,
 )
 
-# GeoLife is excluded: its tariff_block.json carries no geo anchor (same
-# limitation as the E4 drivable graph) and its synthetic per-cell tariff has
-# zero quantization error by construction. Rome (real official tariff with
-# sub-cell zone structure) is the meaningful E0 anchor; Porto is the robustness
-# leg.
+# Rome: real official tariff (zone-homogeneous along trajectories — exact).
+# GeoLife: anchor recovered from the builtin Beijing centred grid (cell_zones
+# reproduce the archive byte-for-byte), 3-tier tariff over 10,000 cells — the
+# genuine multi-zone case. Porto: robustness leg, streamed per trip.
 DATASET_DIR = ROOT_DIR / "dataset"
-CADENCE = {"rome": 60, "porto": 60}
+CADENCE = {"rome": 60, "porto": 60, "geolife": 60}
 ABLATION = ROOT_DIR / "data" / "e1_mechanism_ablation"
 
 
-def load_block_and_tariff(dataset: str) -> tuple[TariffBlock, TariffTable]:
+class CenteredGrid:
+    """GeoLife's tariff geometry: a grid_w x grid_w grid centred on the city
+    origin, cell = floor((x_m + half) / cell_size). Recovered from
+    tariff_at_granularity('beijing', 'medium', grid_w=100, cell_size_m=100),
+    whose cell_zones reproduce the archived tariff byte-for-byte."""
+
+    def __init__(self, origin_lat: float, origin_lon: float, grid_w: int, cell_size_m: int):
+        self.origin_lat = float(origin_lat)
+        self.origin_lon = float(origin_lon)
+        self.grid_w = int(grid_w)
+        self.cell_size_m = int(cell_size_m)
+        self.half_m = self.grid_w * self.cell_size_m / 2.0
+
+    def cell_of(self, x_m: float, y_m: float):
+        cx = math.floor((x_m + self.half_m) / self.cell_size_m)
+        cy = math.floor((y_m + self.half_m) / self.cell_size_m)
+        if 0 <= cx < self.grid_w and 0 <= cy < self.grid_w:
+            return cx, cy
+        return None
+
+
+def load_block_and_tariff(dataset: str):
     raw = json.load(open(ABLATION / dataset / "tariff_block.json"))
+    if "block" not in raw:
+        # GeoLife: centred-grid geometry recovered from the builtin city anchor.
+        from common.osm_vectors import tariff_at_granularity
+
+        t = raw["tariff"]
+        g = tariff_at_granularity("beijing", "medium", grid_w=int(t["grid_w"]), cell_size_m=100)
+        tariff = TariffTable(
+            tariff_version=int(t["tariff_version"]),
+            grid_w=int(t["grid_w"]),
+            cell_zones={int(k): int(v) for k, v in t["cell_zones"].items()},
+            zone_rates_cents_per_m={int(k): int(v) for k, v in t["zone_rates_cents_per_m"].items()},
+        )
+        return CenteredGrid(g.origin_lat, g.origin_lon, int(t["grid_w"]), 100), tariff
     b = raw["block"]
     block = TariffBlock(
         origin_lat=float(b["origin_lat"]),
@@ -78,33 +111,42 @@ def load_block_and_tariff(dataset: str) -> tuple[TariffBlock, TariffTable]:
     return block, tariff
 
 
-def rate_at(block: TariffBlock, tariff: TariffTable, lat: float, lon: float) -> int | None:
+def rate_at(block, tariff: TariffTable, lat: float, lon: float) -> int | None:
     x_m, y_m = project_xy_m(lat, lon, block.origin_lat, block.origin_lon)
-    gx = math.floor(x_m / block.cell_size_m)
-    gy = math.floor(y_m / block.cell_size_m)
-    if not block.contains_global(gx, gy):
-        return None
-    cell_x, cell_y, _ = block.local_cell(gx, gy)
+    if isinstance(block, CenteredGrid):
+        cell = block.cell_of(x_m, y_m)
+        if cell is None:
+            return None
+        cell_x, cell_y = cell
+    else:
+        gx = math.floor(x_m / block.cell_size_m)
+        gy = math.floor(y_m / block.cell_size_m)
+        if not block.contains_global(gx, gy):
+            return None
+        cell_x, cell_y, _ = block.local_cell(gx, gy)
     cell_idx = tariff.cell_index(cell_x, cell_y)
+    if cell_idx not in tariff.cell_zones:
+        return None
     return int(tariff.rate_for_zone(tariff.zone_for_cell(cell_idx)))
 
 
 def iter_vehicles(dataset: str):
-    """Yield (vehicle_id, [sorted (t_unix, lat, lon)]) for a dataset's raw points."""
+    """Yield (trip_id, [sorted (t_unix, lat, lon)]) streaming, one trip at a time.
+
+    Trip-level iterators avoid buffering whole datasets in memory (the Porto
+    zip is ~1.7GB; vehicle-level grouping had to read it all before yielding).
+    """
 
     if dataset == "geolife":
-        points = iter_geolife_driving_raw_points(DATASET_DIR / "Geolife Trajectories 1.3" / "Data")
+        trips = iter_geolife_driving_trips(DATASET_DIR / "Geolife Trajectories 1.3" / "Data", gap_sec=120)
     elif dataset == "rome":
-        points = iter_rome_raw_points(DATASET_DIR / "Roma.txt")
+        trips = iter_rome_trips(DATASET_DIR / "Roma.txt", gap_sec=120)
     elif dataset == "porto":
-        points = iter_porto_raw_points(DATASET_DIR / "porto" / "train.csv.zip")
+        trips = iter_porto_trips(DATASET_DIR / "porto" / "train.csv.zip")
     else:
         raise ValueError(dataset)
-    by_vehicle: dict[str, list[tuple[int, float, float]]] = defaultdict(list)
-    for p in points:
-        by_vehicle[p.vehicle_id].append((int(p.timestamp), float(p.lat), float(p.lon)))
-    for vid, pts in by_vehicle.items():
-        yield vid, sorted(pts)
+    for trip_id, pts in trips:
+        yield trip_id, sorted((int(p.timestamp), float(p.lat), float(p.lon)) for p in pts)
 
 
 def in_region_runs(block, tariff, pts):
@@ -180,7 +222,7 @@ def main() -> None:
     # Porto is opt-in: its raw trajectories live in a ~1.7GB zip that the
     # whole-file vehicle grouping must buffer before yielding, which is cost-
     # prohibitive in this environment (documented in the receipt).
-    parser.add_argument("--datasets", default="rome")
+    parser.add_argument("--datasets", default="rome,geolife,porto")
     parser.add_argument("--max-runs-per-dataset", type=int, default=400)
     parser.add_argument("--min-distance-m", type=int, default=200)
     args = parser.parse_args()
