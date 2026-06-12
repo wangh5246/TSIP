@@ -1,0 +1,3 @@
+cadence_sec,dataset,granularity,max_residual,mean_residual,median_residual,n,p95_residual,payload_mode,positive_share,relay_radius_m,skip_count
+120,geolife,medium,0.15784222014343624,0.09458916074157861,0.08404691943826463,14,0.13954336859949845,intra_cell,1.0,200,0
+120,rome,medium,0.34853014449427006,0.2017437261363332,0.19320677007771564,66,0.29537034078807245,intra_cell,1.0,200,0
