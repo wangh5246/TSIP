@@ -202,6 +202,8 @@
 % correct bad hyphenation here
 \hyphenation{op-tical net-works semi-conduc-tor}
 
+\input{tables/v4_paper_evidence_macros}
+
 \begin{document}
 %
 % paper title
@@ -261,8 +263,9 @@
   envelope. The evaluation is therefore framed as admission-boundary
   enforcement. It measures proof-to-payload substitution rejection, state and
   \(K\)-window boundary checks, metadata leakage, utility cost after admission,
-  and prototype overhead. The evaluated circuit has 3,056 constraints, a 128\,B
-  proof object, and a 5.7\,KB full report frame.
+  and prototype overhead. The manifest-bound paper circuit has
+  \VFourConstraints{} constraints, \VFourPublicInputs{} public inputs, and
+  \VFourPrivateInputs{} private inputs.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -555,7 +558,7 @@ The \textsc{SHTPCMain} relation realizes SHTPC. It proves knowledge of hidden
 coordinates, commitment salts, the primary cell, payload-binding openings, and
 the enrollment secret such that
 \begin{equation}
-  \label{eq:r-tsip}
+  \label{eq:r-shtpc}
   \begin{aligned}
   \mathcal{R}_{\mathrm{SHTPC}}\quad
   &\ell_t=\mathrm{Poseidon}(x_t,y_t,r_t),\\
@@ -1007,10 +1010,9 @@ The privacy claim refers to the expanded aggregation view rather than to an
 uncompressed wire vector. After local expansion, every cell position has a
 share, and any one Aggregator's per-cell shares are indistinguishable from
 random without the other Aggregator's share. On the wire, the prototype sends
-seed-compressed encrypted share envelopes plus public proof material. This is
-why the full report frame is about \(5.7\,\mathrm{KB}\) rather than
-\(D\)-times the field-element size. The 128\,B number is only the compressed
-Groth16 proof object. It is not the full communication cost.
+seed-compressed encrypted share envelopes plus public proof material rather
+than a \(D\)-element wire vector. Current report-frame size is left unclaimed
+until the manifest-bound serializer emits a dedicated size receipt.
 
 \noindent\textbf{Report frame and payload validation syntax.}
 Each submitted report is represented as
@@ -1112,8 +1114,9 @@ Full formulas are given in Section~\ref{sec:circuit-constraints}. All integer
 comparisons use LessEqThan(60) gadgets with explicit Num2Bits range checks on
 coordinates, squared distances, and public caps. Section~\ref{sec:integer-semantics}
 gives the exact semantics. The implementation uses arity-3 Poseidon checks,
-compiles to 3{,}056 measured R1CS constraints, and keeps the Groth16 proof size
-at 128\,B.
+and the manifest-bound paper relation compiles to \VFourConstraints{} measured
+R1CS constraints with \VFourPublicInputs{} public inputs and
+\VFourPrivateInputs{} private inputs.
 
 Constraint C21 is the key relation that separates \textsc{SHTPC} from composing
 a trajectory proof with a VDAF-style check. C17--C20 derive
@@ -1235,8 +1238,7 @@ semantics used by the comparisons.
 \end{table}
 
 The arity-3 Poseidon implementation with explicit integer checks compiles to
-3{,}056 R1CS constraints in the evaluated circuit and keeps the Groth16 proof
-size at 128\,B.
+\VFourConstraints{} R1CS constraints in the manifest-bound paper circuit.
 
 \subsubsection{Integer Semantics and Range Constraints}
 \label{sec:integer-semantics}
@@ -1267,6 +1269,12 @@ format and context validation.
 
 \section{Security and Theoretical Analysis}
 \label{sec:security}
+
+The implementation evidence used for this analysis is the manifest-bound paper
+relation with \VFourConstraints{} constraints and a
+\VFourPublicInputs{}/\VFourPrivateInputs{} public/private input split; archived
+14-input compatibility relations are not used as implementation evidence for
+the statements below.
 
 Theorem~\ref{thm:traj-integrity} covers A1, A3, and A5. Lemma~\ref{lem:secret-binding}
 covers A2a. Theorem~\ref{thm:payload-binding} covers A6. A4 is bounded by the
@@ -1859,17 +1867,26 @@ a deployment residual risk, not a violation of the admission claim.
 \label{sec:eval-scale}
 
 RQ6 asks whether proof-carrying admission is practical at per-report
-granularity. Both K6 and K30 use the same 3{,}056-constraint \textsc{SHTPCMain}
-circuit, 14 public inputs, 23 private inputs, a 128\,B proof object, and a
-5{,}694\,B prototype report frame. The server-side snarkjs subprocess prototype
-takes 1824.1/1197.6\,ms for K6 proving/verification and 1644.6/1082.9\,ms for
-K30; Rapidsnark reduces the K6 prover path to 596.3\,ms. Optimized browser/WASM
-mobile runs of the same circuit take 297--395\,ms, and Aggregator validation is
-\(1.9\pm0.1\)\,ms. Population sweeps \(N\in\{50,200,500,1000\}\) keep TPR~1.00
-and circuit-FRR~0. A native ark-rs verifier sustains 3{,}320 proofs/s with 16
-workers, or about 199{,}000 reports per \(\SI{60}{s}\) window
-(Figure~\ref{fig:eval-pollution-cost}(b)), excluding timing-token handling,
-durable state, logging, transfer, and queueing.
+granularity. Artifact audit identifies three non-interchangeable evidence
+layers. First, the regenerated archive-compatibility K6/K30 relation has
+2{,}728 constraints and a 14/23 public/private input split. It exists only to
+validate saved witness/public pairs and supplies no current-circuit performance
+measurement.
+
+Second, the archived 2026-05-04 performance receipt describes a distinct
+3\,056-constraint relation with the same 14/23 split. It reports snarkjs
+proving/verification times of 1824.1/1197.6\,ms for K6 and
+1644.6/1082.9\,ms for K30, plus a 128\,B Groth16 proof object. These numbers are
+retained only as historical engineering context. No report-frame size or
+pre-manifest microbenchmark is attributed to the current paper circuit.
+
+Third, the current manifest-bound paper relation has \VFourConstraints{}
+constraints, \VFourPublicInputs{} public inputs, and \VFourPrivateInputs{}
+private inputs. It passes all \VFourStaticChecks{} static checks and clean
+protocol smoke on \VFourProtocolDatasets{} datasets. Its three-seed \(N=1000\)
+end-to-end matrix is still subject to strict validation of all 15 dataset-seed
+receipts; until that aggregate receipt passes, we make no current-circuit
+latency or throughput claim.
 
 \FloatBarrier
 \section{Discussion and Limitations}
@@ -1958,9 +1975,11 @@ This paper formulates SHTPC as a narrow admission-consistency goal for private
 heatmap aggregation. The key idea is to bind predecessor continuity, \(K\)-window
 reachability, hidden-primary derivation, and payload equality inside one
 zero-knowledge admission relation before private aggregation separates the
-report across roles. \textsc{SHTPC} realizes this goal with a 3{,}056-constraint
-Groth16 relation and a standalone admission functionality that makes leakage and
-corruption boundaries explicit. The evaluation shows that \textsc{SHTPC} rejects
+report across roles. \textsc{SHTPC} realizes this goal with a manifest-bound
+Groth16 relation containing \VFourConstraints{} constraints,
+\VFourPublicInputs{} public inputs, and \VFourPrivateInputs{} private inputs,
+and with a standalone admission functionality that makes leakage and corruption
+boundaries explicit. The evaluation shows that \textsc{SHTPC} rejects
 modeled envelope and proof-payload violations that are accepted by ablations and
 by \textsc{Stateful-ContextCommit}. Boundary tests identify false genesis and
 fully in-envelope false reports as deployment risks, while metadata experiments
