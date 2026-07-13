@@ -2,16 +2,24 @@
 
 Review date: 2026-07-14. Canonical manuscript: `TSIP/main.tex`. This review is
 an internal quality-control record, not independent peer review. Its scientific
-status is **final-scale verified**: the fixed five-dataset utility, strict
-15-unit current-circuit aggregate, manuscript claim contract, final clean
-build, all-page visual QA, and canonical/mirror consistency all pass. Only
-author-owned release and submission declarations remain open.
+status is **final-polish verified**: the fixed five-dataset utility, strict
+15-unit current-circuit aggregate, mechanism-adapter boundary, small-sample
+statistical boundary, hardware disclosure, manuscript claim contract, final
+clean build, all-page visual QA, and canonical/mirror consistency all pass.
+Only author-owned release and submission declarations remain open.
 
 ## Submission Verdict
 
 - Scientific writing and claim-evidence alignment: **pass**.
 - Five-dataset fixed utility at N=1000: **pass**, with the small Porto and
-  Synthetic gains disclosed rather than generalized.
+  Synthetic gains disclosed rather than generalized or presented as
+  statistically significant.
+- Comparison semantics: **pass**. Nebula-style and EIFFeL-style are identified
+  as mechanism-level adapters in the shared harness, not native deployments of
+  the complete upstream systems.
+- Hardware and software setup: **pass**. The manuscript records the Apple M4
+  host, 16 GB host memory, 10-CPU/8.22-GB Docker allocation, two concurrent
+  jobs, and the passing Python, Node.js, Circom, snarkjs, and Docker versions.
 - Current N=1000 Docker scale evidence: **pass with an explicit performance
   boundary**. All 15 functional receipts verify; 13 timing-eligible receipts
   average 1.000 $\pm$ 0.069 proofs/s and 4.183 $\pm$ 0.248 hours per unit. Rome
@@ -45,20 +53,23 @@ pdflatex -interaction=nonstopmode -halt-on-error main.tex
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-Build and inspection results from the final-scale checkpoint:
+Build and inspection results from the final-polish checkpoint:
 
 - Abstract: 147 words; manuscript checker issues: 0.
 - Biber: 90 citekeys; warnings/errors: 0.
 - PDF: 18 pages, US letter, PDF 1.7.
 - Undefined citations/references, fatal errors, rerun requests: 0.
 - Overfull boxes, LaTeX warnings, package warnings: 0.
-- Underfull boxes: 42. All 18 pages were rendered and inspected. After the RQ6
-  float-flow correction, pages 1--13 were pixel-identical to the inspected
-  render and pages 14--18 were re-inspected at original detail; there is no
-  clipping, overlap, missing figure, or unreadable table/text.
-- SHA-256: `main.tex` `1e3a95d6dc055f2abef5c38b6518f8e088cd90f665f395b12cba48594d6ef9ed`;
+- Underfull boxes: 43. All 18 pages were freshly rendered and inspected. Pages
+  1, 11, 12, 14, 15, and 16 were additionally inspected at original detail;
+  there is no clipping, overlap, missing figure, or unreadable table/text.
+- SHA-256: `main.tex` `dae72d7031a44111af2c023ff6f00f6ef6206a09dec00f502002eb2eb6dd3200`;
   `reference.bib` `c1c4d078c2e2acf21a204312d2f62bb2a0e71b96e17b50926d35d11ededfb6cf`;
-  `main.pdf` `2e59d0cb5cc00169340b45785944aafda2b401c80e5a639eb403a83f3b5f3ca5`.
+  `main.pdf` `443b6f41ce35cae8bb2604d5e0999b74adc556111e5d21b23142dfcc33e43b7f`;
+  `v4_fixed_utility_heatmap.pdf`
+  `53978940a836e8904c651f9d7fdc2373beb57be13e1d647ff6350ff698c4c8e6`;
+  `tab_v4_fixed_utility.tex`
+  `cd1a94bafdf923dbef19b4f602e6ba071ed27bc505718d52e191bd4a8472ba81`.
 - Canonical and Heatmap paper-mirror `main.tex`/`reference.bib` files are
   byte-identical.
 - Final-scale evidence propagation commit: `3591866c`; final verified-paper
@@ -86,18 +97,18 @@ or assumption into a guarantee.
 | Contribution | What new knowledge is delivered? | pass | The paper isolates the hidden trajectory/payload same-primary composition gap and defines one stateful admission relation that closes it. |
 | Contribution | Is the failure case meaningful rather than syntactic? | pass | A valid trajectory proof can otherwise be paired with routed payload material for another primary; the separation lemmas and A6 ablation identify the missing equality. |
 | Contribution | Is novelty scoped honestly? | pass | The paper claims a new admission property and system composition, not a new SNARK, DP mechanism, physical-location proof, or general poisoning defense. |
-| Contribution | Are empirical gains exaggerated? | pass | All five fixed-protocol deltas are reported; +0.007 on Porto and Synthetic is explicitly called small. |
-| Writing clarity | Can the relation and protocol be reproduced? | pass | Method fields, C1-C21, integer semantics, state transition, timing, warmup, artifact paths, commands, and pass criteria are explicit. |
+| Contribution | Are empirical gains exaggerated? | pass | All five fixed-protocol deltas are reported; +0.007 on Porto and Synthetic is explicitly called small, and the three-seed observations are not presented as statistical significance. |
+| Writing clarity | Can the relation and protocol be reproduced? | pass | Method fields, C1-C21, integer semantics, state transition, timing, warmup, hardware and software versions, artifact paths, commands, and pass criteria are explicit. |
 | Writing clarity | Are terminology and evidence layers stable? | pass | SHTPC is the visible term; archive, historical-performance, current static/smoke, fixed utility, and current scale are kept non-interchangeable. |
 | Writing clarity | Does paragraph flow support the paper story? | pass | The reverse outline maps each core prose paragraph to one topic sentence, role, and claim set, including separate functional and timing messages for current scale. |
-| Experimental strength | Are results consistent across inputs and seeds? | pass | The fixed configuration has a positive SHTPC-minus-Nebula Jaccard delta for every dataset mean and for each of the 15 dataset-seed pairs; means and standard deviations are reported. |
+| Experimental strength | Are results consistent across inputs and seeds? | pass | The fixed configuration has a positive SHTPC-minus-adapter Jaccard delta for every dataset mean and for each of the 15 observed dataset-seed pairs; means and standard deviations are reported, while three seeds are treated as insufficient for a significance claim on the small gains. |
 | Experimental strength | Is absolute utility hidden when it is low? | pass | Absolute Jaccard spans 0.135 to 0.878; the manuscript reports each value and does not claim uniformly high utility. |
 | Experimental strength | Are failure cases visible? | pass | Metadata inference, in-envelope pollution, false genesis, transfer, collusion, and development-setup limits appear in the Abstract, RQ3/RQ4, Discussion, or Artifact section. |
 | Experimental strength | Is current-circuit cost established? | pass | Fifteen functional units and 225,000 generated/verified proofs pass with zero failures; 13 timing receipts report all-unit and per-dataset mean/sample-standard-deviation statistics, with both exclusions disclosed. |
 | Evaluation completeness | Are key mechanisms ablated? | pass | No-ADWC, No-Payload-Bind, Stateful-ContextCommit, and No-Admission-Check expose the predicates responsible for A3 and A6. |
 | Evaluation completeness | Is the main comparison fair? | pass | One epsilon/tau pair, N=1000, ten windows, 10% A1, and seeds 101/202/303 are fixed across all five datasets; tuned settings are excluded from the headline. |
 | Evaluation completeness | Are datasets and evidence layers broad enough? | pass | Four real trajectory-derived inputs and one generated stress input are used; utility, smoke, and scale answer separate questions. |
-| Evaluation completeness | Are baseline claims bounded? | pass | Nebula is called the strongest among evaluated fixed-configuration baselines, while VDAF/TEE/proof-of-location systems remain analytical design points rather than falsely comparable implementations. |
+| Evaluation completeness | Are baseline claims bounded? | pass | The Nebula-style mechanism adapter is called the strongest evaluated fixed-configuration adapter, while VDAF/TEE/proof-of-location systems remain analytical design points rather than falsely comparable implementations. |
 | Method soundness | Are assumptions explicit and falsifiable? | pass | SRV-TS, SCS, CA3, setup, hash, channel, and non-collusion assumptions are stated with adjacent failure consequences. |
 | Method soundness | Does one relation actually bind routed payload to trajectory state? | pass | C17-C21, route/binder negative fixtures, Aggregator validation, and the manifest-bound 22-check gate cover the stated interface. |
 | Method soundness | Does the design overclaim source authenticity or robustness? | pass | The claim begins post-enrollment and excludes physical presence, metadata elimination, fully in-envelope false reports, and malicious-Shuffler state forks. |
@@ -125,14 +136,17 @@ declarations.
 4. Bound the strict aggregate into `paper_evidence.json`, updated CE23 and RQ6
    only from generated macros/tables, and kept protocol-scale results separate
    from original-input RQ5 utility.
-5. Re-ran 220 focused evidence and manuscript-contract tests, then completed
-   the clean LaTeX/Biber build, warning scans, canonical/mirror byte comparison,
-   and all-page visual QA.
+5. Re-ran 237 focused evidence, figure, and manuscript-contract tests, then
+   completed the clean LaTeX/Biber build, warning scans, canonical/mirror byte
+   comparison, and all-page visual QA.
 
 ## Evidence Boundary
 
 - Fixed utility is verified for five datasets, three seeds, N=1000, and ten
-  windows at epsilon 5 and tau 2.
+  windows at epsilon 5 and tau 2. The headline comparison is against
+  mechanism-level adapters in the shared harness. All 15 observed paired
+  differences favor SHTPC, but the paper makes no statistical-significance
+  claim for the small Porto and Synthetic gains.
 - The strict aggregate verifies 15/15 functional receipts, 225,000 generated
   and verified proofs, zero proof failures, A/R totals of 150,000/150,000, and
   150/150 reconstruction and DP-release passes. Timing uses 13 receipts after

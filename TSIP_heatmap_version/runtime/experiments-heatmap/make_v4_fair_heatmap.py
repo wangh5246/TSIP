@@ -13,6 +13,7 @@ INPUT = ROOT / "docker_v4_smoke/utility/three_seed_n1000/fair_fixed_comparison.c
 OUTPUT = ROOT / "docker_v4_smoke/analysis_v4/figures/v4_fixed_utility_heatmap"
 DATASETS = ["tdrive", "geolife", "porto", "rome", "synthetic"]
 DISPLAY_DATASETS = ["T-Drive", "GeoLife", "Porto", "Rome", "Synthetic"]
+DISPLAY_METHODS = ["SHTPC", "Nebula-style"]
 FIGURE_SOURCE_DATE_EPOCH = "1783900800"  # 2026-07-13T00:00:00Z
 REQUIRED_COLUMNS = {
     "dataset",
@@ -102,7 +103,7 @@ def main() -> None:
         matrix,
         x_label="Method",
         y_label="Dataset",
-        category_names=["SHTPC", "Nebula"],
+        category_names=DISPLAY_METHODS,
         title="Fixed utility (N=1000, 3 seeds)",
         colorscale="YlGnBu",
         zmin=0.0,

@@ -241,21 +241,22 @@
   Managed heatmap services need to screen location reports before private
   aggregation without exposing coordinates or primary cells. Existing
   compositions can validate a hidden trajectory and an encoded payload
-  separately yet still accept them when they refer to different primary cells,
-  because no single relation enforces their equality. We introduce Stateful
-  Hidden Trajectory-Payload Consistency (SHTPC), a stateful Groth16 admission
-  relation that binds accepted-predecessor continuity, window reachability, the
-  coordinate-derived primary, and A/R payload commitments under one report
-  context. The manifest-bound circuit has \VFourConstraints{} constraints,
-  \VFourPublicInputs{} public inputs, and \VFourPrivateInputs{} private inputs;
-  all \VFourStaticChecks{} static checks pass, and \VFourScaleProofs{} proofs
-  verify with \VFourScaleProofFailures{} failures across
-  \VFourScaleUnits{} \(N{=}1000\) dataset-seed units; a fixed three-seed utility
-  comparison yields positive released-set Jaccard deltas against Nebula on all
-  five datasets, although two gains are small.
-  SHTPC proves post-enrollment proof-to-payload consistency; it does
-  not establish physical presence, eliminate metadata leakage, or reject false
-  reports that remain inside the public mobility envelope.
+  separately, yet no single relation guarantees that both refer to the same
+  primary cell. We introduce Stateful Hidden Trajectory-Payload Consistency
+  (SHTPC), a stateful Groth16 admission relation. It binds accepted-predecessor
+  continuity, window reachability, the coordinate-derived primary, and A/R
+  payload commitments within one report context. The manifest-bound circuit
+  has \VFourConstraints{} constraints, \VFourPublicInputs{} public inputs, and
+  \VFourPrivateInputs{} private inputs, and it passes all
+  \VFourStaticChecks{} static checks. Across \VFourScaleUnits{}
+  \(N{=}1000\) dataset-seed units, \VFourScaleProofs{} proofs verify with
+  \VFourScaleProofFailures{} failures. Under one fixed three-seed
+  configuration, SHTPC yields positive released-set Jaccard differences
+  against a mechanism-level Nebula-style adapter on all five datasets,
+  although two differences are small. SHTPC proves post-enrollment
+  proof-to-payload consistency. It does not establish physical presence,
+  eliminate metadata leakage, or reject false reports that remain inside the
+  public mobility envelope.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -346,7 +347,11 @@ This paper makes three contributions.
   \item Evaluates \textsc{SHTPC} as admission-boundary enforcement, with
     design-space baselines, measured proof-to-payload substitutions,
     state/window-boundary checks, metadata leakage analysis, utility cost, and
-    manifest-bound artifact evidence under the stated deployment boundary.
+    manifest-bound artifact evidence under the stated deployment boundary. The
+    fixed comparison has a positive observed Jaccard difference for every one
+    of the 15 dataset-seed pairs, although two dataset means differ only
+    slightly. The current full-path matrix verifies \VFourScaleProofs{} proofs
+    with \VFourScaleProofFailures{} failures.
 \end{itemize}
 
 \section{Related Work}
@@ -355,13 +360,13 @@ This paper makes three contributions.
 \textsc{SHTPC} is closest to work that protects location analytics, validates
 private aggregate inputs, and proves predicates over hidden data, but those
 systems target different consistency boundaries. Dwork et al. protect released
-statistics with differential privacy~\cite{Dwork2006calibrating}; Bittau et al.
-separate encoding, shuffling, and analysis in Prochlo~\cite{Bittau2017Prochlo};
+statistics with differential privacy~\cite{Dwork2006calibrating}. Bittau et al.
+separate encoding, shuffling, and analysis in Prochlo~\cite{Bittau2017Prochlo}.
 Corrigan-Gibbs and Boneh validate secret-shared measurements in
-Prio~\cite{Corrigan2017Prio}; and Tippenhauer et al. study how a location claim
-can be spoofed or authenticated~\cite{Tippenhauer2011GPS}. Our work instead
-defines a post-enrollment admission relation for private heatmap aggregation:
-the verifier accepts a hidden report only when its predecessor state,
+Prio~\cite{Corrigan2017Prio}. Tippenhauer et al. study how a location claim can
+be spoofed or authenticated~\cite{Tippenhauer2011GPS}. Our work instead defines
+a post-enrollment admission relation for private heatmap aggregation. The
+verifier accepts a hidden report only when its predecessor state,
 \(K\)-window trajectory envelope, coordinate-derived primary cell, and routed
 aggregation payload are mutually consistent. Table~\ref{tab:positioning}
 summarizes this boundary.
@@ -399,8 +404,8 @@ VDAF, differential-privacy mechanism, robust statistic, proof-of-location
 protocol, or proof system. It is an admission layer that rejects hidden reports
 whose accepted state, reachable envelope, derived primary, and routed payload
 are inconsistent. The \textsc{Stateful-ContextCommit} row is the measured
-composition harness used in Section~\ref{sec:eval-stateful-boundary}; it captures a
-natural state-and-context composition that still keeps trajectory and payload
+composition harness used in Section~\ref{sec:eval-stateful-boundary}. It captures
+a natural state-and-context composition that still keeps trajectory and payload
 validity as separated statements.
 
 \subsection{Private Location Analytics}
@@ -413,7 +418,7 @@ trajectory synthesis reduce what is revealed by outputs or traces
 ~\cite{Dwork2006calibrating,Dwork2014algorithmic,Kairouz2021Advances,Mironov2017Renyi,Dong2022Gaussian,Warner1965Randomized,Erlingsson2014RAPPOR,Bassily2015Local,Wang2017LocalFreq,Wang2019MultidimLDP,Andres2013geoi,Chatzikokolakis2013Broadening,Bordenabe2014OptimalGeo,Gonzalez2008Mobility,Song2010Predictability,Montjoye2013Unique,Sweeney2002kAnon,Gruteser2003Anonymous,Hoh2007Preserving,Terrovitis2008Trajectory,Nergiz2009Towards,Primault2019Survey,Wang2023PrivTrace,Du2023LDPTrace}.
 These mechanisms are compatible with a heatmap release and can be used
 downstream of SHTPC. Their trust boundary is nevertheless output privacy or
-trace obfuscation, not admission consistency: they do not decide whether a
+trace obfuscation, not admission consistency. They do not decide whether a
 hidden coordinate is reachable from the previously accepted hidden state or
 whether its primary cell is the one routed into aggregation.
 
@@ -428,7 +433,7 @@ Robust aggregation and federated-learning integrity defenses reduce the effect
 of malicious inputs after admission~\cite{Chowdhury2022EIFFeL,Rathee2023ELSA,Xu2024Camel,Blanchard2017Krum,Yin2018Byzantine,Cao2021FLTrust,Fang2020Poisoning,Bagdasaryan2020Backdoor,Nguyen2022FLAME,Melis2019Inference}.
 These systems are essential once an input has been admitted, but their
 validation predicates are normally measurement-local or aggregate-robustness
-oriented. \textsc{SHTPC} addresses the preceding admission boundary: the hidden
+oriented. \textsc{SHTPC} addresses the preceding admission boundary. The hidden
 trajectory relation and heatmap payload must be one accepted statement before
 secure aggregation separates the report across roles.
 
@@ -871,7 +876,7 @@ Nebula~\cite{Bittau2017Prochlo,Shamsabadi2025Nebula}. The Shuffler is
 honest-but-curious. It observes proofs, commitments, ciphertext metadata, and
 accept/reject outcomes, yet it never sees plaintext coordinates. Aggregators A
 and R are further assumed not to collude. This organizational separation is an
-explicit deployment assumption; it is not implied by regulatory compliance or
+explicit deployment assumption. It is not implied by regulatory compliance or
 by assigning different service names to the roles.
 These are claim boundaries rather than engineering conveniences. If the
 Shuffler forks or rolls back state, the envelope-admission theorem is not
@@ -905,7 +910,7 @@ Enrollment authorization follows assumption CA3. Under CA3, at least $t$ out of
 $n$ enrollment anchors are non-colluding. The default profile is $t=3$, $n=5$,
 and a single-operator deployment is the degenerate case $t=1$, $n=1$.
 
-\textsc{SHTPC} deliberately leaves two issues to the deployment layer:
+\textsc{SHTPC} deliberately leaves two issues to the deployment layer. They are
 ground-truth enrollment ($c_0$) and voluntary credential or device transfer
 (A2b). These risks fall outside
 Theorems~\ref{thm:traj-integrity}--\ref{thm:payload-binding} and require
@@ -1262,7 +1267,7 @@ format and context validation.
 
 The implementation evidence used for this analysis is the manifest-bound paper
 relation with \VFourConstraints{} constraints and a
-\VFourPublicInputs{}/\VFourPrivateInputs{} public/private input split; archived
+\VFourPublicInputs{}/\VFourPrivateInputs{} public/private input split. Archived
 14-input compatibility relations are not used as implementation evidence for
 the statements below.
 
@@ -1556,14 +1561,14 @@ All rejection results should be read as boundary-enforcement results.
 
 \emph{Datasets and design-space comparisons.}
 The original-input utility evaluation uses T-Drive taxi trajectories
-(\(10{,}357\) taxis, about 15M GPS points), GeoLife traces (182 users,
-17K+ trajectories), and trajectory-derived Porto and Rome inputs. These four
-real inputs contribute \(N{=}1000\) client records each with bootstrap disabled;
-the fifth input, Synthetic, contains \(N{=}1000\) clustered random-walk records
-generated with seed 20260709. Each fixed-utility input provides ten windows per
-record. Boundary and session experiments additionally use T-Drive rush-hour and
-GeoLife session-gap subsets to stress dense vehicle mobility and re-enrollment
-behavior~\cite{Yuan2010Tdrive,Yuan2011Driving,Zheng2008Understanding,
+(\(10{,}357\) taxis and about 15M GPS points), GeoLife mixed-mode traces
+(182 users and more than 17K trajectories), and taxi trajectories from Porto
+and Rome. Each prepared real input contains \(N{=}1000\) client records with
+bootstrap disabled and ten windows per record. The fifth input, Synthetic,
+contains \(N{=}1000\) clustered random-walk records with the same ten-window
+format and generation seed 20260709. Boundary and session experiments also use
+T-Drive rush-hour and GeoLife session-gap subsets to stress dense vehicle
+mobility and re-enrollment behavior~\cite{Yuan2010Tdrive,Yuan2011Driving,Zheng2008Understanding,
 Zheng2009Mining,Zheng2010GeoLife,MoreiraMatias2015Porto,
 Bracciale2014Rome}. We compare
 \textsc{SHTPC-Full} with \textsc{No-Admission-Check}, \textsc{No-ADWC},
@@ -1578,21 +1583,28 @@ drop-in baselines for the same privacy and trust boundary. We therefore use
 them as analytical design points and measure the closest low-cost composition
 that keeps coordinate hiding and stateful context binding.
 
+For RQ5, the shared heatmap harness also includes mechanism-level Nebula-style
+and EIFFeL-style adapters. The Nebula-style adapter models report sampling,
+shuffling, thresholding, and debiasing. The EIFFeL-style adapter models the
+single-round range and norm validation outcome. These adapters do not reproduce
+native deployments of the complete upstream systems. Utility comparisons are
+therefore limited to the evaluated adapters under the shared fixed protocol.
+
 \emph{Boundary-violation suites and configuration.}
 The controlled harness covers A1 teleportation, A2a secret substitution, A3
 gradual drift, A5 replay or chain-state reuse, and A6 proof-payload
 substitution. A4 Sybil creation is analyzed by
-Proposition~\ref{prop:bounded-sybil}; A2b transfer and false genesis are
+Proposition~\ref{prop:bounded-sybil}. A2b transfer and false genesis are
 deployment-scope risks. The adaptive suite maximizes accepted pollution under
 public parameters and covers reset/warmup abuse, false genesis followed by
 plausible motion, near-boundary drift, and proof-payload mismatch. Unless stated
-otherwise, headline numbers use:
+otherwise, the headline configuration uses the following settings.
 \begin{itemize}
     \setlength{\itemsep}{0pt}
     \setlength{\parsep}{0pt}
     \setlength{\topsep}{2pt}
   \item Controlled boundary-violation headlines use $N{=}50$ clients and
-    $T{=}10$ rounds; the fixed utility comparison uses $N{=}1000$ and
+    $T{=}10$ rounds. The fixed utility comparison uses $N{=}1000$ and
     $T{=}10$.
   \item $\varepsilon_{\mathrm{total}}{=}1.0$, $\Delta t{=}\SI{60}{s}$, and
     $K\in\{6,30\}$.
@@ -1604,10 +1616,10 @@ otherwise, headline numbers use:
   \item \SI{100}{m} cells over a $\SI{10000}{m}$ domain.
 \end{itemize}
 The count payload is \(L_1\)-clipped to one primary cell. Headline rejection
-uses \(K{=}6\); \(K{=}30\) is a long-window stress profile.
+uses \(K{=}6\). The \(K{=}30\) setting is a long-window stress profile.
 
 \emph{Metrics and implementation.}
-TPR is malicious rejection rate; pipeline FRR is circuit rejection plus session
+TPR is the malicious rejection rate. Pipeline FRR is circuit rejection plus session
 withholding plus DP-SVT exclusion on benign traces. RMSE/Pearson measure count
 distortion, Jaccard measures released-set stability, false hotspot probability
 and HS@k measure ranking pollution. The current prototype uses Python
@@ -1615,6 +1627,13 @@ microservices and Circom/snarkjs Groth16 inside the manifest-bound Docker path.
 RQ6 labels all pre-manifest microbenchmarks as historical and reports current
 scale only from the strict manifest- and launcher-bound aggregate. Randomized
 sweeps use three seeds unless stated otherwise.
+
+\emph{Hardware and software.}
+All experiments ran on an Apple M4 MacBook Pro with 10 CPU cores and 16 GB of
+host memory. The scale launcher used two concurrent jobs. Its preflight receipt
+recorded 10 Docker CPUs and 8.22 GB of Docker memory. The passing manifest
+records Python 3.10.20, Node.js 20.20.2, Circom 2.1.9, snarkjs 0.7.6, and
+Docker Server 29.1.3 on Linux arm64 containers.
 
 \emph{Original-input utility.}
 The RQ5 evaluator reads the five prepared inputs above directly, uses seeds
@@ -1627,7 +1646,7 @@ The clean Docker protocol suite mounts the manifest-bound circuit and sets
 \texttt{TSIP\_SAFE\_PROTOCOL\_TRAJECTORY=1} to replace timestamp gaps and
 out-of-envelope jumps with safe in-envelope trajectories. This layer isolates
 proof generation, state transitions, reconstruction, and DP release across the
-five dataset-labelled runs; it is not the source of the RQ5 utility values.
+five dataset-labelled runs. It is not the source of the RQ5 utility values.
 
 \emph{Full Groth16 scale.}
 The scale matrix exercises five datasets and seeds 101, 202, and 303 at
@@ -1721,7 +1740,7 @@ $\mathrm{cap}_{\mathrm{policy}}=\SI{3.3}{km}$ transitions near
 $\SI{6.6}{km}$ in the plotted attack-jump parameterization because the sweep
 moves the adversarial endpoint across both sides of the anchor boundary. The
 underlying admission predicate remains the \(\SI{3.3}{km}\) anchor-distance
-cap; the observed transition reflects the windowed anchor-distance boundary
+cap. The observed transition reflects the windowed anchor-distance boundary
 rather than a single-step speed cap.
 
 \begin{figure}[!t]
@@ -1772,7 +1791,7 @@ only Shuffler-visible metadata such as chain length, timing, topology, and
 accept/reject histories. On synthetic calibrated traces with 500 users, 30
 rounds, delay mean 1.5 rounds, and three seeds, timing-only and chain-topology
 views reach AUC \(0.748\pm0.005\) and \(0.751\pm0.004\), nearly matching full
-metadata (\(0.751\pm0.003\)); accept/reject history is weaker but still above
+metadata (\(0.751\pm0.003\)). Accept/reject history is weaker but still above
 random (\(0.679\pm0.011\)). On 50-user, 30-round real fragments, active-period
 inference is highly predictable on GeoLife (\(0.963\pm0.056\)) and T-Drive
 (\(0.978\pm0.011\)), while lightweight session linking remains near random.
@@ -1833,7 +1852,7 @@ are rejected in 98\% of malicious cell-rounds and admit no in-envelope
 contribution. Payload-bound in-envelope attempts are accepted by design
 (490/500 cell-rounds), while the same strategy at \(1.01{\times}\) the ADWC cap
 is rejected in all 500 malicious cell-rounds. False genesis and A2b
-credential/device transfer remain deployment-scope risks; with
+credential/device transfer remain deployment-scope risks. With
 \(G{=}\SI{30}{min}\), inter-window gaps exceeding \(G\) are 1.10\% on T-Drive
 and 2.12\% on GeoLife.
 
@@ -1844,7 +1863,7 @@ and 2.12\% on GeoLife.
   \caption{Residual utility and historical cost views. Panel (a) plots false-hotspot risk
   under accepted in-envelope pollution as the malicious-client fraction varies.
   Panel (b) plots pre-manifest verifier-only latency for snarkjs and ark-rs
-  against a \(\SI{60}{s}\) release window; it is not a measurement of the
+  against a \(\SI{60}{s}\) release window. It is not a measurement of the
   current manifest-bound relation.}
   \label{fig:eval-pollution-cost}
 \end{figure}
@@ -1858,8 +1877,9 @@ unchanged SVT/Laplace DP release. The headline protocol fixes
 \(\tau{=}2.0\) for every dataset,
 uses \(N{=}1000\), \(T{=}10\), 10\% A1 attackers, top-50 released-set Jaccard,
 and seeds 101, 202, and 303. It does not substitute per-dataset tuned settings.
-Among the evaluated fixed-configuration baselines, Nebula has the highest mean
-Jaccard on every dataset~\cite{Shamsabadi2025Nebula,Chowdhury2022EIFFeL}.
+Among the evaluated fixed-configuration adapters, the Nebula-style adapter has
+the highest mean Jaccard on every dataset~\cite{Shamsabadi2025Nebula,
+Chowdhury2022EIFFeL}.
 
 \input{tables/tab_v4_fixed_utility}
 
@@ -1869,22 +1889,27 @@ Jaccard on every dataset~\cite{Shamsabadi2025Nebula,Chowdhury2022EIFFeL}.
   \vspace{-0.7em}
   \caption{Fixed-configuration released-set Jaccard at \(N{=}1000\) and
   \(T{=}10\), averaged over seeds 101, 202, and 303. Both methods use
-  \(\varepsilon{=}5.0\); SHTPC uses post-admission release threshold
+  \(\varepsilon{=}5.0\). SHTPC uses post-admission release threshold
   \(\tau{=}2.0\). Table~\ref{tab:v4-fixed-utility} reports standard deviations,
   absolute deltas, FRR, and MRR.}
   \label{fig:v4-fixed-utility}
 \end{figure}
 
-Table~\ref{tab:v4-fixed-utility} and Figure~\ref{fig:v4-fixed-utility} show
-SHTPC/Nebula mean Jaccard of 0.671/0.561 on T-Drive, 0.878/0.366 on GeoLife,
-0.305/0.298 on Porto, 0.772/0.664 on Rome, and 0.135/0.128 on Synthetic. The
-absolute gains are therefore +0.110, +0.512, +0.007, +0.108, and +0.007,
-respectively. Porto and Synthetic provide only small gains, so the result
-supports a consistent positive direction under the fixed protocol rather than
-a uniformly large margin. SHTPC has zero honest false rejection and complete
-modeled malicious rejection on every dataset in this comparison. A separate
-legacy GeoLife sweep found admission TPR 1.00 at each tested \(\varepsilon\),
-consistent with proof verification preceding the release stage; it is
+Table~\ref{tab:v4-fixed-utility} and Figure~\ref{fig:v4-fixed-utility} report
+mean Jaccard for SHTPC and the Nebula-style adapter. The respective values are
+0.671/0.561 on T-Drive, 0.878/0.366 on GeoLife, 0.305/0.298 on Porto,
+0.772/0.664 on Rome, and 0.135/0.128 on Synthetic. The absolute gains are
+therefore +0.110, +0.512, +0.007, +0.108, and +0.007, respectively. Porto and
+Synthetic provide only small gains, so the result supports an observed positive
+direction under the fixed protocol rather than a uniformly large margin. All
+15 observed dataset-seed paired differences favor SHTPC, and the smallest is
++0.00239. Each dataset has only three seeds, so we do not claim statistical
+significance for the small Porto and Synthetic differences. SHTPC also has zero
+honest false rejection and
+complete modeled malicious rejection on every dataset in this comparison. A
+separate legacy GeoLife sweep found admission TPR 1.00 at each tested
+\(\varepsilon\),
+consistent with proof verification preceding the release stage. It is
 supporting evidence rather than the headline utility comparison. In-envelope
 accepted mass can still create false hotspots
 (Figure~\ref{fig:eval-pollution-cost}(a)), which remains a deployment risk.
@@ -1914,7 +1939,7 @@ protocol smoke on \VFourProtocolDatasets{} datasets. The strict three-seed
 with \VFourScaleProofs{} client proofs generated and Shuffler-verified and
 \VFourScaleProofFailures{} proof failures. Across
 \VFourScaleEvaluationRounds{} evaluation rounds, routes A and R receive
-\VFourScaleRouteA{} and \VFourScaleRouteR{} reports, respectively; all
+\VFourScaleRouteA{} and \VFourScaleRouteR{} reports, respectively. All
 \VFourScaleReconstructions{} reconstructions and \VFourScaleDPReleases{} DP
 releases pass.
 
@@ -1992,7 +2017,7 @@ and manifest/launcher binding.
 
 The four real trajectory datasets are obtained directly from their official
 providers under the terms recorded in \texttt{DATA\_NOTICE.md}. Neither raw GPS
-records nor row-level prepared real trajectories are redistributed; the
+records nor row-level prepared real trajectories are redistributed. The
 artifact contains preparation code, a non-row-level source manifest, random
 seeds, and aggregate receipts, tables, and figures. The Synthetic input is
 generated by repository code with a fixed seed, but public redistribution also
@@ -2005,7 +2030,7 @@ development reproducibility artifact. Any change to the public-signal order,
 \(K\), grid parameters, hash domains, or payload-binder formula requires
 regenerating or revalidating it. The current material is explicitly not evidence
 of a production multi-party ceremony. A production deployment would require an
-approved setup process, hashes, and ceremony metadata; a compromised setup
+approved setup process, hashes, and ceremony metadata. A compromised setup
 mainly threatens admission soundness.
 
 \subsection{Ethics, Governance, and Misuse}
@@ -2019,13 +2044,13 @@ operational accountability, but they can also enable behavioral profiling if
 retained or queried without governance.
 
 The evaluation is a secondary analysis of provider-released T-Drive, GeoLife,
-Porto, and Rome trajectories plus repository-generated Synthetic records; it
+Porto, and Rome trajectories plus repository-generated Synthetic records. It
 does not recruit participants or collect new location traces. Reproducers must
 obtain the real datasets from their official sources and comply with their
 license, citation, non-de-anonymization, and redistribution terms. The artifact
 does not release raw or row-level prepared real trajectories. Before submission,
 the authors must confirm the applicable institutional human-subject or ethics
-determination for this secondary use; the artifact record does not invent that
+determination for this secondary use. The artifact record does not invent that
 determination.
 
 Deployments should therefore define consent, retention, revocation, access
@@ -2039,27 +2064,23 @@ become a surveillance choke point even when raw coordinates remain hidden.
 \section{Conclusion}
 \label{sec:conclusion}
 
-This paper formulates SHTPC as a narrow admission-consistency goal for private
-heatmap aggregation. The key idea is to bind predecessor continuity, \(K\)-window
-reachability, hidden-primary derivation, and payload equality inside one
-zero-knowledge admission relation before private aggregation separates the
-report across roles. \textsc{SHTPC} realizes this goal with a manifest-bound
-Groth16 relation containing \VFourConstraints{} constraints,
-\VFourPublicInputs{} public inputs, and \VFourPrivateInputs{} private inputs,
-and with a standalone admission functionality that makes leakage and corruption
-boundaries explicit. The evaluation shows that \textsc{SHTPC} rejects
-modeled envelope and proof-payload violations that are accepted by ablations and
-by \textsc{Stateful-ContextCommit}; the current-circuit scale matrix verifies
-\VFourScaleProofs{} proofs with no proof, reconstruction, or DP-release failure
-across \VFourScaleUnits{} \(N{=}1000\) units. Its roughly
-\VFourScaleWallHoursMean{}-hour mean unit runtime establishes reproducible
-execution rather than interactive latency. Boundary tests identify false
-genesis and fully in-envelope false reports as deployment risks, while metadata
-experiments confirm that chain, timing, and participation signals remain outside
-the coordinate-hiding claim. The practical takeaway is that SHTPC fits managed
-heatmap systems that can tolerate stateful admission metadata and explicit
-governance, not anonymous trajectory publication or fully untrusted-Shuffler
-deployments.
+This paper addresses hidden trajectory-payload mismatch in private heatmap
+aggregation through the SHTPC admission property. Its key idea is to bind
+predecessor continuity, \(K\)-window reachability, hidden-primary derivation,
+and payload equality inside one zero-knowledge relation before aggregation
+separates the report across roles. The manifest-bound Groth16 relation contains
+\VFourConstraints{} constraints, \VFourPublicInputs{} public inputs, and
+\VFourPrivateInputs{} private inputs. The evaluation shows that SHTPC rejects
+the modeled envelope and proof-payload violations admitted by its ablations and
+by \textsc{Stateful-ContextCommit}. The fixed comparison also yields positive
+observed Jaccard differences on all five datasets, although two differences are
+small. Across \VFourScaleUnits{} \(N{=}1000\) units, the current-circuit matrix
+verifies \VFourScaleProofs{} proofs with no proof, reconstruction, or DP-release
+failure. Its roughly \VFourScaleWallHoursMean{}-hour mean unit runtime supports
+reproducible execution rather than interactive latency. These results support
+managed heatmap systems with stateful admission and explicit governance. They
+do not extend to physical-presence proof, metadata anonymity, fully in-envelope
+false reports, or a malicious Shuffler without external accountability.
 
 \noindent\emph{Future Work.}
 Future work should evaluate stronger enrollment, device attestation, auditable

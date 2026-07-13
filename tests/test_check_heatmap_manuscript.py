@@ -21,6 +21,10 @@ ABSTRACT_BODY
 T-Drive GeoLife Porto Rome Synthetic
 \VFourConstraints{} constraints, \VFourPublicInputs{} public inputs, and
 \VFourPrivateInputs{} private inputs.
+The experiments ran on an Apple M4 host with 16 GB memory. The scale preflight
+recorded 10 Docker CPUs and 8.22 GB of Docker memory. We compare a
+mechanism-level Nebula-style adapter. We do not claim statistical significance
+for the small Porto and Synthetic differences.
 \label{eq:r-shtpc}
 """
 PARTIAL = {"scale": {"status": "partial"}}
@@ -165,6 +169,26 @@ def test_dataset_names_in_comments_do_not_satisfy_contract() -> None:
 
     for dataset in datasets:
         assert f"dataset missing from manuscript: {dataset}" in issues
+
+
+@pytest.mark.parametrize(
+    ("missing", "expected"),
+    [
+        ("Apple M4", "experiment host disclosure missing: Apple M4"),
+        ("16 GB", "experiment host-memory disclosure missing: 16 GB"),
+        ("10 Docker CPUs", "Docker CPU allocation disclosure missing"),
+        ("8.22 GB", "Docker memory allocation disclosure missing"),
+        ("Nebula-style", "mechanism-level Nebula-style adapter disclosure missing"),
+        ("mechanism-level", "mechanism-level Nebula-style adapter disclosure missing"),
+        ("do not claim statistical significance", "small-gain significance boundary missing"),
+    ],
+)
+def test_polished_manuscript_requires_setup_and_comparison_disclosures(
+    missing: str, expected: str
+) -> None:
+    issues = MODULE.check_text(paper().replace(missing, ""), PARTIAL)
+
+    assert expected in issues
 
 
 @pytest.mark.parametrize(

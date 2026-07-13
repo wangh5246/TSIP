@@ -63,6 +63,32 @@ VERIFIED_SCALE_DISCLOSURES = (
         "verified scale timing-only exclusion disclosure missing",
     ),
 )
+POLISH_DISCLOSURES = (
+    (
+        re.compile(r"\bApple\s+M4\b", re.I),
+        "experiment host disclosure missing: Apple M4",
+    ),
+    (
+        re.compile(r"\b16\s*GB\b", re.I),
+        "experiment host-memory disclosure missing: 16 GB",
+    ),
+    (
+        re.compile(r"\b10\s+Docker\s+CPUs\b", re.I),
+        "Docker CPU allocation disclosure missing",
+    ),
+    (
+        re.compile(r"\b8\.22\s*GB\b", re.I),
+        "Docker memory allocation disclosure missing",
+    ),
+    (
+        re.compile(
+            r"\bdo\s+not\s+(?:claim|interpret)[^.]{0,100}"
+            r"statistical\s+significance\b",
+            re.I | re.S,
+        ),
+        "small-gain significance boundary missing",
+    ),
+)
 SCALE_COMPLETE_PATTERNS = (
     r"\b15\s*/\s*15\s+(?:dataset[- ]seed\s+)?units?\s+"
     r"(?:(?:have|has)\s+been\s+|(?:have|has|are|is|was|were)\s+)?"
@@ -251,6 +277,20 @@ def check_text(text: str, evidence: dict[str, Any]) -> list[str]:
     for dataset in _DATASETS:
         if not _contains_lexical_token(contract_text, dataset):
             issues.append(f"dataset missing from manuscript: {dataset}")
+
+    for pattern, message in POLISH_DISCLOSURES:
+        if pattern.search(contract_text) is None:
+            issues.append(message)
+    if (
+        re.search(r"\bNebula[- ]style\b", contract_text, re.I) is None
+        or re.search(
+            r"\bmechanism[- ]level\b[^.]{0,80}\badapter\b",
+            contract_text,
+            re.I | re.S,
+        )
+        is None
+    ):
+        issues.append("mechanism-level Nebula-style adapter disclosure missing")
 
     macro_text = _without_macro_definitions(contract_text)
     for macro in REQUIRED_MACROS:

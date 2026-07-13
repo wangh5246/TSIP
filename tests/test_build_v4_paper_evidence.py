@@ -686,7 +686,8 @@ def test_rendered_tex_uses_current_artifact_and_five_datasets(
     assert r"\newcommand{\VFourConstraints}{3{,}547}" in macros
     assert r"\newcommand{\VFourPublicInputs}{16}" in macros
     assert "SHTPC $\\pm$ std" in table
-    assert "Nebula $\\pm$ std" in table
+    assert "Nebula-style $\\pm$ std" in table
+    assert "mechanism-level adapter" in table
     assert "FRR" in table and "MRR" in table
     assert "partial" not in table
 
