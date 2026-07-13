@@ -865,12 +865,13 @@ collusion~\cite{Douceur2002Sybil}. A2b and false enrollment genesis points are
 deployment-scope issues handled by external controls rather than by the SNARK
 relation.
 
-The server side is modeled after the separated role design of Prochlo and
-Nebula~\cite{Bittau2017Prochlo,Shamsabadi2025Nebula} and the multi-operator
-governance common to GDPR/CCPA-style regimes. The Shuffler is
+The server side follows the separated-role design of Prochlo and
+Nebula~\cite{Bittau2017Prochlo,Shamsabadi2025Nebula}. The Shuffler is
 honest-but-curious. It observes proofs, commitments, ciphertext metadata, and
 accept/reject outcomes, yet it never sees plaintext coordinates. Aggregators A
-and R are further assumed not to collude.
+and R are further assumed not to collude. This organizational separation is an
+explicit deployment assumption; it is not implied by regulatory compliance or
+by assigning different service names to the roles.
 These are claim boundaries rather than engineering conveniences. If the
 Shuffler forks or rolls back state, the envelope-admission theorem is not
 claimed without an external audit log or replicated state machine. If the
@@ -922,13 +923,12 @@ both Aggregators lies outside Game~3's single-Aggregator privacy guarantee, in w
 case input privacy degrades to the public output DP layer while Shuffler-side
 admission checks still run.
 
-Two real-world settings show that the honest-but-curious, non-colluding server
-model is practically realizable under existing multi-operator governance.
-Municipal Mobility Data Specification deployments and the EU Electronic Toll
-Service both separate Shuffler/Decoder-style control roles from Aggregator-style
-third-party or provider roles. In such governance, a regulator or toll charger
-checks admission consistency while independent parties aggregate or audit
-contributions without seeing raw trajectories.
+Independent operation can make the non-collusion assumption auditable, but it
+cannot enforce that assumption cryptographically. A conforming deployment must
+therefore place the Shuffler and Aggregators in distinct administrative domains,
+document their data access, and audit state transitions and cross-role flows.
+If one operator controls or can silently correlate these roles, the
+single-server privacy claim does not apply.
 
 The component leakage boundary is summarized in
 Table~\ref{tab:privacy-boundary}. The Shuffler sees \textsc{SHTPCMain}, public

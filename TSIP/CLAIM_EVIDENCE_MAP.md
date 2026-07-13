@@ -1,6 +1,6 @@
 # SHTPC Claim-Evidence Map
 
-Evidence snapshot: 2026-07-13. The canonical manuscript is `TSIP/main.tex`.
+Evidence snapshot: 2026-07-14. The canonical manuscript is `TSIP/main.tex`.
 The N=1000 Docker scale result remains `partial` until a strict aggregate binds
 all 15 distinct unit receipts to the current manifest and launcher hashes.
 Unless a path starts with `TSIP/`, experiment paths below are relative to
@@ -17,11 +17,12 @@ Unless a path starts with `TSIP/`, experiment paths below are relative to
 ## Claim-Evidence Map
 
 Allowed statuses are `supported`, `partial`, `analytical`, `assumption`, and
-`unsupported`. This revision contains no retained `unsupported` claim.
+`unsupported`. This revision contains no retained `unsupported` claim and only
+CE23 remains `partial`.
 
 | ID | Claim | Manuscript location | Evidence artifact | Status | Action |
 |---|---|---|---|---|---|
-| CE01 | Managed private heatmaps motivate admission with coordinate and primary-cell hiding. | Abstract; Introduction opening | `TSIP/reference.bib` keys `Zheng2010GeoLife`, `Yuan2010Tdrive`, and private-aggregation references | partial | Keep the scoped motivation; complete source-level citation audit in Task 7. |
+| CE01 | Managed private heatmaps motivate admission with coordinate and primary-cell hiding. | Abstract; Introduction opening | `TSIP/reference.bib` keys `Zheng2010GeoLife`, `Yuan2010Tdrive`, and private-aggregation references; `TSIP/CITATION_AUDIT.md` | supported | Source-level metadata and claim scope were audited in Task 7; keep the motivation scoped. |
 | CE02 | Separate hidden-trajectory and payload checks do not imply same-primary equality. | Abstract; Introduction gap; composition-gap lemmas | Separation lemmas and composition matrix in `TSIP/main.tex` | analytical | Keep as the paper's central logical gap. |
 | CE03 | SHTPC binds accepted predecessor state, window reachability, hidden-primary derivation, and routed payload commitments in one relation. | Abstract; Introduction; Method | `docker_v4_smoke/manifest.json`; paper circuit, bindings, client, and shuffler hashes in that manifest | supported | Keep terminology and relation boundary stable. |
 | CE04 | The current paper relation has 3,547 constraints, 16 public inputs, and 25 private inputs. | Abstract; Method; Security; RQ6; Conclusion | `docker_v4_smoke/analysis_v4/paper_evidence.json`; `docker_v4_smoke/manifest.json` | supported | Cite only through generated `VFour*` macros. |
@@ -45,8 +46,8 @@ Allowed statuses are `supported`, `partial`, `analytical`, `assumption`, and
 | CE22 | The 2026-05-04 snarkjs timings and 128-byte proof object belong only to the historical 3,056 relation. | RQ6 | `circuit_bench/20260504_v4/circuit_perf.csv` | supported | Keep explicitly historical; omit unreceipted 5,694-byte frame claim. |
 | CE23 | Current three-seed N=1000 latency and throughput are not yet paper-verified. | RQ6; absent from Abstract | `docker_n1000_v4/launch_status.json`; strict aggregate currently absent | partial | Update only after 15/15 unit validation and strict aggregate generation. |
 | CE24 | The current Groth16 setup is a development setup, not a production ceremony. | Discussion; Artifact section | `docker_v4_smoke/manifest.json` setup field | supported | Keep this limitation in artifact and submission materials. |
-| CE25 | Multi-operator governance examples make the HBC/non-collusion model plausible. | Method threat model | Cited MDS/EETS governance sources | partial | Keep as examples, not proof; verify primary sources in Task 7. |
-| CE26 | The artifact exposes enough interface and receipt material to audit the proof-to-payload boundary. | Artifact section | Manifest, evidence builder, static/protocol/utility receipts | partial | Complete the Heatmap-specific artifact index and exact rerun commands in Task 7. |
+| CE25 | Distinct administrative domains, access documentation, and cross-role audits are deployment requirements for the HBC/non-collusion model, not cryptographic guarantees. | Method threat model | Explicit threat-model assumptions and failure conditions in `TSIP/main.tex` | assumption | Keep as an assumption; do not use governance analogies as evidence of non-collusion. |
+| CE26 | The artifact exposes enough interface and receipt material to audit the proof-to-payload boundary. | Artifact section | `TSIP_heatmap_version/ARTIFACT_README.md`; manifest, evidence builder, static/protocol/utility receipts | supported | Heatmap-specific paths, commands, pass criteria, data boundary, and scale limitation were indexed in Task 7. |
 | CE27 | SHTPC is suitable for managed deployments but not anonymous or fully untrusted-Shuffler settings. | Discussion; Conclusion | Consequence of CE08, CE09, CE14, CE18, and CE19 | analytical | Keep as deployment guidance, not a universal recommendation. |
 
 ## Reverse Outline
@@ -94,7 +95,7 @@ same-primary relation before aggregation.
 | M12 | Threat Model | SHTPC leaves ground-truth enrollment and voluntary transfer to deployment controls. | Exclude false genesis and A2b from circuit guarantees. | CE08, CE09 |
 | M13 | Threat Model | Transferred credentials must still satisfy the public admission envelope. | State what remains enforced after transfer. | CE08, CE10 |
 | M14 | Threat Model | Warmup raises false-genesis cost but does not restore physical truth. | Bound warmup and Aggregator-collusion claims. | CE08, CE09 |
-| M15 | Threat Model | Multi-operator examples illustrate the server model's deployability. | Motivate, without proving, governance assumptions. | CE25 |
+| M15 | Threat Model | Independent operation can make non-collusion auditable but cannot enforce it cryptographically. | State the administrative separation, access-documentation, and audit requirements and their failure condition. | CE25 |
 | M16 | Threat Model | The component leakage boundary is summarized by role. | Separate Shuffler metadata from Aggregator share views. | CE14, CE15 |
 | M17 | Commitment Chain | The commitment chain and payload binders provide SHTPC's state-and-payload substrate. | Motivate both commitment mechanisms. | CE03, CE10, CE11 |
 | M18 | Commitment Chain | Each client maintains a chain of salted location commitments. | Define hidden state representation. | CE10, CE14 |
@@ -192,6 +193,8 @@ risks.
 
 - Abstract has exactly five message sentences and excludes the partial scale result.
 - Every retained major claim has a non-`unsupported` status and an action.
+- CE01 and CE26 are closed by the Task 7 citation and artifact audits; CE25 is
+  an explicit assumption rather than an unsupported governance analogy.
 - Historical relation measurements are not evidence for the manifest-bound paper relation.
 - The fixed fair five-dataset evidence is integrated in E02 and E19-E20.
 - Final-scale writing may update CE23 only after strict aggregate verification.
@@ -209,7 +212,7 @@ task and is not treated as paper-ready.
 | Contribution | Is the idea non-obvious beyond standard composition? | pass | The separation lemmas and CE11 explain why state/context or VDAF-style checks alone do not imply equality. |
 | Contribution | Is the empirical gain stated without exaggeration? | pass | Abstract and RQ5 say two of five positive Jaccard deltas are small; CE07 retains every exact value. |
 | Contribution | Is at least one novelty type explicit? | pass | The paper claims a new scoped admission property and one-relation system design, not a new proof system or DP mechanism. |
-| Writing clarity | Can a knowledgeable reader reproduce the method? | needs revision | Method is detailed, but Task 7 must add the Heatmap artifact index and exact rerun commands. |
+| Writing clarity | Can a knowledgeable reader reproduce the method? | pass | Method details are paired with the Heatmap artifact index, exact commands, pass criteria, and evidence-layer boundaries. |
 | Writing clarity | Are key modules technically specified? | pass | M17-M47 cover state, binders, transport, circuit, timing, warmup, DP, and integer semantics. |
 | Writing clarity | Is each module motivated by a concrete challenge? | pass | M17, M27, and M36 explicitly connect design choices to the proof/payload gap and enrollment boundary. |
 | Writing clarity | Are terms and notation consistent? | pass | SHTPC terminology, generated V4 facts, and `eq:r-shtpc` are now consistent; stale current facts are absent. |
@@ -223,7 +226,7 @@ task and is not treated as paper-ready.
 | Evaluation completeness | Are metrics sufficient and separated by evidence layer? | pass | E04-E07 and CE20-CE23 separate rejection, utility, protocol smoke, historical microbenchmarks, and current scale. |
 | Evaluation completeness | Are datasets sufficiently broad? | pass | The manuscript integrates four real trajectory-derived inputs and one explicitly generated clustered random-walk stress input. |
 | Evaluation completeness | Is the protocol documented clearly? | pass | Experimental Setup separates original-input utility, safe-trajectory protocol smoke, and full Groth16 scale in three paragraphs. |
-| Method soundness | Is the deployment setting realistic? | pass | CE09, CE25, and CE27 restrict the claim to managed deployments with explicit governance assumptions. |
+| Method soundness | Is the deployment setting realistic? | pass | CE09, CE25, and CE27 restrict the claim to managed deployments and state that administrative separation is assumed rather than inferred from regulation. |
 | Method soundness | Are hidden technical defects addressed? | pass | CE05 and CE11 bind the current circuit to 22 compatibility/tamper checks and negative fixtures. |
 | Method soundness | Does the fair result avoid per-dataset retuning? | pass | CE07 uses one epsilon/tau pair across all datasets; tuned results are not the headline comparison. |
 | Method soundness | Are complexity and limitations visible? | pass | Discussion and CE08/CE14/CE18/CE24 expose leakage, collusion, setup, enrollment, and in-envelope limits. |
