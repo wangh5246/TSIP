@@ -1,6 +1,7 @@
 import hashlib
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 
@@ -9,6 +10,62 @@ SPEC = importlib.util.spec_from_file_location("build_v4_paper_evidence", SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 SPEC.loader.exec_module(MODULE)
+
+UTILITY_METRICS = {
+    "tdrive": {
+        "proposed_avg_jaccard": 0.7114,
+        "proposed_std_jaccard": 0.0114,
+        "baseline_avg_jaccard": 0.5114,
+        "baseline_std_jaccard": 0.0214,
+        "delta_jaccard": 0.2004,
+        "proposed_frr": 0.0014,
+        "proposed_mrr": 0.9014,
+    },
+    "geolife": {
+        "proposed_avg_jaccard": 0.7224,
+        "proposed_std_jaccard": 0.0224,
+        "baseline_avg_jaccard": 0.5224,
+        "baseline_std_jaccard": 0.0324,
+        "delta_jaccard": 0.2014,
+        "proposed_frr": 0.0024,
+        "proposed_mrr": 0.9024,
+    },
+    "porto": {
+        "proposed_avg_jaccard": 0.7334,
+        "proposed_std_jaccard": 0.0334,
+        "baseline_avg_jaccard": 0.5334,
+        "baseline_std_jaccard": 0.0434,
+        "delta_jaccard": 0.2024,
+        "proposed_frr": 0.0034,
+        "proposed_mrr": 0.9034,
+    },
+    "rome": {
+        "proposed_avg_jaccard": 0.7444,
+        "proposed_std_jaccard": 0.0444,
+        "baseline_avg_jaccard": 0.5444,
+        "baseline_std_jaccard": 0.0544,
+        "delta_jaccard": 0.2034,
+        "proposed_frr": 0.0044,
+        "proposed_mrr": 0.9044,
+    },
+    "synthetic": {
+        "proposed_avg_jaccard": 0.7554,
+        "proposed_std_jaccard": 0.0554,
+        "baseline_avg_jaccard": 0.5554,
+        "baseline_std_jaccard": 0.0654,
+        "delta_jaccard": 0.2044,
+        "proposed_frr": 0.0054,
+        "proposed_mrr": 0.9054,
+    },
+}
+
+EXPECTED_UTILITY_ROWS = [
+    r"T-Drive & 0.711 $\pm$ 0.011 & 0.511 $\pm$ 0.021 & +0.200 & 0.001 & 0.901 \\",
+    r"GeoLife & 0.722 $\pm$ 0.022 & 0.522 $\pm$ 0.032 & +0.201 & 0.002 & 0.902 \\",
+    r"Porto & 0.733 $\pm$ 0.033 & 0.533 $\pm$ 0.043 & +0.202 & 0.003 & 0.903 \\",
+    r"Rome & 0.744 $\pm$ 0.044 & 0.544 $\pm$ 0.054 & +0.203 & 0.004 & 0.904 \\",
+    r"Synthetic & 0.755 $\pm$ 0.055 & 0.555 $\pm$ 0.065 & +0.204 & 0.005 & 0.905 \\",
+]
 
 
 def write_json(path: Path, payload: object) -> None:
@@ -64,15 +121,9 @@ def fixture_tree(tmp_path: Path) -> dict[str, Path]:
                 "dataset": name,
                 "fixed_epsilon": 5,
                 "fixed_tau": 2,
-                "proposed_avg_jaccard": 0.7,
-                "proposed_std_jaccard": 0.02,
                 "strongest_baseline": "nebula",
-                "baseline_avg_jaccard": 0.6,
-                "baseline_std_jaccard": 0.01,
-                "delta_jaccard": 0.1,
-                "proposed_frr": 0,
-                "proposed_mrr": 1,
                 "pass": True,
+                **UTILITY_METRICS[name],
             }
         )
     write_json(utility, {"epsilon": 5, "tau": 2, "pass": True, "rows": rows})
@@ -133,14 +184,18 @@ def test_rendered_tex_uses_current_artifact_and_five_datasets(
     table = MODULE.render_utility_table(evidence)
     assert r"\newcommand{\VFourConstraints}{3{,}547}" in macros
     assert r"\newcommand{\VFourPublicInputs}{16}" in macros
-    assert all(
-        label in table
-        for label in ("T-Drive", "GeoLife", "Porto", "Rome", "Synthetic")
-    )
     assert "SHTPC $\\pm$ std" in table
     assert "Nebula $\\pm$ std" in table
     assert "FRR" in table and "MRR" in table
     assert "partial" not in table
+
+    lines = table.splitlines()
+    rendered_rows = lines[lines.index(r"\midrule") + 1 : lines.index(r"\bottomrule")]
+    assert rendered_rows == EXPECTED_UTILITY_ROWS
+    for row in rendered_rows:
+        numeric_values = re.findall(r"[+-]?\d+\.\d+", row)
+        assert len(numeric_values) == 7
+        assert all(re.fullmatch(r"[+-]?\d+\.\d{3}", value) for value in numeric_values)
 
 
 def test_launch_pass_is_not_verified_without_strict_summary(tmp_path: Path) -> None:
