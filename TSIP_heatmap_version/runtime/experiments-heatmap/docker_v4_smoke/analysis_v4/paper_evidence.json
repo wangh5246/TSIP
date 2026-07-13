@@ -125,5 +125,27 @@
     "total_units": 15
   },
   "schema_version": 1,
-  "setup_scope": "development Groth16 setup; not a production ceremony"
+  "setup_scope": "development Groth16 setup; not a production ceremony",
+  "source_receipts": {
+    "launch": {
+      "path": "TSIP_heatmap_version/runtime/experiments-heatmap/docker_n1000_v4/launch_status.json",
+      "sha256": "6efc952ad4128c58477e9b781abeb7918a9f4a0a06ccd800cb66847f6d747f81"
+    },
+    "manifest": {
+      "path": "TSIP_heatmap_version/runtime/experiments-heatmap/docker_v4_smoke/manifest.json",
+      "sha256": "346f15c6404bf5bc55598c470dbb78341289cb3b11383a6e4b9c4b3fc7210b96"
+    },
+    "protocol": {
+      "path": "TSIP_heatmap_version/runtime/experiments-heatmap/docker_v4_smoke/protocol_clean_five_dataset_v2/suite_status.json",
+      "sha256": "336fe34b3378ac9438ec001bf9b946bba38a94487fb87678f071471b1d1a23e0"
+    },
+    "static": {
+      "path": "TSIP_heatmap_version/runtime/experiments-heatmap/docker_v4_smoke/static/gate_status.json",
+      "sha256": "c1b920df0b04a30ea121201fead8abc17bf2d512e1c14e71cb0d3ffd9bf71877"
+    },
+    "utility": {
+      "path": "TSIP_heatmap_version/runtime/experiments-heatmap/docker_v4_smoke/utility/three_seed_n1000/fair_fixed_comparison.json",
+      "sha256": "2f8bdd1cd1416ace080e13a83d3e8401fb72ac2352aaa024196211fd9df2facb"
+    }
+  }
 }
