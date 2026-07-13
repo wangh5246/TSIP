@@ -25,6 +25,13 @@ data/processed_check/
 data/processed_grid32_check/
 data/processed_k6_compat/
 
+# Local trajectory-derived Heatmap inputs (provider terms apply)
+TSIP_heatmap_version/runtime/experiments-heatmap/five_dataset_inputs/*.jsonl
+TSIP_heatmap_version/runtime/experiments-heatmap/five_dataset_periods/
+experiments-heatmap/five_dataset_inputs/*.jsonl
+experiments-heatmap/five_dataset_periods/
+experiments/*_tsip_ready_1000u.jsonl
+
 # External baseline repos (pivot-era, vendored clones)
 baselines/
 
