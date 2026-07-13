@@ -1,7 +1,7 @@
 ---
 type: project-index
 project: tsip-heatmap
-updated: 2026-07-13T18:25:44Z
+updated: 2026-07-13T18:53:02Z
 status: active
 tags: [tsip-heatmap, index]
 ---

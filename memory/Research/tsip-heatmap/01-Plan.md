@@ -68,6 +68,6 @@ Pre-scale 阶段不提前写入 15/15 scale 结论；final-scale 严格聚合通
 
 - [x] 复审 Obsidian、strict aggregate、utility receipts、baseline adapters 与论文证据边界，确认无需新增实验。
 - [x] 修复 `Sources/Docs/V4方法审计与实验事实源` 中 13/15 running 的过期当前状态。
-- [ ] 补充论文硬件环境与 adapter baseline 说明。
-- [ ] 按 claim-safe 原则润色 Abstract、Introduction、Related Work、Method、Evaluation、Discussion 和 Conclusion。
-- [ ] 复跑 evidence/manuscript tests、clean LaTeX/Biber build、全页视觉检查和 mirror 字节比较。
+- [x] 补充论文硬件环境与 adapter baseline 说明。
+- [x] 按 claim-safe 原则润色 Abstract、Introduction、Related Work、Method、Evaluation、Discussion 和 Conclusion。
+- [x] 复跑 237 项 evidence/figure/manuscript tests、clean LaTeX/Biber build、18/18 页视觉检查和 mirror 字节比较；final-polish 提交为 `43f84752`。

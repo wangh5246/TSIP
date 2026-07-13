@@ -16,16 +16,16 @@ tags: [tsip-heatmap, hub, v4]
 
 - V4 静态与 Route-B/C21 门禁为 22/22 通过。
 - 五数据集 Docker clean protocol smoke 为 5/5 通过。
-- N=1000、五数据集、三种子固定公平效用比较已完成，V4 proposed 在五个数据集上均优于最强基线 Nebula，honest FRR 为 0。
+- N=1000、五数据集、三种子固定公平效用比较已完成，V4 proposed 在五个数据集的观测均值和 15 个观测 dataset-seed 配对上均优于 Nebula-style 机制适配器，honest FRR 为 0；Porto 与 Synthetic 小增益不作统计显著性主张。
 - V4 paper-scale cryptographic matrix 为 5 数据集 x 3 seeds x 16 rounds，共 15 个单元；2026-07-13 23:24:37 +0800 已完成 15/15，launcher receipt 为 pass、failed units 为 0。
 - Strict aggregate 已验证全部 unit hashes、16-round contract、功能总账与 manifest/launch binding；15 个功能单元全部通过，13 个计时单元为 1.000 +/- 0.069 proofs/s、4.183 +/- 0.248 h/单元。
 - 论文 evidence 已升级为 `scale.status=verified`，CE23 已关闭；最终 clean build、18/18 页视觉 QA 与 paper mirror 字节同步均已通过。
 
 ## 当前焦点
 
-- 实验完整性再审已确认不存在阻塞性补实验需求；当前进入 claim-safe 全文润色、最终重编译与视觉复核。
+- 实验完整性再审确认不存在阻塞性补实验需求；claim-safe 全文润色、最终重编译与视觉复核现已完成。
 - 按 `docs/superpowers/specs/2026-07-13-tsip-heatmap-tdsc-revision-design.md` 执行 TDSC 分阶段证据驱动修订。
-- Pre-scale 已完成 Git 保全、artifact 一致性、摘要、五数据集固定效用、合规门、18 页 clean build 与 adversarial self-review；final-scale evidence propagation 也已通过 220 项合同测试。
+- Pre-scale 已完成 Git 保全、artifact 一致性、摘要、五数据集固定效用、合规门、18 页 clean build 与 adversarial self-review；final-polish 回归已通过 237 项证据、图形与稿件合同测试。
 - 不再启动 scale launcher；保留 15 个 pass receipts。实验与机器可验证论文门禁均已闭合，当前只剩作者拥有的 release/submission 声明。
 - 区分 [[Experiments/V4-Docker-N1000完整实验]]、旧版 full N=1000 RQ suite 和简单 Docker sanity run，避免证据混用。
 - 用 [[Knowledge/V4方法与证据边界]] 约束论文措辞。
@@ -33,10 +33,8 @@ tags: [tsip-heatmap, hub, v4]
 
 ## 下一步动作
 
-1. 润色 Abstract、Introduction、Related Work、Method、Evaluation 与 Conclusion，并保持所有 claim/evidence 边界不变。
-2. 补充硬件环境，明确 Nebula/EIFFeL 为机制级适配器，避免对 Porto/Synthetic 小增益使用统计显著或普遍最优措辞。
-3. 重跑 220 项证据测试、稿件合同、clean build、18 页视觉检查与 paper mirror 比较。
-4. 作者明确 license、署名、单位/ORCID、COI、funding、ethics、code/data availability 和 AI-use disclosure。
+1. 作者明确 license、署名、单位/ORCID、COI、funding、ethics、code/data availability 和 AI-use disclosure。
+2. 按投稿系统要求准备匿名稿、补充材料和最终元数据；不再启动或重跑现有实验矩阵。
 
 ## 重要链接
 
@@ -52,6 +50,7 @@ tags: [tsip-heatmap, hub, v4]
 
 ## 最近重要变化
 
+- 2026-07-14 final-polish 论文提交为 `43f84752`：补充 Apple M4/Docker/软件环境，明确 Nebula-style 与 EIFFeL-style 为机制级适配器，收紧三种子小增益表述，重写核心章节并同步 canonical/mirror；237 tests、Abstract 147 words、稿件 issues 0、18 页 clean build 与 18/18 页视觉 QA 全部通过。
 - 2026-07-14 实验完整性再审确认执行合同全部完成且无需补跑；发现并修复 Obsidian 事实源的 13/15 过期快照，同时把适配器基线、三种子小增益、clean-scale、timing exclusion 和硬件环境列为润色必须主动披露的非阻塞风险。
 - 2026-07-14 final-scale verified paper build 已提交为 `71b7e418`：18 页 letter/PDF 1.7，90 citekeys，220 tests，稿件 issues 0；undefined/fatal/rerun/overfull/LaTeX/package/Biber warnings 均为 0，18/18 页视觉检查和 canonical/mirror 字节比较通过。
 - 2026-07-14 final-scale evidence propagation 已提交为 `3591866c`（`feat: bind verified V4 N1000 paper evidence`）。
@@ -79,6 +78,7 @@ tags: [tsip-heatmap, hub, v4]
 - [[Daily/2026-07-14]]
 
 ## Recent Changes
+- 2026-07-13T18:53:02Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-polish).
 - 2026-07-13T18:25:44Z: sync refreshed scaffold, registry, index, and daily note (experiment-completeness-reaudit).
 - 2026-07-13T17:15:48Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task4-final-build).
 - 2026-07-13T17:02:16Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task3-commit).
@@ -86,4 +86,3 @@ tags: [tsip-heatmap, hub, v4]
 - 2026-07-13T16:56:38Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task3-propagation).
 - 2026-07-13T16:40:48Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-commit).
 - 2026-07-13T16:39:29Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-precommit).
-- 2026-07-13T16:37:42Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-aggregate-fix).
