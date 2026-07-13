@@ -19,23 +19,22 @@ tags: [tsip-heatmap, hub, v4]
 - N=1000、五数据集、三种子固定公平效用比较已完成，V4 proposed 在五个数据集上均优于最强基线 Nebula，honest FRR 为 0。
 - V4 paper-scale cryptographic matrix 为 5 数据集 x 3 seeds x 16 rounds，共 15 个单元；2026-07-13 23:24:37 +0800 已完成 15/15，launcher receipt 为 pass、failed units 为 0。
 - Strict aggregate 已验证全部 unit hashes、16-round contract、功能总账与 manifest/launch binding；15 个功能单元全部通过，13 个计时单元为 1.000 +/- 0.069 proofs/s、4.183 +/- 0.248 h/单元。
-- 论文 evidence 已升级为 `scale.status=verified`，CE23 已关闭；最终 clean build、全页视觉 QA 与 paper mirror 同步仍待完成。
+- 论文 evidence 已升级为 `scale.status=verified`，CE23 已关闭；最终 clean build、18/18 页视觉 QA 与 paper mirror 字节同步均已通过。
 
 ## 当前焦点
 
 - 按 `docs/superpowers/specs/2026-07-13-tsip-heatmap-tdsc-revision-design.md` 执行 TDSC 分阶段证据驱动修订。
 - Pre-scale 已完成 Git 保全、artifact 一致性、摘要、五数据集固定效用、合规门、18 页 clean build 与 adversarial self-review；final-scale evidence propagation 也已通过 220 项合同测试。
-- 不再启动 scale launcher；保留 15 个 pass receipts，当前只执行论文最终构建与视觉/镜像门禁。
+- 不再启动 scale launcher；保留 15 个 pass receipts。实验与机器可验证论文门禁均已闭合，当前只剩作者拥有的 release/submission 声明。
 - 区分 [[Experiments/V4-Docker-N1000完整实验]]、旧版 full N=1000 RQ suite 和简单 Docker sanity run，避免证据混用。
 - 用 [[Knowledge/V4方法与证据边界]] 约束论文措辞。
 - 根据 [[Writing/论文修订与投稿决策]] 复核当前主稿，而不是沿用早期聊天中的页数或术语判断。
 
 ## 下一步动作
 
-1. 从 clean auxiliary state 执行最终 `pdflatex -> biber -> pdflatex -> pdflatex`。
-2. 扫描 undefined/fatal/rerun/overfull/warning，并渲染检查全部 PDF 页面。
-3. 将最终 canonical manuscript/reference 同步到 Heatmap paper mirror 并做字节比较。
-4. 回填最终哈希、页数与视觉检查；作者 license 与投稿声明仍保持人工阻塞。
+1. 作者明确选择 SPDX license，并确认全部版权持有人授权；在此之前不创建 `LICENSE`。
+2. 作者确认署名/顺序、单位与 ORCID、通讯作者、COI、prior/concurrent versions、funding、ethics、code/data availability 和 AI-use disclosure。
+3. 按 IEEE TDSC 投稿系统要求完成匿名选项、biographies 与 supplementary files 的最终打包。
 
 ## 重要链接
 
@@ -50,6 +49,8 @@ tags: [tsip-heatmap, hub, v4]
 
 ## 最近重要变化
 
+- 2026-07-14 final-scale verified paper build 已提交为 `71b7e418`：18 页 letter/PDF 1.7，90 citekeys，220 tests，稿件 issues 0；undefined/fatal/rerun/overfull/LaTeX/package/Biber warnings 均为 0，18/18 页视觉检查和 canonical/mirror 字节比较通过。
+- 2026-07-14 final-scale evidence propagation 已提交为 `3591866c`（`feat: bind verified V4 N1000 paper evidence`）。
 - 2026-07-14 final-scale paper evidence 已升级为 verified：220 tests、Abstract 147 words、manuscript issues 0；RQ6、Abstract、Conclusion 与 CE23 已只通过生成宏/表传播。
 - 2026-07-14 strict aggregate 已提交为 `248f858c`；15 个功能 units verified，13 个连续计时 units 均值为 1.000 +/- 0.069 proofs/s，两个 host-suspended timing receipts 显式排除。
 - 2026-07-14 Task 9 对抗自审及 Obsidian 基线已提交为 `a0db10db`。
@@ -74,11 +75,11 @@ tags: [tsip-heatmap, hub, v4]
 - [[Daily/2026-07-14]]
 
 ## Recent Changes
+- 2026-07-13T17:15:48Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task4-final-build).
+- 2026-07-13T17:02:16Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task3-commit).
 - 2026-07-13T17:00:04Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task3-hardening).
 - 2026-07-13T16:56:38Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task3-propagation).
 - 2026-07-13T16:40:48Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-commit).
 - 2026-07-13T16:39:29Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-precommit).
 - 2026-07-13T16:37:42Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-aggregate-fix).
 - 2026-07-13T16:35:54Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-aggregate).
-- 2026-07-13T16:20:48Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task1-complete).
-- 2026-07-13T16:19:21Z: sync refreshed scaffold, registry, index, and daily note (tdsc-pre-scale-revision-task9-commit).

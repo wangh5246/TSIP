@@ -3,8 +3,9 @@
 Review date: 2026-07-14. Canonical manuscript: `TSIP/main.tex`. This review is
 an internal quality-control record, not independent peer review. Its scientific
 status is **final-scale verified**: the fixed five-dataset utility, strict
-15-unit current-circuit aggregate, and manuscript claim contract pass. Final
-clean-build and full-page visual QA remain the current mechanical gate.
+15-unit current-circuit aggregate, manuscript claim contract, final clean
+build, all-page visual QA, and canonical/mirror consistency all pass. Only
+author-owned release and submission declarations remain open.
 
 ## Submission Verdict
 
@@ -16,6 +17,7 @@ clean-build and full-page visual QA remain the current mechanical gate.
   average 1.000 $\pm$ 0.069 proofs/s and 4.183 $\pm$ 0.248 hours per unit. Rome
   seed 101 and Synthetic seed 101 remain in functional totals but are excluded
   only from timing after documented host suspension.
+- Final paper build and visual inspection: **pass**.
 - Public release and submission declarations: **blocked on author action**.
 
 ## Blocking Author Gate
@@ -43,25 +45,24 @@ pdflatex -interaction=nonstopmode -halt-on-error main.tex
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-Build and inspection results from the last clean pre-scale checkpoint:
+Build and inspection results from the final-scale checkpoint:
 
-- Abstract: 155 words; manuscript checker issues: 0.
+- Abstract: 147 words; manuscript checker issues: 0.
 - Biber: 90 citekeys; warnings/errors: 0.
 - PDF: 18 pages, US letter, PDF 1.7.
 - Undefined citations/references, fatal errors, rerun requests: 0.
 - Overfull boxes, LaTeX warnings, package warnings: 0.
-- Underfull boxes: 42; all 18 pages were rendered, the Task 8 full-page review
-  remained valid, and the modified Threat Model flow on pages 5--7 was
-  re-inspected with no clipping, overlap, or unreadable text.
-- SHA-256: `main.tex` `77e57e4cefa99814bed486fd9fcaa6bfb21adbd927de155effe001b6da792e12`;
+- Underfull boxes: 42. All 18 pages were rendered and inspected. After the RQ6
+  float-flow correction, pages 1--13 were pixel-identical to the inspected
+  render and pages 14--18 were re-inspected at original detail; there is no
+  clipping, overlap, missing figure, or unreadable table/text.
+- SHA-256: `main.tex` `1e3a95d6dc055f2abef5c38b6518f8e088cd90f665f395b12cba48594d6ef9ed`;
   `reference.bib` `c1c4d078c2e2acf21a204312d2f62bb2a0e71b96e17b50926d35d11ededfb6cf`;
-  `main.pdf` `b28bc819eac06711bebf42b551b7ae4c65d13bbc38d8a26c88a5fdf65e7bdfcb`.
-- Task 8 verified checkpoint commit: `d54ac1a5`; the self-review edits and new
-  build receipt belong to the Task 9 commit.
-
-These are historical pre-scale hashes, not final submission hashes. The full
-clean build, warning scan, manuscript checker, mirror comparison, and all-page
-visual gate must run again after the completed strict-scale integration.
+  `main.pdf` `2e59d0cb5cc00169340b45785944aafda2b401c80e5a639eb403a83f3b5f3ca5`.
+- Canonical and Heatmap paper-mirror `main.tex`/`reference.bib` files are
+  byte-identical.
+- Final-scale evidence propagation commit: `3591866c`; final verified-paper
+  build commit: `71b7e418`.
 
 ## Claim-Evidence Closure
 
@@ -104,8 +105,8 @@ or assumption into a guarantee.
 
 No additional utility or scale rerun is required by this review. The strict
 validator found all 15 functional receipts valid and retained at least two
-timing receipts per dataset. The remaining work is final manuscript build,
-warning scan, visual QA, mirror synchronization, and author-owned submission
+timing receipts per dataset. All machine-verifiable manuscript gates are now
+closed; the remaining work is limited to author-owned release and submission
 declarations.
 
 ## Completed Final-Scale Work
@@ -124,9 +125,9 @@ declarations.
 4. Bound the strict aggregate into `paper_evidence.json`, updated CE23 and RQ6
    only from generated macros/tables, and kept protocol-scale results separate
    from original-input RQ5 utility.
-5. Re-ran focused evidence and manuscript-contract tests. The clean
-   LaTeX/Biber build, warning scans, canonical/mirror byte comparison, and
-   all-page visual QA are the final pending verification stage.
+5. Re-ran 220 focused evidence and manuscript-contract tests, then completed
+   the clean LaTeX/Biber build, warning scans, canonical/mirror byte comparison,
+   and all-page visual QA.
 
 ## Evidence Boundary
 

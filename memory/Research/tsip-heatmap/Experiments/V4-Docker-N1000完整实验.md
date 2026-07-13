@@ -91,7 +91,7 @@ T-Drive seed 101 于 2026-07-10 12:56 至 16:21 +0800 完成：
 
 ## 完成判据
 
-见 [[01-Plan]]。执行矩阵、strict aggregate、paper-evidence 与 manuscript checker 都已通过；只剩最终构建和视觉门禁。
+见 [[01-Plan]]。执行矩阵、strict aggregate、paper-evidence、manuscript checker、最终构建和 18/18 页视觉门禁都已通过；无需重跑实验。
 可引用数字、timing exclusion 和 artifact hashes 见 [[Results/Reports/V4实验结果-2026-07]]。
 
 ## 2026-07-14 Final-scale 接管检查
@@ -110,3 +110,4 @@ T-Drive seed 101 于 2026-07-10 12:56 至 16:21 +0800 完成：
 - 确定性重生成哈希一致，33 summarizer tests 和 202 combined Heatmap tests 全部通过；临时 paper-evidence build 已返回 `scale.status=verified`。
 - Strict aggregate 实现与 receipts 已提交为 `248f858c`。
 - Final-scale paper evidence 已返回 `scale.status=verified`；三组合同测试合计 220 passed，实验无需重跑。
+- Final-scale 18 页论文构建、全页视觉检查与 canonical/paper mirror 字节同步已通过并提交为 `71b7e418`。

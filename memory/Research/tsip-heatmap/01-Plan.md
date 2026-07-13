@@ -54,7 +54,7 @@ Pre-scale 阶段不提前写入 15/15 scale 结论；final-scale 严格聚合通
 - [x] 将 protocol scalability 与 fixed utility 分成不同表或小节（Experimental Setup 三层分离；RQ5 固定效用；RQ6 scale）。
 - [x] 更新论文中数据集、实验协议、效用和成本数字；规模数字只来自 verified `paper_evidence.json`、生成宏和生成表，220 项测试通过。
 - [x] 全文搜索并消除过强的 authenticity、robustness、security guarantee 与现实治理类比表述；最终 scale 写回后再跑同一 checker。
-- [ ] 重新编译并视觉核验论文页数、图表和引用。
+- [x] 重新编译并视觉核验论文页数、图表和引用；final-scale 18 页 PDF、90 citekeys、220 tests、0 manuscript issues、18/18 页视觉检查与 mirror 字节一致性均通过（`71b7e418`）。
 
 ## 完成门槛
 
