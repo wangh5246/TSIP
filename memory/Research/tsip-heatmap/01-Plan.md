@@ -63,3 +63,11 @@ Pre-scale 阶段不提前写入 15/15 scale 结论；final-scale 严格聚合通
 - 所有证明尝试都有对应 verified receipt，proof failed 为 0。
 - 论文表格只引用汇总脚本生成的 artifact，且与 manifest hash 一致。
 - [x] [[Results/Reports/V4实验结果-2026-07]] 已从 `partial-verified` 更新为 `verified`，并披露 timing exclusion。
+
+## P0 最终全文润色
+
+- [x] 复审 Obsidian、strict aggregate、utility receipts、baseline adapters 与论文证据边界，确认无需新增实验。
+- [x] 修复 `Sources/Docs/V4方法审计与实验事实源` 中 13/15 running 的过期当前状态。
+- [ ] 补充论文硬件环境与 adapter baseline 说明。
+- [ ] 按 claim-safe 原则润色 Abstract、Introduction、Related Work、Method、Evaluation、Discussion 和 Conclusion。
+- [ ] 复跑 evidence/manuscript tests、clean LaTeX/Biber build、全页视觉检查和 mirror 字节比较。

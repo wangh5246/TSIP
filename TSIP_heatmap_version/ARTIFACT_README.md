@@ -17,7 +17,8 @@ another.
 | Scale launcher | `runtime/experiments-heatmap/run_v4_docker_n1000_scale.py` | Builds the 5 by 3 N=1000 Docker execution matrix with bounded concurrency. |
 | Scale launcher receipt | `runtime/experiments-heatmap/docker_n1000_v4/launch_status.json` | Records 15/15 unit execution pass; this launcher receipt alone is not a verified aggregate performance result. |
 | Scale unit receipts | `runtime/experiments-heatmap/docker_n1000_v4/<dataset>/seed_<seed>/clean/status.json` | Fifteen per-dataset/per-seed protocol receipts used by the strict aggregate builder. |
-| Paper evidence bundle | `runtime/experiments-heatmap/docker_v4_smoke/analysis_v4/paper_evidence.json` | Hash-bound manuscript facts; scale remains partial until a strict aggregate receipt validates all unit hashes. |
+| Strict scale aggregate | `runtime/experiments-heatmap/docker_n1000_v4/aggregate_summary.json` | Verifies the 15-unit matrix, functional totals, timing eligibility, and manifest/launcher/unit hashes. |
+| Paper evidence bundle | `runtime/experiments-heatmap/docker_v4_smoke/analysis_v4/paper_evidence.json` | Hash-bound manuscript facts with `scale.status=verified`. |
 
 The five-dataset source manifest is
 `runtime/experiments-heatmap/five_dataset_inputs/manifest.json`. The row-level
@@ -27,8 +28,10 @@ repository. See `../DATA_NOTICE.md` before acquiring or preparing data.
 ## Environment
 
 The recorded passing manifest used Python 3.10.20, Node.js 20.20.2, Circom
-2.1.9, snarkjs 0.7.6, Docker Server 29.1.3, and Docker Compose. Reproduction
-also requires sufficient Docker CPU/memory capacity, free experiment ports,
+2.1.9, snarkjs 0.7.6, Docker Server 29.1.3, and Docker Compose. The experiments
+ran on an Apple M4 MacBook Pro with 10 CPU cores and 16 GB host memory. The
+scale launch preflight recorded 10 Docker CPUs, 8,217,448,448 bytes of Docker
+memory, and two concurrent jobs. Reproduction also requires free experiment ports,
 `jq` for receipt inspection, and the Python dependencies used by the repository
 test suite. `caffeinate` is optional and macOS-specific; Linux users can invoke
 the scale Python command directly or use their system's sleep inhibitor.
@@ -88,6 +91,12 @@ Pass condition: the suite receipt reports five datasets, five passes, and
 `state == "pass"`.
 
 ## Fixed Utility
+
+The comparison code uses mechanism-level Nebula-style and EIFFeL-style
+adapters under the shared heatmap harness. They are not native deployments of
+the complete upstream systems. Paper claims must therefore say "evaluated
+adapter" or "design-space comparison" and must not imply universal superiority
+over every private-aggregation implementation.
 
 Run from the experiment directory:
 
@@ -155,10 +164,11 @@ jq '{state,completed_units,failed_units,total_units,failure}' \
   docker_n1000_v4/launch_status.json
 ```
 
-The final paper may use scale metrics only after the strict aggregate command
-produces an aggregate receipt that validates all 15 unit receipt hashes and is
-then bound into `paper_evidence.json`. A 15/15 launcher pass is necessary but
-not sufficient for a latency or throughput claim.
+The strict aggregate has validated all 15 unit receipt hashes and is bound into
+`paper_evidence.json`. Functional totals use all 15 units. Timing uses 13 units
+after excluding Rome/101 and Synthetic/101 only for host-suspension gaps above
+the 7,200-second rule. A 15/15 launcher pass remains necessary but is not by
+itself sufficient for a latency or throughput claim.
 
 ## Internal Quality-Control Records
 

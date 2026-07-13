@@ -23,6 +23,7 @@ tags: [tsip-heatmap, hub, v4]
 
 ## 当前焦点
 
+- 实验完整性再审已确认不存在阻塞性补实验需求；当前进入 claim-safe 全文润色、最终重编译与视觉复核。
 - 按 `docs/superpowers/specs/2026-07-13-tsip-heatmap-tdsc-revision-design.md` 执行 TDSC 分阶段证据驱动修订。
 - Pre-scale 已完成 Git 保全、artifact 一致性、摘要、五数据集固定效用、合规门、18 页 clean build 与 adversarial self-review；final-scale evidence propagation 也已通过 220 项合同测试。
 - 不再启动 scale launcher；保留 15 个 pass receipts。实验与机器可验证论文门禁均已闭合，当前只剩作者拥有的 release/submission 声明。
@@ -32,9 +33,10 @@ tags: [tsip-heatmap, hub, v4]
 
 ## 下一步动作
 
-1. 作者明确选择 SPDX license，并确认全部版权持有人授权；在此之前不创建 `LICENSE`。
-2. 作者确认署名/顺序、单位与 ORCID、通讯作者、COI、prior/concurrent versions、funding、ethics、code/data availability 和 AI-use disclosure。
-3. 按 IEEE TDSC 投稿系统要求完成匿名选项、biographies 与 supplementary files 的最终打包。
+1. 润色 Abstract、Introduction、Related Work、Method、Evaluation 与 Conclusion，并保持所有 claim/evidence 边界不变。
+2. 补充硬件环境，明确 Nebula/EIFFeL 为机制级适配器，避免对 Porto/Synthetic 小增益使用统计显著或普遍最优措辞。
+3. 重跑 220 项证据测试、稿件合同、clean build、18 页视觉检查与 paper mirror 比较。
+4. 作者明确 license、署名、单位/ORCID、COI、funding、ethics、code/data availability 和 AI-use disclosure。
 
 ## 重要链接
 
@@ -43,12 +45,14 @@ tags: [tsip-heatmap, hub, v4]
 - [[Knowledge/V4方法与证据边界]]
 - [[Experiments/V4-Docker-N1000完整实验]]
 - [[Results/Reports/V4实验结果-2026-07]]
+- [[Results/Reports/V4实验完整性再审-2026-07-14]]
 - [[Writing/论文修订与投稿决策]]
 - [[Sources/Notes/Codex对话同步审计-2026-07-13]]
 - [[Daily/2026-07-13]]
 
 ## 最近重要变化
 
+- 2026-07-14 实验完整性再审确认执行合同全部完成且无需补跑；发现并修复 Obsidian 事实源的 13/15 过期快照，同时把适配器基线、三种子小增益、clean-scale、timing exclusion 和硬件环境列为润色必须主动披露的非阻塞风险。
 - 2026-07-14 final-scale verified paper build 已提交为 `71b7e418`：18 页 letter/PDF 1.7，90 citekeys，220 tests，稿件 issues 0；undefined/fatal/rerun/overfull/LaTeX/package/Biber warnings 均为 0，18/18 页视觉检查和 canonical/mirror 字节比较通过。
 - 2026-07-14 final-scale evidence propagation 已提交为 `3591866c`（`feat: bind verified V4 N1000 paper evidence`）。
 - 2026-07-14 final-scale paper evidence 已升级为 verified：220 tests、Abstract 147 words、manuscript issues 0；RQ6、Abstract、Conclusion 与 CE23 已只通过生成宏/表传播。
@@ -75,6 +79,7 @@ tags: [tsip-heatmap, hub, v4]
 - [[Daily/2026-07-14]]
 
 ## Recent Changes
+- 2026-07-13T18:25:44Z: sync refreshed scaffold, registry, index, and daily note (experiment-completeness-reaudit).
 - 2026-07-13T17:15:48Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task4-final-build).
 - 2026-07-13T17:02:16Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task3-commit).
 - 2026-07-13T17:00:04Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task3-hardening).
@@ -82,4 +87,3 @@ tags: [tsip-heatmap, hub, v4]
 - 2026-07-13T16:40:48Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-commit).
 - 2026-07-13T16:39:29Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-precommit).
 - 2026-07-13T16:37:42Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-aggregate-fix).
-- 2026-07-13T16:35:54Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-aggregate).
