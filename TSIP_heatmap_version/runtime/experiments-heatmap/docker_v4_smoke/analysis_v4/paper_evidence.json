@@ -1,0 +1,129 @@
+{
+  "artifact_hashes": {
+    "bindings": "dc50cea2a8657be7f8be52315d1930a98a5c4a6c9d1b0db052ddefc37aa7f339",
+    "circuit_base": "9232e8e9501662136aaea48a0f9184c0d7a14c737a3798afc23f27057e670c69",
+    "circuit_wrapper": "d09e03a7ec70f408d3a492556573534922a644fc99f5ea854399dc7d92654aff",
+    "client": "735ff8fcbcf91b0ae38cef4fb4ddc514cff127e9eebce9eedf278d0368760775",
+    "r1cs": "acc0be7145f04316bcec309c5785c2b67f1cde72a4c0dfeae2ba843f81b13e31",
+    "shuffler": "2fc51bc7b457999b36d9189bd8f3e58f5fc87e4a4bc62d67011dc2c6371c70f6",
+    "vkey": "bba823fe06ccac9b9bc706037d842c75313a2eb2baed9e1fa18f6a65a6c6c9ba",
+    "wasm": "f14fe82be4830c20337ed6b8fb380668d906b81f9cf187a46427ef14dd26dc30",
+    "zkey": "f6aee500660b93040a6d541a04cc17235519261c6b34ecfb0800944f543f41fd"
+  },
+  "circuit": {
+    "constraints": 3547,
+    "outputs": 0,
+    "private_inputs": 25,
+    "public_inputs": 16,
+    "wires": 3550
+  },
+  "fixed_config": {
+    "epsilon": 5.0,
+    "tau": 2.0
+  },
+  "fixed_utility": [
+    {
+      "baseline_avg_jaccard": 0.5609671242224961,
+      "baseline_std_jaccard": 0.00048068015011165177,
+      "dataset": "tdrive",
+      "delta_jaccard": 0.10967258468998609,
+      "fixed_epsilon": 5.0,
+      "fixed_tau": 2.0,
+      "pass": true,
+      "proposed_avg_jaccard": 0.6706397089124821,
+      "proposed_frr": 0.0,
+      "proposed_mrr": 1.0,
+      "proposed_std_jaccard": 0.025869506313931787,
+      "strongest_baseline": "nebula"
+    },
+    {
+      "baseline_avg_jaccard": 0.3662433862433862,
+      "baseline_std_jaccard": 0.0016495721976846648,
+      "dataset": "geolife",
+      "delta_jaccard": 0.5116483516483517,
+      "fixed_epsilon": 5.0,
+      "fixed_tau": 2.0,
+      "pass": true,
+      "proposed_avg_jaccard": 0.8778917378917379,
+      "proposed_frr": 0.0,
+      "proposed_mrr": 1.0,
+      "proposed_std_jaccard": 0.04379124978628153,
+      "strongest_baseline": "nebula"
+    },
+    {
+      "baseline_avg_jaccard": 0.2980907075635907,
+      "baseline_std_jaccard": 0.003071782516258048,
+      "dataset": "porto",
+      "delta_jaccard": 0.0065728634046172685,
+      "fixed_epsilon": 5.0,
+      "fixed_tau": 2.0,
+      "pass": true,
+      "proposed_avg_jaccard": 0.30466357096820795,
+      "proposed_frr": 0.0,
+      "proposed_mrr": 1.0,
+      "proposed_std_jaccard": 0.005811862606887466,
+      "strongest_baseline": "nebula"
+    },
+    {
+      "baseline_avg_jaccard": 0.6639764247845262,
+      "baseline_std_jaccard": 0.0026610215279694355,
+      "dataset": "rome",
+      "delta_jaccard": 0.10817055553105204,
+      "fixed_epsilon": 5.0,
+      "fixed_tau": 2.0,
+      "pass": true,
+      "proposed_avg_jaccard": 0.7721469803155783,
+      "proposed_frr": 0.0,
+      "proposed_mrr": 1.0,
+      "proposed_std_jaccard": 0.008596679080232232,
+      "strongest_baseline": "nebula"
+    },
+    {
+      "baseline_avg_jaccard": 0.12792697134962303,
+      "baseline_std_jaccard": 0.001687887241277394,
+      "dataset": "synthetic",
+      "delta_jaccard": 0.006873247638163105,
+      "fixed_epsilon": 5.0,
+      "fixed_tau": 2.0,
+      "pass": true,
+      "proposed_avg_jaccard": 0.13480021898778613,
+      "proposed_frr": 0.0,
+      "proposed_mrr": 1.0,
+      "proposed_std_jaccard": 0.005567303316772192,
+      "strongest_baseline": "nebula"
+    }
+  ],
+  "gates": {
+    "protocol": "pass",
+    "static": "pass",
+    "utility": "pass"
+  },
+  "profile": "v4-paper-k6",
+  "public_signal_order": [
+    "hash_prev",
+    "hash_curr",
+    "hash_anchor",
+    "step_dt_sq",
+    "tier_vmax_sq",
+    "tier_anchor_cap_sq",
+    "cap_policy_sq",
+    "primary_commitment",
+    "payload_commitment_v2",
+    "share_content_commitment_a",
+    "share_content_commitment_r",
+    "context_commitment",
+    "blob_hash",
+    "secret_commitment",
+    "modeset_commitment",
+    "mode_tag"
+  ],
+  "scale": {
+    "completed_units": 13,
+    "state": "running",
+    "status": "partial",
+    "summary_sha256": null,
+    "total_units": 15
+  },
+  "schema_version": 1,
+  "setup_scope": "development Groth16 setup; not a production ceremony"
+}
