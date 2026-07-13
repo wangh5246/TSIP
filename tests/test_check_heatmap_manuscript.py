@@ -25,10 +25,46 @@ T-Drive GeoLife Porto Rome Synthetic
 """
 PARTIAL = {"scale": {"status": "partial"}}
 VERIFIED = {"scale": {"status": "verified"}}
+VERIFIED_SCALE_MACROS = (
+    r"\VFourScaleUnits",
+    r"\VFourScaleProofs",
+    r"\VFourScaleProofFailures",
+    r"\VFourScaleEvaluationRounds",
+    r"\VFourScaleRouteA",
+    r"\VFourScaleRouteR",
+    r"\VFourScaleReconstructions",
+    r"\VFourScaleDPReleases",
+    r"\VFourScaleTimingUnits",
+    r"\VFourScaleTimingExcluded",
+    r"\VFourScaleThroughputMean",
+    r"\VFourScaleThroughputStd",
+    r"\VFourScaleWallHoursMean",
+    r"\VFourScaleWallHoursStd",
+)
+VERIFIED_SCALE_CONTRACT = r"""
+\input{tables/tab_v4_n1000_scale}
+The \VFourScaleUnits{} dataset-seed units produced \VFourScaleProofs{}
+verified proofs and \VFourScaleProofFailures{} proof failures. Across
+\VFourScaleEvaluationRounds{} evaluation rounds, routes A and R each received
+\VFourScaleRouteA{} and \VFourScaleRouteR{} reports, respectively;
+\VFourScaleReconstructions{} reconstructions and \VFourScaleDPReleases{} DP
+releases passed. Timing uses
+\VFourScaleTimingUnits{} units and excludes \VFourScaleTimingExcluded{} units.
+The rate is \VFourScaleThroughputMean{} plus or minus
+\VFourScaleThroughputStd{} proofs per second, and wall time is
+\VFourScaleWallHoursMean{} plus or minus \VFourScaleWallHoursStd{} hours.
+Rome seed 101 and Synthetic seed 101 experienced host suspension and were
+excluded only from timing statistics while their functional receipts remained
+in the proof totals.
+"""
 
 
 def paper(words: int = 150) -> str:
     return GOOD.replace("ABSTRACT_BODY", "word " * words)
+
+
+def verified_paper(words: int = 150) -> str:
+    return paper(words) + VERIFIED_SCALE_CONTRACT
 
 
 def test_valid_150_word_partial_scale_manuscript_passes() -> None:
@@ -241,7 +277,45 @@ def test_contract_claims_in_comments_are_ignored() -> None:
 
 
 def test_verified_scale_allows_completion_claim() -> None:
-    assert MODULE.check_text(paper() + "15/15 units passed.", VERIFIED) == []
+    assert MODULE.check_text(verified_paper() + "15/15 units passed.", VERIFIED) == []
+
+
+@pytest.mark.parametrize("macro", VERIFIED_SCALE_MACROS)
+def test_verified_scale_requires_generated_scale_macro_use(macro: str) -> None:
+    issues = MODULE.check_text(verified_paper().replace(f"{macro}{{}}", ""), VERIFIED)
+
+    assert f"verified scale macro missing from manuscript: {macro}" in issues
+
+
+def test_verified_scale_requires_generated_scale_table() -> None:
+    text = verified_paper().replace(r"\input{tables/tab_v4_n1000_scale}", "")
+
+    assert "verified scale table missing from manuscript" in MODULE.check_text(
+        text, VERIFIED
+    )
+
+
+@pytest.mark.parametrize(
+    ("missing", "expected"),
+    [
+        ("host suspension", "verified scale host-suspension disclosure missing"),
+        ("Rome seed 101", "verified scale excluded pair missing: Rome seed 101"),
+        (
+            "Synthetic seed 101",
+            "verified scale excluded pair missing: Synthetic seed 101",
+        ),
+        (
+            "excluded only from timing statistics",
+            "verified scale timing-only exclusion disclosure missing",
+        ),
+    ],
+)
+def test_verified_scale_requires_timing_exclusion_disclosure(
+    missing: str, expected: str
+) -> None:
+    issues = MODULE.check_text(verified_paper().replace(missing, ""), VERIFIED)
+
+    assert expected in issues
 
 
 def test_missing_abstract_reports_issue() -> None:

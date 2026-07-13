@@ -237,14 +237,17 @@ def fixture_tree(tmp_path: Path) -> dict[str, Path]:
 
 
 def valid_scale_summary(paths: dict[str, Path]) -> dict:
+    proofs_per_second = 15000 / 3600
     by_dataset = {}
-    for index, dataset in enumerate(MODULE.DATASETS):
+    for dataset in MODULE.DATASETS:
         by_dataset[dataset] = {
             "units": 3,
-            "proofs_per_second_mean": 100.0 + index,
-            "proofs_per_second_std": 1.0 + index / 10,
-            "wall_seconds_mean": 3600.0 + index,
-            "wall_seconds_std": 10.0 + index,
+            "timing_units": 3,
+            "timing_excluded_units": 0,
+            "proofs_per_second_mean": proofs_per_second,
+            "proofs_per_second_std": 0.0,
+            "wall_seconds_mean": 3600.0,
+            "wall_seconds_std": 0.0,
         }
     unit_receipts = []
     for dataset in MODULE.DATASETS:
@@ -258,6 +261,12 @@ def valid_scale_summary(paths: dict[str, Path]) -> dict:
                     "proof_generated": 15000,
                     "proof_verified": 15000,
                     "proof_failed": 0,
+                    "observed_wall_seconds": 3600.0,
+                    "timing_status": "verified",
+                    "timing_exclusion_reason": None,
+                    "timing_wall_seconds": 3600.0,
+                    "proofs_per_second": proofs_per_second,
+                    "max_inter_round_gap_seconds": 1000.0,
                     "receipt_sha256": hashlib.sha256(
                         f"{dataset}:{seed}".encode()
                     ).hexdigest(),
@@ -271,10 +280,38 @@ def valid_scale_summary(paths: dict[str, Path]) -> dict:
         "seeds": [101, 202, 303],
         "units": 15,
         "rounds": 240,
+        "warmup_rounds": 90,
         "evaluation_rounds": 150,
+        "client_proof_attempts": 225000,
+        "shuffler_proof_attempts": 225000,
         "proof_generated": 225000,
         "proof_verified": 225000,
         "proof_failed": 0,
+        "route_received_a": 150000,
+        "route_received_r": 150000,
+        "reconstruction_passed": 150,
+        "dp_release_passed": 150,
+        "timing_units": 15,
+        "timing_excluded_units": 0,
+        "timing_excluded_pairs": [],
+        "timing_rule": {
+            "clock": "receipt wall clock",
+            "maximum_inter_round_gap_seconds": 7200.0,
+            "exclusion": "exclude timing when a round-id gap exceeds the configured round timeout",
+            "minimum_timing_units_per_dataset": 2,
+        },
+        "overall": {
+            "units": 15,
+            "timing_units": 15,
+            "timing_excluded_units": 0,
+            "proof_generated": 225000,
+            "proof_verified": 225000,
+            "proof_failed": 0,
+            "proofs_per_second_mean": proofs_per_second,
+            "proofs_per_second_std": 0.0,
+            "wall_seconds_mean": 3600.0,
+            "wall_seconds_std": 0.0,
+        },
         "by_dataset": by_dataset,
         "unit_receipts": unit_receipts,
         "source_receipts": {
@@ -662,6 +699,29 @@ def test_rendered_tex_uses_current_artifact_and_five_datasets(
         assert all(re.fullmatch(r"[+-]?\d+\.\d{3}", value) for value in numeric_values)
 
 
+def test_rendered_macros_include_only_verified_scale_facts(tmp_path: Path) -> None:
+    partial_macros = MODULE.render_macros(collect(fixture_tree(tmp_path / "partial")))
+    assert r"\VFourScaleUnits" not in partial_macros
+
+    paths = fixture_tree(tmp_path / "verified")
+    write_launcher_pass(paths)
+    write_json(paths["scale_summary"], valid_scale_summary(paths))
+    macros = MODULE.render_macros(collect(paths))
+    assert r"\newcommand{\VFourScaleUnits}{15}" in macros
+    assert r"\newcommand{\VFourScaleProofs}{225{,}000}" in macros
+    assert r"\newcommand{\VFourScaleProofFailures}{0}" in macros
+    assert r"\newcommand{\VFourScaleEvaluationRounds}{150}" in macros
+    assert r"\newcommand{\VFourScaleRouteA}{150{,}000}" in macros
+    assert r"\newcommand{\VFourScaleRouteR}{150{,}000}" in macros
+    assert r"\newcommand{\VFourScaleReconstructions}{150}" in macros
+    assert r"\newcommand{\VFourScaleDPReleases}{150}" in macros
+    assert r"\newcommand{\VFourScaleTimingUnits}{15}" in macros
+    assert r"\newcommand{\VFourScaleTimingExcluded}{0}" in macros
+    assert r"\newcommand{\VFourScaleThroughputMean}{4.167}" in macros
+    assert r"\newcommand{\VFourScaleThroughputStd}{0.000}" in macros
+    assert r"\newcommand{\VFourScaleWallHoursMean}{1.000}" in macros
+
+
 @pytest.mark.parametrize(
     ("key", "value"),
     [
@@ -705,12 +765,52 @@ def test_strict_summary_upgrades_scale_to_verified(tmp_path: Path) -> None:
     write_json(paths["scale_summary"], valid_scale_summary(paths))
     evidence = collect(paths)
     assert evidence["scale"]["status"] == "verified"
+    assert evidence["scale"]["proof_verified"] == 225000
+    assert evidence["scale"]["proof_failed"] == 0
+    assert evidence["scale"]["evaluation_rounds"] == 150
+    assert evidence["scale"]["route_received_a"] == 150000
+    assert evidence["scale"]["route_received_r"] == 150000
+    assert evidence["scale"]["reconstruction_passed"] == 150
+    assert evidence["scale"]["dp_release_passed"] == 150
+    assert evidence["scale"]["timing_units"] == 15
+    assert evidence["scale"]["timing_excluded_units"] == 0
+    assert evidence["scale"]["proofs_per_second_mean"] == 15000 / 3600
+    assert evidence["scale"]["proofs_per_second_std"] == 0.0
     digest = MODULE.sha256(paths["scale_summary"])
     assert evidence["scale"]["summary_sha256"] == digest
     assert evidence["source_receipts"]["scale_summary"] == {
         "path": paths["scale_summary"].relative_to(paths["repo"]).as_posix(),
         "sha256": digest,
     }
+
+
+def test_strict_summary_accepts_coherent_host_suspension_exclusion(
+    tmp_path: Path,
+) -> None:
+    paths = fixture_tree(tmp_path)
+    summary = bound_scale_summary(paths)
+    summary["timing_units"] = 14
+    summary["timing_excluded_units"] = 1
+    summary["timing_excluded_pairs"] = [{"dataset": "tdrive", "seed": 101}]
+    summary["overall"]["timing_units"] = 14
+    summary["overall"]["timing_excluded_units"] = 1
+    summary["by_dataset"]["tdrive"]["timing_units"] = 2
+    summary["by_dataset"]["tdrive"]["timing_excluded_units"] = 1
+    unit = summary["unit_receipts"][0]
+    unit["timing_status"] = "excluded_host_suspension"
+    unit["timing_exclusion_reason"] = (
+        "inter-round gap exceeds the 7200-second round timeout"
+    )
+    unit["timing_wall_seconds"] = None
+    unit["proofs_per_second"] = None
+    unit["max_inter_round_gap_seconds"] = 8000.0
+    write_json(paths["scale_summary"], summary)
+
+    evidence = collect(paths)
+
+    assert evidence["scale"]["status"] == "verified"
+    assert evidence["scale"]["timing_units"] == 14
+    assert evidence["scale"]["timing_excluded_units"] == 1
 
 
 def test_strict_summary_rejects_missing_unit_matrix(tmp_path: Path) -> None:
@@ -771,6 +871,15 @@ def test_strict_summary_rejects_wrong_unit_proof_totals(tmp_path: Path) -> None:
     assert_summary_not_verified(paths, summary)
 
 
+def test_strict_summary_rejects_unknown_unit_dataset_without_crashing(
+    tmp_path: Path,
+) -> None:
+    paths = fixture_tree(tmp_path)
+    summary = bound_scale_summary(paths)
+    summary["unit_receipts"][0]["dataset"] = "unknown"
+    assert_summary_not_verified(paths, summary)
+
+
 @pytest.mark.parametrize("mode", ["dataset_order", "seed_order", "dataset_keys"])
 def test_strict_summary_rejects_wrong_matrix_metadata(
     tmp_path: Path, mode: str
@@ -794,3 +903,47 @@ def test_strict_summary_rejects_invalid_aggregate_metric(
     summary = bound_scale_summary(paths)
     summary["by_dataset"]["tdrive"]["proofs_per_second_mean"] = value
     assert_summary_not_verified(paths, summary, allow_nan=not value == value)
+
+
+@pytest.mark.parametrize("scope", ["overall", "dataset"])
+def test_strict_summary_rejects_tampered_timing_aggregate(
+    tmp_path: Path, scope: str
+) -> None:
+    paths = fixture_tree(tmp_path)
+    summary = bound_scale_summary(paths)
+    target = summary["overall"] if scope == "overall" else summary["by_dataset"]["tdrive"]
+    target["proofs_per_second_mean"] += 0.25
+    assert_summary_not_verified(paths, summary)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "allow_nan"),
+    [
+        (lambda summary: summary.__setitem__("timing_units", 14), False),
+        (
+            lambda summary: summary["by_dataset"]["tdrive"].__setitem__(
+                "timing_units", 1
+            ),
+            False,
+        ),
+        (
+            lambda summary: summary["unit_receipts"][0].__setitem__(
+                "timing_status", "unknown"
+            ),
+            False,
+        ),
+        (
+            lambda summary: summary["overall"].__setitem__(
+                "proofs_per_second_mean", float("nan")
+            ),
+            True,
+        ),
+    ],
+)
+def test_strict_summary_rejects_incoherent_timing_contract(
+    tmp_path: Path, mutation, allow_nan: bool
+) -> None:
+    paths = fixture_tree(tmp_path)
+    summary = bound_scale_summary(paths)
+    mutation(summary)
+    assert_summary_not_verified(paths, summary, allow_nan=allow_nan)

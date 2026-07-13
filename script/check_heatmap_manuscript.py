@@ -26,6 +26,43 @@ REQUIRED_MACROS = (
     r"\VFourPublicInputs",
     r"\VFourPrivateInputs",
 )
+REQUIRED_VERIFIED_SCALE_MACROS = (
+    r"\VFourScaleUnits",
+    r"\VFourScaleProofs",
+    r"\VFourScaleProofFailures",
+    r"\VFourScaleEvaluationRounds",
+    r"\VFourScaleRouteA",
+    r"\VFourScaleRouteR",
+    r"\VFourScaleReconstructions",
+    r"\VFourScaleDPReleases",
+    r"\VFourScaleTimingUnits",
+    r"\VFourScaleTimingExcluded",
+    r"\VFourScaleThroughputMean",
+    r"\VFourScaleThroughputStd",
+    r"\VFourScaleWallHoursMean",
+    r"\VFourScaleWallHoursStd",
+)
+VERIFIED_SCALE_TABLE_RE = re.compile(
+    r"\\input\s*\{\s*tables/tab_v4_n1000_scale\s*\}"
+)
+VERIFIED_SCALE_DISCLOSURES = (
+    (
+        re.compile(r"\bhost[- ]suspension\b", re.I),
+        "verified scale host-suspension disclosure missing",
+    ),
+    (
+        re.compile(r"\bRome(?:\s+seed|\s*/)?\s*101\b", re.I),
+        "verified scale excluded pair missing: Rome seed 101",
+    ),
+    (
+        re.compile(r"\bSynthetic(?:\s+seed|\s*/)?\s*101\b", re.I),
+        "verified scale excluded pair missing: Synthetic seed 101",
+    ),
+    (
+        re.compile(r"\bexcluded\s+only\s+from\s+timing(?:\s+statistics)?\b", re.I),
+        "verified scale timing-only exclusion disclosure missing",
+    ),
+)
 SCALE_COMPLETE_PATTERNS = (
     r"\b15\s*/\s*15\s+(?:dataset[- ]seed\s+)?units?\s+"
     r"(?:(?:have|has)\s+been\s+|(?:have|has|are|is|was|were)\s+)?"
@@ -224,6 +261,17 @@ def check_text(text: str, evidence: dict[str, Any]) -> list[str]:
         issues.append(
             "manuscript claims 15/15 completion while scale evidence is partial"
         )
+    elif scale_status == "verified":
+        for macro in REQUIRED_VERIFIED_SCALE_MACROS:
+            if not re.search(re.escape(macro) + r"(?![A-Za-z@])", macro_text):
+                issues.append(
+                    f"verified scale macro missing from manuscript: {macro}"
+                )
+        if VERIFIED_SCALE_TABLE_RE.search(contract_text) is None:
+            issues.append("verified scale table missing from manuscript")
+        for pattern, message in VERIFIED_SCALE_DISCLOSURES:
+            if pattern.search(contract_text) is None:
+                issues.append(message)
     return issues
 
 

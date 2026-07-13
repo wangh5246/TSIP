@@ -18,23 +18,24 @@ tags: [tsip-heatmap, hub, v4]
 - 五数据集 Docker clean protocol smoke 为 5/5 通过。
 - N=1000、五数据集、三种子固定公平效用比较已完成，V4 proposed 在五个数据集上均优于最强基线 Nebula，honest FRR 为 0。
 - V4 paper-scale cryptographic matrix 为 5 数据集 x 3 seeds x 16 rounds，共 15 个单元；2026-07-13 23:24:37 +0800 已完成 15/15，launcher receipt 为 pass、failed units 为 0。
-- 15/15 只确认执行矩阵完成；论文级 latency/throughput 仍需 strict aggregate builder 验证全部 unit hashes、16-round contract 与 manifest/launch binding。
+- Strict aggregate 已验证全部 unit hashes、16-round contract、功能总账与 manifest/launch binding；15 个功能单元全部通过，13 个计时单元为 1.000 +/- 0.069 proofs/s、4.183 +/- 0.248 h/单元。
+- 论文 evidence 已升级为 `scale.status=verified`，CE23 已关闭；最终 clean build、全页视觉 QA 与 paper mirror 同步仍待完成。
 
 ## 当前焦点
 
 - 按 `docs/superpowers/specs/2026-07-13-tsip-heatmap-tdsc-revision-design.md` 执行 TDSC 分阶段证据驱动修订。
-- Pre-scale 已完成 Git 保全、artifact 一致性、摘要、五数据集固定效用、合规门、18 页 clean build 与 adversarial self-review；科学证据只剩 CE23 strict scale aggregate 未关闭。
-- 不再启动 scale launcher；保留 15 个 pass receipts，运行 strict aggregate builder 后才更新 RQ6 性能数字。
+- Pre-scale 已完成 Git 保全、artifact 一致性、摘要、五数据集固定效用、合规门、18 页 clean build 与 adversarial self-review；final-scale evidence propagation 也已通过 220 项合同测试。
+- 不再启动 scale launcher；保留 15 个 pass receipts，当前只执行论文最终构建与视觉/镜像门禁。
 - 区分 [[Experiments/V4-Docker-N1000完整实验]]、旧版 full N=1000 RQ suite 和简单 Docker sanity run，避免证据混用。
 - 用 [[Knowledge/V4方法与证据边界]] 约束论文措辞。
 - 根据 [[Writing/论文修订与投稿决策]] 复核当前主稿，而不是沿用早期聊天中的页数或术语判断。
 
 ## 下一步动作
 
-1. 实现并用测试锁定 strict aggregate builder，对 15 个单元逐一 fail closed 验证。
-2. 核验每单元 16 轮、15,000 proofs、proof failures=0、evaluation reconstruction/DP 全通过，生成 aggregate JSON/CSV/LaTeX。
-3. 将 strict aggregate 的 manifest/launch/unit hashes 绑定进 `paper_evidence.json`。
-4. 只有 aggregate receipt 为 verified 时才更新 [[Results/Reports/V4实验结果-2026-07]] 并把最终 scale 数字接入论文。
+1. 从 clean auxiliary state 执行最终 `pdflatex -> biber -> pdflatex -> pdflatex`。
+2. 扫描 undefined/fatal/rerun/overfull/warning，并渲染检查全部 PDF 页面。
+3. 将最终 canonical manuscript/reference 同步到 Heatmap paper mirror 并做字节比较。
+4. 回填最终哈希、页数与视觉检查；作者 license 与投稿声明仍保持人工阻塞。
 
 ## 重要链接
 
@@ -49,6 +50,8 @@ tags: [tsip-heatmap, hub, v4]
 
 ## 最近重要变化
 
+- 2026-07-14 final-scale paper evidence 已升级为 verified：220 tests、Abstract 147 words、manuscript issues 0；RQ6、Abstract、Conclusion 与 CE23 已只通过生成宏/表传播。
+- 2026-07-14 strict aggregate 已提交为 `248f858c`；15 个功能 units verified，13 个连续计时 units 均值为 1.000 +/- 0.069 proofs/s，两个 host-suspended timing receipts 显式排除。
 - 2026-07-14 Task 9 对抗自审及 Obsidian 基线已提交为 `a0db10db`。
 - 2026-07-14 Task 9 五维对抗自审完成：27 claims = 17 supported + 7 analytical + 2 assumption + 1 partial + 0 unsupported；169 tests 通过，唯一 partial 是 CE23 strict scale。
 - 2026-07-14 删除 MDS/EETS 治理类比过强的支撑作用，将 HBC/非合谋明确为管理域分离、访问记录与审计的部署假设。
@@ -71,11 +74,11 @@ tags: [tsip-heatmap, hub, v4]
 - [[Daily/2026-07-14]]
 
 ## Recent Changes
+- 2026-07-13T17:00:04Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task3-hardening).
+- 2026-07-13T16:56:38Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task3-propagation).
+- 2026-07-13T16:40:48Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-commit).
 - 2026-07-13T16:39:29Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-precommit).
 - 2026-07-13T16:37:42Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-aggregate-fix).
 - 2026-07-13T16:35:54Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-aggregate).
 - 2026-07-13T16:20:48Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task1-complete).
 - 2026-07-13T16:19:21Z: sync refreshed scaffold, registry, index, and daily note (tdsc-pre-scale-revision-task9-commit).
-- 2026-07-13T16:18:16Z: sync refreshed scaffold, registry, index, and daily note (tdsc-pre-scale-revision-task9).
-- 2026-07-13T16:09:21Z: sync refreshed scaffold, registry, index, and daily note (tdsc-pre-scale-revision-task8-commit).
-- 2026-07-13T16:06:40Z: sync refreshed scaffold, registry, index, and daily note (tdsc-pre-scale-revision-task8).

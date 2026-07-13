@@ -118,18 +118,31 @@
     "mode_tag"
   ],
   "scale": {
-    "completed_units": 13,
-    "state": "running",
-    "status": "partial",
-    "summary_sha256": null,
-    "total_units": 15
+    "completed_units": 15,
+    "dp_release_passed": 150,
+    "evaluation_rounds": 150,
+    "proof_failed": 0,
+    "proof_verified": 225000,
+    "proofs_per_second_mean": 0.9999758978053287,
+    "proofs_per_second_std": 0.0689743640260623,
+    "reconstruction_passed": 150,
+    "route_received_a": 150000,
+    "route_received_r": 150000,
+    "state": "pass",
+    "status": "verified",
+    "summary_sha256": "2ad8e35340d0646c3b0e130468f9a00c5b66e433bedf4411929fe9f166516a95",
+    "timing_excluded_units": 2,
+    "timing_units": 13,
+    "total_units": 15,
+    "wall_seconds_mean": 15057.153846153846,
+    "wall_seconds_std": 894.2843364159826
   },
   "schema_version": 1,
   "setup_scope": "development Groth16 setup; not a production ceremony",
   "source_receipts": {
     "launch": {
       "path": "TSIP_heatmap_version/runtime/experiments-heatmap/docker_n1000_v4/launch_status.json",
-      "sha256": "6efc952ad4128c58477e9b781abeb7918a9f4a0a06ccd800cb66847f6d747f81"
+      "sha256": "841248014d1a40baea620e2d7fc9cd70f0eeccae14334e08608c71a7ab386540"
     },
     "manifest": {
       "path": "TSIP_heatmap_version/runtime/experiments-heatmap/docker_v4_smoke/manifest.json",
@@ -138,6 +151,10 @@
     "protocol": {
       "path": "TSIP_heatmap_version/runtime/experiments-heatmap/docker_v4_smoke/protocol_clean_five_dataset_v2/suite_status.json",
       "sha256": "336fe34b3378ac9438ec001bf9b946bba38a94487fb87678f071471b1d1a23e0"
+    },
+    "scale_summary": {
+      "path": "TSIP_heatmap_version/runtime/experiments-heatmap/docker_n1000_v4/aggregate_summary.json",
+      "sha256": "2ad8e35340d0646c3b0e130468f9a00c5b66e433bedf4411929fe9f166516a95"
     },
     "static": {
       "path": "TSIP_heatmap_version/runtime/experiments-heatmap/docker_v4_smoke/static/gate_status.json",

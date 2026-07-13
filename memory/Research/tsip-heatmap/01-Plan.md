@@ -18,14 +18,14 @@ tags: [tsip-heatmap, plan, v4]
 - [x] 建立 manifest-bound paper artifact 的唯一事实表（`paper_evidence.json`；focused 86、baseline 45、两层审查通过）。
 - [x] 建立 manuscript evidence contract checker（`1cc26e9d`、`f45972dc`；focused 73、Task 2/3 combined 159、baseline 45；本地规格/质量复核通过）。
 - [x] 将全文旧 3,056/14/23 circuit 数字与当前 artifact 对齐（生成宏唯一加载；三层 relation 分离；checker 仅余 Tasks 5--6 四项）。
-- [x] 将 Abstract 从约 247 词压缩到 100 至 200 词（155 词；五消息；只用 verified static/fixed-utility evidence）。
+- [x] 将 Abstract 从约 247 词压缩到 100 至 200 词（final-scale 传播后为 147 词；五消息；只用 verified evidence）。
 - [x] 把四个真实数据集加一个 Synthetic 及固定公平效用接入正文（`3f1d5d4b`；固定主比较、生成表图、checker 0 issue、focused 169）。
 - [x] 增加 DATA_NOTICE、Heatmap 可复现索引、citation audit 与作者确认声明（`dec09503`）；LICENSE 因缺少作者明确 SPDX 选择而保持阻塞并不创建。
 - [x] 从 clean auxiliary state 重新编译、统计 18 页并完成 18/18 逐页视觉检查；pre-scale verified checkpoint 已提交为 `d54ac1a5`，最终 scale aggregate 写回后须重复该门禁。
-- [x] 建立 Abstract/Introduction claim-evidence map（Task 6 后为 27 claims、五核心章节 89 段 reverse outline、24 项 adversarial self-review；unsupported 0）。
+- [x] 建立 Abstract/Introduction claim-evidence map（final-scale 后为 27 claims：18 supported、7 analytical、2 assumption、0 partial、0 unsupported）。
 - [x] 完成并提交 Task 9 五维对抗自审（`a0db10db`）；关闭 citation/artifact 两项 partial，移除过强治理类比，claim map 收敛为 17 supported / 7 analytical / 2 assumption / 1 partial / 0 unsupported，169 tests 通过。
 
-以上任务不写入 15/15 scale 结论；最终规模统计仍受下方实验门禁约束。
+Pre-scale 阶段不提前写入 15/15 scale 结论；final-scale 严格聚合通过后已按下方门禁完成一次性传播。
 
 ## 执行规则
 
@@ -49,9 +49,10 @@ tags: [tsip-heatmap, plan, v4]
 ## P1 论文结果闭环
 
 - [x] 生成 15 单元 aggregate CSV/JSON/LaTeX 和可审计 manifest/launch/unit hash 绑定。
+- [x] Strict aggregate 生成器、33 项 tests 和三份聚合 artifacts 已提交为 `248f858c`。
 - [x] 报告均值、样本标准差和 seed 间波动，不只报告最优 seed；同时显式披露 13/15 timing receipts 及排除规则。
 - [x] 将 protocol scalability 与 fixed utility 分成不同表或小节（Experimental Setup 三层分离；RQ5 固定效用；RQ6 scale）。
-- [ ] 更新论文中数据集、实验协议、效用和成本数字。
+- [x] 更新论文中数据集、实验协议、效用和成本数字；规模数字只来自 verified `paper_evidence.json`、生成宏和生成表，220 项测试通过。
 - [x] 全文搜索并消除过强的 authenticity、robustness、security guarantee 与现实治理类比表述；最终 scale 写回后再跑同一 checker。
 - [ ] 重新编译并视觉核验论文页数、图表和引用。
 

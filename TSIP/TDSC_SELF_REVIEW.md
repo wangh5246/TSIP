@@ -1,19 +1,21 @@
-# TDSC Pre-Scale Adversarial Self-Review
+# TDSC Final-Scale Adversarial Self-Review
 
 Review date: 2026-07-14. Canonical manuscript: `TSIP/main.tex`. This review is
 an internal quality-control record, not independent peer review. Its scientific
-status is **pre-scale verified**: the fixed five-dataset utility and all
-non-scale manuscript evidence pass, while current-circuit latency and throughput
-remain withheld pending the strict 15-unit aggregate.
+status is **final-scale verified**: the fixed five-dataset utility, strict
+15-unit current-circuit aggregate, and manuscript claim contract pass. Final
+clean-build and full-page visual QA remain the current mechanical gate.
 
 ## Submission Verdict
 
-- Scientific writing and non-scale evidence: **pass**.
+- Scientific writing and claim-evidence alignment: **pass**.
 - Five-dataset fixed utility at N=1000: **pass**, with the small Porto and
   Synthetic gains disclosed rather than generalized.
-- Current N=1000 Docker performance claim: **not yet paper-ready**. The launcher
-  reports 15/15 execution pass, but CE23 remains `partial` until every unit
-  receipt is validated and hash-bound by the strict aggregate.
+- Current N=1000 Docker scale evidence: **pass with an explicit performance
+  boundary**. All 15 functional receipts verify; 13 timing-eligible receipts
+  average 1.000 $\pm$ 0.069 proofs/s and 4.183 $\pm$ 0.248 hours per unit. Rome
+  seed 101 and Synthetic seed 101 remain in functional totals but are excluded
+  only from timing after documented host suspension.
 - Public release and submission declarations: **blocked on author action**.
 
 ## Blocking Author Gate
@@ -41,7 +43,7 @@ pdflatex -interaction=nonstopmode -halt-on-error main.tex
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-Build and inspection results before this review's final-scale work:
+Build and inspection results from the last clean pre-scale checkpoint:
 
 - Abstract: 155 words; manuscript checker issues: 0.
 - Biber: 90 citekeys; warnings/errors: 0.
@@ -57,19 +59,20 @@ Build and inspection results before this review's final-scale work:
 - Task 8 verified checkpoint commit: `d54ac1a5`; the self-review edits and new
   build receipt belong to the Task 9 commit.
 
-These are pre-scale self-review hashes, not final submission hashes. The full
-clean build, warning scan, manuscript checker, mirror comparison, and 18-page
-visual gate must run again after strict-scale integration.
+These are historical pre-scale hashes, not final submission hashes. The full
+clean build, warning scan, manuscript checker, mirror comparison, and all-page
+visual gate must run again after the completed strict-scale integration.
 
 ## Claim-Evidence Closure
 
-`TSIP/CLAIM_EVIDENCE_MAP.md` contains 27 major claims: 17 `supported`, seven
-`analytical`, two `assumption`, one `partial`, and zero `unsupported`. CE01 is
+`TSIP/CLAIM_EVIDENCE_MAP.md` contains 27 major claims: 18 `supported`, seven
+`analytical`, two `assumption`, zero `partial`, and zero `unsupported`. CE01 is
 closed by the source-level citation audit. CE26 is closed by the Heatmap
 artifact index and executable rerun contract. The earlier MDS/EETS analogy was
 removed: CE25 now states administrative separation as an explicit assumption,
-not as evidence that operators will not collude. CE23 is the only remaining
-partial claim and is excluded from the Abstract.
+not as evidence that operators will not collude. CE23 is closed by aggregate
+SHA-256 `2ad8e35340d0646c3b0e130468f9a00c5b66e433bedf4411929fe9f166516a95`
+and enters the manuscript only through generated evidence, macros, and table.
 
 ## Five-Dimension Review
 
@@ -85,11 +88,11 @@ or assumption into a guarantee.
 | Contribution | Are empirical gains exaggerated? | pass | All five fixed-protocol deltas are reported; +0.007 on Porto and Synthetic is explicitly called small. |
 | Writing clarity | Can the relation and protocol be reproduced? | pass | Method fields, C1-C21, integer semantics, state transition, timing, warmup, artifact paths, commands, and pass criteria are explicit. |
 | Writing clarity | Are terminology and evidence layers stable? | pass | SHTPC is the visible term; archive, historical-performance, current static/smoke, fixed utility, and current scale are kept non-interchangeable. |
-| Writing clarity | Does paragraph flow support the paper story? | pass | The 89-entry reverse outline maps each core prose paragraph to one topic sentence, role, and claim set. |
+| Writing clarity | Does paragraph flow support the paper story? | pass | The reverse outline maps each core prose paragraph to one topic sentence, role, and claim set, including separate functional and timing messages for current scale. |
 | Experimental strength | Are results consistent across inputs and seeds? | pass | The fixed configuration has a positive SHTPC-minus-Nebula Jaccard delta for every dataset mean and for each of the 15 dataset-seed pairs; means and standard deviations are reported. |
 | Experimental strength | Is absolute utility hidden when it is low? | pass | Absolute Jaccard spans 0.135 to 0.878; the manuscript reports each value and does not claim uniformly high utility. |
 | Experimental strength | Are failure cases visible? | pass | Metadata inference, in-envelope pollution, false genesis, transfer, collusion, and development-setup limits appear in the Abstract, RQ3/RQ4, Discussion, or Artifact section. |
-| Experimental strength | Is current-circuit cost established? | needs revision | Fifteen execution units pass, but no latency/throughput statistic may enter the paper until strict receipt validation and aggregation complete. |
+| Experimental strength | Is current-circuit cost established? | pass | Fifteen functional units and 225,000 generated/verified proofs pass with zero failures; 13 timing receipts report all-unit and per-dataset mean/sample-standard-deviation statistics, with both exclusions disclosed. |
 | Evaluation completeness | Are key mechanisms ablated? | pass | No-ADWC, No-Payload-Bind, Stateful-ContextCommit, and No-Admission-Check expose the predicates responsible for A3 and A6. |
 | Evaluation completeness | Is the main comparison fair? | pass | One epsilon/tau pair, N=1000, ten windows, 10% A1, and seeds 101/202/303 are fixed across all five datasets; tuned settings are excluded from the headline. |
 | Evaluation completeness | Are datasets and evidence layers broad enough? | pass | Four real trajectory-derived inputs and one generated stress input are used; utility, smoke, and scale answer separate questions. |
@@ -97,39 +100,42 @@ or assumption into a guarantee.
 | Method soundness | Are assumptions explicit and falsifiable? | pass | SRV-TS, SCS, CA3, setup, hash, channel, and non-collusion assumptions are stated with adjacent failure consequences. |
 | Method soundness | Does one relation actually bind routed payload to trajectory state? | pass | C17-C21, route/binder negative fixtures, Aggregator validation, and the manifest-bound 22-check gate cover the stated interface. |
 | Method soundness | Does the design overclaim source authenticity or robustness? | pass | The claim begins post-enrollment and excludes physical presence, metadata elimination, fully in-envelope false reports, and malicious-Shuffler state forks. |
-| Method soundness | Is net benefit supported at paper scale? | needs revision | Close CE23 with current-relation latency distribution, throughput, proof/verification totals, failure rate, reconstruction, and DP receipts before making a practicality claim. |
+| Method soundness | Is net benefit supported at paper scale? | pass | CE23 verifies proof/route totals, all 150 reconstructions and DP releases, and current-relation timing. The paper characterizes the 4.183-hour mean unit runtime as reproducible execution rather than interactive performance. |
 
-No additional utility rerun is required by this review. The remaining scientific
-work is strict validation and aggregation of the already completed 15-unit
-current-circuit matrix; any invalid unit discovered by that validator must be
-rerun before the result can be marked verified.
+No additional utility or scale rerun is required by this review. The strict
+validator found all 15 functional receipts valid and retained at least two
+timing receipts per dataset. The remaining work is final manuscript build,
+warning scan, visual QA, mirror synchronization, and author-owned submission
+declarations.
 
-## Exact Deferred Scale Work
+## Completed Final-Scale Work
 
-1. Validate all five datasets times three seeds against the expected matrix,
+1. Validated all five datasets times three seeds against the expected matrix,
    current manifest hash, launch-plan/status hash, N=1000, six warmup rounds,
    ten evaluation rounds, and `state=pass`.
-2. Require 16 completed rounds per unit, zero unit/round failures, complete
+2. Required 16 completed rounds per unit, zero unit/round failures, complete
    proof-generation and proof-verification accounting, A/R totals of 1000/1000
    in every evaluation round, successful reconstruction, and successful DP
    release.
-3. Hash-bind every validated unit receipt and emit deterministic aggregate
+3. Hash-bound every validated unit receipt and emitted deterministic aggregate
    JSON, CSV, and LaTeX artifacts with all-unit and per-dataset mean, standard
-   deviation, min/max, and throughput statistics. Do not report only the best
-   seed.
-4. Bind the strict aggregate into `paper_evidence.json`, update CE23 and RQ6
-   only from generated macros/tables, and keep protocol-scale results separate
+   deviation, min/max, and throughput statistics; the manuscript does not report
+   only the best seed.
+4. Bound the strict aggregate into `paper_evidence.json`, updated CE23 and RQ6
+   only from generated macros/tables, and kept protocol-scale results separate
    from original-input RQ5 utility.
-5. Re-run focused tests, manuscript contract checks, clean LaTeX/Biber build,
-   warning scans, canonical/mirror byte comparison, and 18-page visual QA.
+5. Re-ran focused evidence and manuscript-contract tests. The clean
+   LaTeX/Biber build, warning scans, canonical/mirror byte comparison, and
+   all-page visual QA are the final pending verification stage.
 
 ## Evidence Boundary
 
 - Fixed utility is verified for five datasets, three seeds, N=1000, and ten
   windows at epsilon 5 and tau 2.
-- The Docker launcher records 15/15 execution pass, but scale latency and
-  throughput remain unverified until the strict aggregate validates all 15 unit
-  receipts and their manifest/launch bindings.
+- The strict aggregate verifies 15/15 functional receipts, 225,000 generated
+  and verified proofs, zero proof failures, A/R totals of 150,000/150,000, and
+  150/150 reconstruction and DP-release passes. Timing uses 13 receipts after
+  two host-suspension exclusions and remains a prototype performance result.
 - Simulated reviewer reports are internal quality control only.
 - The checked-in Groth16 setup is a development reproducibility artifact, not a
   production ceremony.

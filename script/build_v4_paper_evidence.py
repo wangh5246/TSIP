@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import re
+import statistics
 from pathlib import Path
 from typing import Any
 
@@ -89,6 +90,12 @@ _SCALE_AGGREGATE_METRICS = (
     "wall_seconds_mean",
     "wall_seconds_std",
 )
+_SCALE_TIMING_CLOCK = "receipt wall clock"
+_SCALE_TIMING_EXCLUSION = (
+    "exclude timing when a round-id gap exceeds the configured round timeout"
+)
+_SCALE_TIMING_MAX_GAP_SECONDS = 7200
+_SCALE_MIN_TIMING_UNITS_PER_DATASET = 2
 _SEEDS = (101, 202, 303)
 _SHA256_RE = re.compile(r"[0-9a-f]{64}")
 _DATASET_LABELS = {
@@ -259,6 +266,23 @@ def _is_real_number(value: Any) -> bool:
     if type(value) is int:
         return True
     return type(value) is float and math.isfinite(value)
+
+
+def _timing_aggregate_matches(
+    row: dict[str, Any], proofs_per_second: list[float], wall_seconds: list[float]
+) -> bool:
+    expected = {
+        "proofs_per_second_mean": statistics.fmean(proofs_per_second),
+        "proofs_per_second_std": statistics.stdev(proofs_per_second),
+        "wall_seconds_mean": statistics.fmean(wall_seconds),
+        "wall_seconds_std": statistics.stdev(wall_seconds),
+    }
+    return all(
+        math.isclose(
+            float(row[name]), value, rel_tol=1e-12, abs_tol=1e-12
+        )
+        for name, value in expected.items()
+    )
 
 
 def _validate_r1cs(manifest: dict[str, Any]) -> None:
@@ -445,10 +469,65 @@ def _strict_scale_summary_is_verified(
         or not all(type(seed) is int for seed in summary.get("seeds", []))
         or not _is_exact_int(summary.get("units"), 15)
         or not _is_exact_int(summary.get("rounds"), 240)
+        or not _is_exact_int(summary.get("warmup_rounds"), 90)
         or not _is_exact_int(summary.get("evaluation_rounds"), 150)
+        or not _is_exact_int(summary.get("client_proof_attempts"), 225000)
+        or not _is_exact_int(summary.get("shuffler_proof_attempts"), 225000)
         or not _is_exact_int(summary.get("proof_generated"), 225000)
         or not _is_exact_int(summary.get("proof_verified"), 225000)
         or not _is_exact_int(summary.get("proof_failed"), 0)
+        or not _is_exact_int(summary.get("route_received_a"), 150000)
+        or not _is_exact_int(summary.get("route_received_r"), 150000)
+        or not _is_exact_int(summary.get("reconstruction_passed"), 150)
+        or not _is_exact_int(summary.get("dp_release_passed"), 150)
+    ):
+        return False
+
+    timing_units = summary.get("timing_units")
+    timing_excluded_units = summary.get("timing_excluded_units")
+    if (
+        type(timing_units) is not int
+        or timing_units < len(DATASETS) * _SCALE_MIN_TIMING_UNITS_PER_DATASET
+        or timing_units > 15
+        or type(timing_excluded_units) is not int
+        or timing_excluded_units != 15 - timing_units
+    ):
+        return False
+
+    timing_rule = summary.get("timing_rule")
+    if (
+        not isinstance(timing_rule, dict)
+        or timing_rule.get("clock") != _SCALE_TIMING_CLOCK
+        or timing_rule.get("exclusion") != _SCALE_TIMING_EXCLUSION
+        or not _is_real_number(
+            timing_rule.get("maximum_inter_round_gap_seconds")
+        )
+        or timing_rule["maximum_inter_round_gap_seconds"]
+        != _SCALE_TIMING_MAX_GAP_SECONDS
+        or not _is_exact_int(
+            timing_rule.get("minimum_timing_units_per_dataset"),
+            _SCALE_MIN_TIMING_UNITS_PER_DATASET,
+        )
+    ):
+        return False
+
+    overall = summary.get("overall")
+    if (
+        not isinstance(overall, dict)
+        or not _is_exact_int(overall.get("units"), 15)
+        or not _is_exact_int(overall.get("timing_units"), timing_units)
+        or not _is_exact_int(
+            overall.get("timing_excluded_units"), timing_excluded_units
+        )
+        or not _is_exact_int(overall.get("proof_generated"), 225000)
+        or not _is_exact_int(overall.get("proof_verified"), 225000)
+        or not _is_exact_int(overall.get("proof_failed"), 0)
+        or any(
+            not _is_real_number(overall.get(metric)) or overall[metric] < 0
+            for metric in _SCALE_AGGREGATE_METRICS
+        )
+        or overall["proofs_per_second_mean"] <= 0
+        or overall["wall_seconds_mean"] <= 0
     ):
         return False
 
@@ -465,14 +544,28 @@ def _strict_scale_summary_is_verified(
     by_dataset = summary.get("by_dataset")
     if not isinstance(by_dataset, dict) or set(by_dataset) != set(DATASETS):
         return False
+    expected_timing_counts: dict[str, int] = {}
     for dataset in DATASETS:
         row = by_dataset.get(dataset)
         if not isinstance(row, dict) or not _is_exact_int(row.get("units"), 3):
             return False
+        dataset_timing_units = row.get("timing_units")
+        dataset_timing_excluded = row.get("timing_excluded_units")
+        if (
+            type(dataset_timing_units) is not int
+            or dataset_timing_units < _SCALE_MIN_TIMING_UNITS_PER_DATASET
+            or dataset_timing_units > 3
+            or type(dataset_timing_excluded) is not int
+            or dataset_timing_excluded != 3 - dataset_timing_units
+        ):
+            return False
+        expected_timing_counts[dataset] = dataset_timing_units
         if any(
             not _is_real_number(row.get(metric)) or row[metric] < 0
             for metric in _SCALE_AGGREGATE_METRICS
         ):
+            return False
+        if row["proofs_per_second_mean"] <= 0 or row["wall_seconds_mean"] <= 0:
             return False
 
     unit_receipts = summary.get("unit_receipts")
@@ -481,12 +574,18 @@ def _strict_scale_summary_is_verified(
     expected_pairs = {(dataset, seed) for dataset in DATASETS for seed in _SEEDS}
     actual_pairs = []
     receipt_hashes = []
+    actual_timing_counts = {dataset: 0 for dataset in DATASETS}
+    timing_proofs_per_second = {dataset: [] for dataset in DATASETS}
+    timing_wall_seconds_by_dataset = {dataset: [] for dataset in DATASETS}
+    actual_excluded_pairs: set[tuple[str, int]] = set()
     for row in unit_receipts:
         if not isinstance(row, dict):
             return False
         dataset = row.get("dataset")
         seed = row.get("seed")
         if not isinstance(dataset, str) or type(seed) is not int:
+            return False
+        if (dataset, seed) not in expected_pairs:
             return False
         actual_pairs.append((dataset, seed))
         receipt_hash = row.get("receipt_sha256")
@@ -501,10 +600,98 @@ def _strict_scale_summary_is_verified(
         ):
             return False
         receipt_hashes.append(receipt_hash)
-    return (
-        len(set(actual_pairs)) == 15
-        and set(actual_pairs) == expected_pairs
-        and len(set(receipt_hashes)) == 15
+
+        observed_wall_seconds = row.get("observed_wall_seconds")
+        max_gap_seconds = row.get("max_inter_round_gap_seconds")
+        timing_status = row.get("timing_status")
+        if (
+            not _is_real_number(observed_wall_seconds)
+            or observed_wall_seconds <= 0
+            or not _is_real_number(max_gap_seconds)
+            or max_gap_seconds < 0
+        ):
+            return False
+        if timing_status == "verified":
+            unit_timing_wall_seconds = row.get("timing_wall_seconds")
+            proofs_per_second = row.get("proofs_per_second")
+            if (
+                row.get("timing_exclusion_reason") is not None
+                or not _is_real_number(unit_timing_wall_seconds)
+                or unit_timing_wall_seconds <= 0
+                or unit_timing_wall_seconds != observed_wall_seconds
+                or not _is_real_number(proofs_per_second)
+                or proofs_per_second <= 0
+                or max_gap_seconds > _SCALE_TIMING_MAX_GAP_SECONDS
+                or not math.isclose(
+                    proofs_per_second,
+                    row["proof_verified"] / unit_timing_wall_seconds,
+                    rel_tol=1e-12,
+                    abs_tol=0.0,
+                )
+            ):
+                return False
+            actual_timing_counts[dataset] += 1
+            timing_proofs_per_second[dataset].append(float(proofs_per_second))
+            timing_wall_seconds_by_dataset[dataset].append(
+                float(unit_timing_wall_seconds)
+            )
+        elif timing_status == "excluded_host_suspension":
+            if (
+                not isinstance(row.get("timing_exclusion_reason"), str)
+                or not row["timing_exclusion_reason"].strip()
+                or row.get("timing_wall_seconds") is not None
+                or row.get("proofs_per_second") is not None
+                or max_gap_seconds <= _SCALE_TIMING_MAX_GAP_SECONDS
+            ):
+                return False
+            actual_excluded_pairs.add((dataset, seed))
+        else:
+            return False
+
+    excluded_pairs = summary.get("timing_excluded_pairs")
+    if not isinstance(excluded_pairs, list):
+        return False
+    declared_excluded_pairs: list[tuple[str, int]] = []
+    for row in excluded_pairs:
+        if not isinstance(row, dict) or set(row) != {"dataset", "seed"}:
+            return False
+        dataset = row.get("dataset")
+        seed = row.get("seed")
+        if not isinstance(dataset, str) or type(seed) is not int:
+            return False
+        declared_excluded_pairs.append((dataset, seed))
+
+    if (
+        len(set(actual_pairs)) != 15
+        or set(actual_pairs) != expected_pairs
+        or len(set(receipt_hashes)) != 15
+        or sum(actual_timing_counts.values()) != timing_units
+        or actual_timing_counts != expected_timing_counts
+        or len(actual_excluded_pairs) != timing_excluded_units
+        or len(set(declared_excluded_pairs)) != len(declared_excluded_pairs)
+        or set(declared_excluded_pairs) != actual_excluded_pairs
+    ):
+        return False
+
+    all_proofs_per_second = [
+        value for dataset in DATASETS for value in timing_proofs_per_second[dataset]
+    ]
+    all_wall_seconds = [
+        value
+        for dataset in DATASETS
+        for value in timing_wall_seconds_by_dataset[dataset]
+    ]
+    if not _timing_aggregate_matches(
+        overall, all_proofs_per_second, all_wall_seconds
+    ):
+        return False
+    return all(
+        _timing_aggregate_matches(
+            by_dataset[dataset],
+            timing_proofs_per_second[dataset],
+            timing_wall_seconds_by_dataset[dataset],
+        )
+        for dataset in DATASETS
     )
 
 
@@ -611,6 +798,33 @@ def collect_evidence(
             repo_root, resolved_scale_summary, scale_digest
         )
 
+    scale_evidence: dict[str, Any] = {
+        "status": "verified" if scale_verified else "partial",
+        "state": launch_data.get("state"),
+        "completed_units": completed,
+        "total_units": total,
+        "summary_sha256": scale_digest,
+    }
+    if scale_verified:
+        overall = scale_data["overall"]
+        scale_evidence.update(
+            {
+                "proof_verified": overall["proof_verified"],
+                "proof_failed": overall["proof_failed"],
+                "evaluation_rounds": scale_data["evaluation_rounds"],
+                "route_received_a": scale_data["route_received_a"],
+                "route_received_r": scale_data["route_received_r"],
+                "reconstruction_passed": scale_data["reconstruction_passed"],
+                "dp_release_passed": scale_data["dp_release_passed"],
+                "timing_units": overall["timing_units"],
+                "timing_excluded_units": overall["timing_excluded_units"],
+                "proofs_per_second_mean": overall["proofs_per_second_mean"],
+                "proofs_per_second_std": overall["proofs_per_second_std"],
+                "wall_seconds_mean": overall["wall_seconds_mean"],
+                "wall_seconds_std": overall["wall_seconds_std"],
+            }
+        )
+
     artifacts = manifest_data["artifacts"]
     return {
         "schema_version": 1,
@@ -627,30 +841,50 @@ def collect_evidence(
         "fixed_utility": sorted(
             utility_rows, key=lambda row: DATASETS.index(row["dataset"])
         ),
-        "scale": {
-            "status": "verified" if scale_verified else "partial",
-            "state": launch_data.get("state"),
-            "completed_units": completed,
-            "total_units": total,
-            "summary_sha256": scale_digest,
-        },
+        "scale": scale_evidence,
     }
 
 
 def render_macros(evidence: dict[str, Any]) -> str:
     circuit = evidence["circuit"]
     constraints = f"{circuit['constraints']:,}".replace(",", r"{,}")
-    return "\n".join(
-        [
-            "% Generated by script/build_v4_paper_evidence.py; do not edit.",
-            rf"\newcommand{{\VFourConstraints}}{{{constraints}}}",
-            rf"\newcommand{{\VFourPublicInputs}}{{{circuit['public_inputs']}}}",
-            rf"\newcommand{{\VFourPrivateInputs}}{{{circuit['private_inputs']}}}",
-            r"\newcommand{\VFourStaticChecks}{22}",
-            r"\newcommand{\VFourProtocolDatasets}{5}",
-            "",
-        ]
-    )
+    lines = [
+        "% Generated by script/build_v4_paper_evidence.py; do not edit.",
+        rf"\newcommand{{\VFourConstraints}}{{{constraints}}}",
+        rf"\newcommand{{\VFourPublicInputs}}{{{circuit['public_inputs']}}}",
+        rf"\newcommand{{\VFourPrivateInputs}}{{{circuit['private_inputs']}}}",
+        r"\newcommand{\VFourStaticChecks}{22}",
+        r"\newcommand{\VFourProtocolDatasets}{5}",
+    ]
+    scale = evidence["scale"]
+    if scale.get("status") == "verified":
+        proofs = f"{scale['proof_verified']:,}".replace(",", r"{,}")
+        route_a = f"{scale['route_received_a']:,}".replace(",", r"{,}")
+        route_r = f"{scale['route_received_r']:,}".replace(",", r"{,}")
+        throughput_mean = f"{scale['proofs_per_second_mean']:.3f}"
+        throughput_std = f"{scale['proofs_per_second_std']:.3f}"
+        wall_hours_mean = f"{scale['wall_seconds_mean'] / 3600:.3f}"
+        wall_hours_std = f"{scale['wall_seconds_std'] / 3600:.3f}"
+        lines.extend(
+            [
+                rf"\newcommand{{\VFourScaleUnits}}{{{scale['total_units']}}}",
+                rf"\newcommand{{\VFourScaleProofs}}{{{proofs}}}",
+                rf"\newcommand{{\VFourScaleProofFailures}}{{{scale['proof_failed']}}}",
+                rf"\newcommand{{\VFourScaleEvaluationRounds}}{{{scale['evaluation_rounds']}}}",
+                rf"\newcommand{{\VFourScaleRouteA}}{{{route_a}}}",
+                rf"\newcommand{{\VFourScaleRouteR}}{{{route_r}}}",
+                rf"\newcommand{{\VFourScaleReconstructions}}{{{scale['reconstruction_passed']}}}",
+                rf"\newcommand{{\VFourScaleDPReleases}}{{{scale['dp_release_passed']}}}",
+                rf"\newcommand{{\VFourScaleTimingUnits}}{{{scale['timing_units']}}}",
+                rf"\newcommand{{\VFourScaleTimingExcluded}}{{{scale['timing_excluded_units']}}}",
+                rf"\newcommand{{\VFourScaleThroughputMean}}{{{throughput_mean}}}",
+                rf"\newcommand{{\VFourScaleThroughputStd}}{{{throughput_std}}}",
+                rf"\newcommand{{\VFourScaleWallHoursMean}}{{{wall_hours_mean}}}",
+                rf"\newcommand{{\VFourScaleWallHoursStd}}{{{wall_hours_std}}}",
+            ]
+        )
+    lines.append("")
+    return "\n".join(lines)
 
 
 def render_utility_table(evidence: dict[str, Any]) -> str:

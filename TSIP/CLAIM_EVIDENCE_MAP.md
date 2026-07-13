@@ -1,8 +1,10 @@
 # SHTPC Claim-Evidence Map
 
 Evidence snapshot: 2026-07-14. The canonical manuscript is `TSIP/main.tex`.
-The N=1000 Docker scale result remains `partial` until a strict aggregate binds
-all 15 distinct unit receipts to the current manifest and launcher hashes.
+The N=1000 Docker scale result is `verified`: a strict aggregate binds all 15
+distinct unit receipts to the current manifest and launcher hashes. Functional
+totals include every unit; timing uses 13 eligible receipts after two documented
+host-suspension exclusions.
 Unless a path starts with `TSIP/`, experiment paths below are relative to
 `TSIP_heatmap_version/runtime/experiments-heatmap/`.
 
@@ -11,14 +13,14 @@ Unless a path starts with `TSIP/`, experiment paths below are relative to
 1. Problem significance: managed heatmaps need pre-aggregation admission without revealing coordinates or primary cells.
 2. Missing same-relation binding: separate trajectory and payload checks do not prove equality of their hidden primary cells.
 3. SHTPC mechanism: one stateful Groth16 relation binds accepted state, window reachability, derived primary, and routed payload commitments.
-4. Verified evidence: the manifest-bound circuit facts, 22 static checks, and fixed five-dataset three-seed utility comparison are complete.
+4. Verified evidence: the manifest-bound circuit facts, 22 static checks, 225,000 scale proofs, and fixed five-dataset three-seed utility comparison are complete.
 5. Scoped limitation: SHTPC does not prove physical presence, hide all metadata, or reject fully in-envelope false reports.
 
 ## Claim-Evidence Map
 
 Allowed statuses are `supported`, `partial`, `analytical`, `assumption`, and
-`unsupported`. This revision contains no retained `unsupported` claim and only
-CE23 remains `partial`.
+`unsupported`. This revision contains 18 `supported`, seven `analytical`, two
+`assumption`, zero `partial`, and zero `unsupported` claims.
 
 | ID | Claim | Manuscript location | Evidence artifact | Status | Action |
 |---|---|---|---|---|---|
@@ -44,7 +46,7 @@ CE23 remains `partial`.
 | CE20 | The legacy GeoLife epsilon sweep separates admission behavior from post-admission utility. | RQ5 supporting paragraph | Existing utility sweep receipts | supported | Keep subordinate to CE07; do not use it as the headline utility comparison. |
 | CE21 | Archive compatibility (2,728/14/23), historical performance (3,056/14/23), and current paper (3,547/16/25) are distinct relations. | RQ6 | `V4_METHOD_AUDIT.md`; `circuit_bench/20260504_v4/circuit_perf.csv`; current manifest and evidence JSON | supported | Never transfer measurements across layers. |
 | CE22 | The 2026-05-04 snarkjs timings and 128-byte proof object belong only to the historical 3,056 relation. | RQ6 | `circuit_bench/20260504_v4/circuit_perf.csv` | supported | Keep explicitly historical; omit unreceipted 5,694-byte frame claim. |
-| CE23 | Current three-seed N=1000 latency and throughput are not yet paper-verified. | RQ6; absent from Abstract | `docker_n1000_v4/launch_status.json`; strict aggregate currently absent | partial | Update only after 15/15 unit validation and strict aggregate generation. |
+| CE23 | The current three-seed N=1000 matrix verifies 225,000 proofs with zero failures across 15 units; 13 timing-eligible units average 1.000 $\pm$ 0.069 proofs/s and 4.183 $\pm$ 0.248 hours, with Rome/101 and Synthetic/101 excluded only from timing after host suspension. | Abstract; Experimental Setup; RQ6; Conclusion | `docker_n1000_v4/aggregate_summary.json`; `aggregate_by_dataset.csv`; generated `TSIP/tables/tab_v4_n1000_scale.tex`; hash-bound `docker_v4_smoke/analysis_v4/paper_evidence.json` | supported | Keep all functional receipts in totals, disclose timing $n$ per dataset, and characterize the result as reproducible execution rather than interactive latency. |
 | CE24 | The current Groth16 setup is a development setup, not a production ceremony. | Discussion; Artifact section | `docker_v4_smoke/manifest.json` setup field | supported | Keep this limitation in artifact and submission materials. |
 | CE25 | Distinct administrative domains, access documentation, and cross-role audits are deployment requirements for the HBC/non-collusion model, not cryptographic guarantees. | Method threat model | Explicit threat-model assumptions and failure conditions in `TSIP/main.tex` | assumption | Keep as an assumption; do not use governance analogies as evidence of non-collusion. |
 | CE26 | The artifact exposes enough interface and receipt material to audit the proof-to-payload boundary. | Artifact section | `TSIP_heatmap_version/ARTIFACT_README.md`; manifest, evidence builder, static/protocol/utility receipts | supported | Heatmap-specific paths, commands, pass criteria, data boundary, and scale limitation were indexed in Task 7. |
@@ -131,19 +133,19 @@ same-primary relation before aggregation.
 
 ### Evaluation
 
-Section thesis: each RQ tests a stated admission boundary or residual risk, while
-utility and artifact layers remain separate from the incomplete current scale
-aggregate.
+Section thesis: each RQ tests a stated admission boundary or residual risk,
+while original-input utility, protocol smoke, and the verified current scale
+aggregate remain non-interchangeable evidence layers.
 
 | Paragraph | Manuscript location | Topic sentence | Role | Claim IDs |
 |---|---|---|---|---|
 | E01 | Evaluation opening | The evaluation follows the narrowed paper claims. | Map RQ1-RQ6 and exclude general truthfulness/robustness. | CE08, CE16, CE17, CE18, CE19, CE23 |
 | E02 | Experimental Setup | The dataset paragraph defines four real trajectory-derived inputs and one generated stress input. | Establish the five-dataset, no-bootstrap, N=1000 utility scope and baseline family. | CE01, CE07 |
 | E03 | Experimental Setup | The boundary-violation paragraph defines suites and default configuration. | Bind modeled attacks, parameters, and metrics to receipts. | CE16, CE17, CE19 |
-| E04 | Experimental Setup | The metrics paragraph defines rejection, utility, and artifact-versioning rules. | Prevent metric and circuit-layer conflation before the evidence-layer split. | CE20, CE21, CE23 |
+| E04 | Experimental Setup | The metrics paragraph defines rejection, utility, and artifact-versioning rules. | Prevent metric and circuit-layer conflation and require current scale to come from the strict bound aggregate. | CE20, CE21, CE23 |
 | E05 | Experimental Setup | The original-input utility paragraph identifies the source of RQ5 values. | Bind the fixed table and figure to the five prepared inputs and three seeds. | CE07 |
 | E06 | Experimental Setup | The safe-trajectory paragraph isolates the clean Docker protocol smoke. | State what the smoke exercises and why it is not utility evidence. | CE05, CE06 |
-| E07 | Experimental Setup | The full-scale paragraph defines the 15-unit Groth16 matrix. | Separate current protocol execution evidence from original-input utility and withhold unverified performance. | CE23 |
+| E07 | Experimental Setup | The full-scale paragraph defines the 15-unit Groth16 matrix. | Separate current protocol execution from original-input utility and define the 7,200-second timing-eligibility rule with at least two retained units per dataset. | CE23 |
 | E08 | RQ1 | RQ1 asks whether SHTPC rejects proof/payload-inconsistent reports. | State target attack and ablation purpose. | CE11, CE16 |
 | E09 | RQ1 | SHTPC-Full rejects all modeled A1, A2a, A3, A5, and A6 violations. | Report scoped ablation result and mechanism attribution. | CE16 |
 | E10 | RQ1 | A6 is also tested with private binder, blob, route, and replay mutations. | Connect table-level evidence to static end-to-end negatives. | CE05, CE11 |
@@ -159,7 +161,8 @@ aggregate.
 | E20 | RQ5 | SHTPC has five positive Jaccard deltas over Nebula under the fixed protocol. | Report every absolute value and distinguish large gains from the small Porto and Synthetic gains. | CE07, CE20 |
 | E21 | RQ6 archive layer | RQ6 begins by identifying non-interchangeable evidence layers. | Restrict archive compatibility to saved witness validation. | CE21 |
 | E22 | RQ6 historical layer | The 2026-05-04 receipt belongs to a distinct historical relation. | Retain only receipted historical timings/proof size. | CE21, CE22 |
-| E23 | RQ6 current layer | The current manifest-bound relation has generated circuit facts and passing gates. | State current evidence and withhold latency/throughput pending strict aggregate. | CE04, CE05, CE06, CE23 |
+| E23 | RQ6 current functional layer | The current manifest-bound relation completes the strict 15-unit matrix. | Report generated circuit facts, passing gates, proof/route totals, reconstruction, and DP-release completion from generated evidence. | CE04, CE05, CE06, CE23 |
+| E24 | RQ6 current timing layer | The scale table separates functional completion from timing eligibility. | Report 13-receipt timing statistics, disclose Rome/101 and Synthetic/101 host suspension, and reject an interactive-latency interpretation. | CE23 |
 
 ### Discussion
 
@@ -186,18 +189,20 @@ risks.
 
 | Paragraph | Manuscript location | Topic sentence | Role | Claim IDs |
 |---|---|---|---|---|
-| C01 | Conclusion | This paper formulates SHTPC as a narrow admission-consistency goal. | Restate insight, current circuit identity, evidence, and deployment boundary. | CE03, CE04, CE08, CE16, CE18, CE19, CE27 |
-| C02 | Future Work | Future work should strengthen enrollment, Shuffler auditability, adaptive evaluation, and setup portability. | Route excluded risks to future work without claiming they are solved. | CE08, CE23, CE24 |
+| C01 | Conclusion | This paper formulates SHTPC as a narrow admission-consistency goal. | Restate insight, current circuit identity, verified scale execution, and deployment boundary. | CE03, CE04, CE08, CE16, CE18, CE19, CE23, CE27 |
+| C02 | Future Work | Future work should strengthen enrollment, Shuffler auditability, adaptive evaluation, and setup portability. | Route excluded risks and throughput optimization to future work without claiming they are solved. | CE08, CE23, CE24 |
 
 ## Review Gate
 
-- Abstract has exactly five message sentences and excludes the partial scale result.
+- Abstract has exactly five message sentences and includes only the verified
+  functional scale totals, not an interactive-latency claim.
 - Every retained major claim has a non-`unsupported` status and an action.
 - CE01 and CE26 are closed by the Task 7 citation and artifact audits; CE25 is
   an explicit assumption rather than an unsupported governance analogy.
 - Historical relation measurements are not evidence for the manifest-bound paper relation.
 - The fixed fair five-dataset evidence is integrated in E02 and E19-E20.
-- Final-scale writing may update CE23 only after strict aggregate verification.
+- CE23 is bound to strict aggregate SHA-256
+  `2ad8e35340d0646c3b0e130468f9a00c5b66e433bedf4411929fe9f166516a95`.
 
 ## Five-Dimension Adversarial Self-Review
 
@@ -216,7 +221,7 @@ task and is not treated as paper-ready.
 | Writing clarity | Are key modules technically specified? | pass | M17-M47 cover state, binders, transport, circuit, timing, warmup, DP, and integer semantics. |
 | Writing clarity | Is each module motivated by a concrete challenge? | pass | M17, M27, and M36 explicitly connect design choices to the proof/payload gap and enrollment boundary. |
 | Writing clarity | Are terms and notation consistent? | pass | SHTPC terminology, generated V4 facts, and `eq:r-shtpc` are now consistent; stale current facts are absent. |
-| Writing clarity | Does every core-section paragraph carry one message? | pass | The 89-entry reverse outline records one topic sentence and role per prose paragraph/list contribution. |
+| Writing clarity | Does every core-section paragraph carry one message? | pass | The reverse outline records one topic sentence and role per prose paragraph/list contribution, including separate current-scale functional and timing messages. |
 | Experimental strength | Are improvements over the strongest fair baseline meaningful? | pass | RQ5 reports all five deltas and distinguishes GeoLife/T-Drive/Rome gains from the small Porto/Synthetic gains. |
 | Experimental strength | Is absolute performance competitive? | pass | The generated table and figure expose mean Jaccard, standard deviation, delta, FRR, and MRR under one fixed protocol. |
 | Experimental strength | Are gains consistent across datasets and seeds? | pass | CE07 binds five positive mean deltas and three-seed standard deviations under one fixed configuration. |
@@ -230,4 +235,4 @@ task and is not treated as paper-ready.
 | Method soundness | Are hidden technical defects addressed? | pass | CE05 and CE11 bind the current circuit to 22 compatibility/tamper checks and negative fixtures. |
 | Method soundness | Does the fair result avoid per-dataset retuning? | pass | CE07 uses one epsilon/tau pair across all datasets; tuned results are not the headline comparison. |
 | Method soundness | Are complexity and limitations visible? | pass | Discussion and CE08/CE14/CE18/CE24 expose leakage, collusion, setup, enrollment, and in-envelope limits. |
-| Method soundness | Is the net benefit supported at paper scale? | needs revision | CE23 remains partial until all 15 unit receipts and the strict aggregate verify current latency/throughput. |
+| Method soundness | Is the net benefit supported at paper scale? | pass | CE23 verifies every functional receipt and reports all timing-eligible units; the manuscript also states that the measured 4.183-hour mean unit runtime is reproducible execution evidence, not interactive performance. |
