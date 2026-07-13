@@ -27,7 +27,7 @@ Allowed statuses are `supported`, `partial`, `analytical`, `assumption`, and
 | CE04 | The current paper relation has 3,547 constraints, 16 public inputs, and 25 private inputs. | Abstract; Method; Security; RQ6; Conclusion | `docker_v4_smoke/analysis_v4/paper_evidence.json`; `docker_v4_smoke/manifest.json` | supported | Cite only through generated `VFour*` macros. |
 | CE05 | All 22 manifest-bound static compatibility and tamper checks pass. | Abstract; RQ6 | `docker_v4_smoke/static/gate_status.json`; hash-bound in `paper_evidence.json` | supported | Keep; do not generalize to production security. |
 | CE06 | The clean manifest-bound protocol path passes on five datasets. | RQ6; Artifact section | `docker_v4_smoke/protocol_clean_five_dataset_v2/suite_status.json`; hash-bound in `paper_evidence.json` | supported | Describe as protocol smoke, not original-input utility. |
-| CE07 | At fixed epsilon 5 and tau 2, three-seed N=1000 SHTPC Jaccard exceeds Nebula on all five datasets, with FRR 0 and MRR 1. | Abstract; planned RQ5 replacement | `docker_v4_smoke/utility/three_seed_n1000/fair_fixed_comparison.json`; companion `status.json`; generated table | supported | Integrate all five deltas in Task 6; call Porto and Synthetic gains small. |
+| CE07 | At fixed epsilon 5 and tau 2, three-seed N=1000 SHTPC Jaccard exceeds Nebula on all five datasets, with FRR 0 and MRR 1. | Abstract; RQ5 | `docker_v4_smoke/utility/three_seed_n1000/fair_fixed_comparison.json`; companion `status.json`; generated table and figure | supported | Retain all five deltas and keep the Porto and Synthetic gains explicitly small. |
 | CE08 | SHTPC does not prove physical presence, eliminate metadata leakage, or reject fully in-envelope false reports. | Abstract; Introduction scope; Discussion; Conclusion | Threat-model boundary, Game 3 leakage definition, and RQ3/RQ4 artifacts | analytical | Keep visible in first and final impressions. |
 | CE09 | SRV-TS, SCS, CA3, non-collusion, setup soundness, and cryptographic assumptions are required. | Method threat model; Security; Discussion | Explicit assumptions and theorem premises in `TSIP/main.tex` | assumption | Keep assumptions explicit; do not present them as measured guarantees. |
 | CE10 | The implementation maintains accepted-state continuity and validates timing and transport context before forwarding. | Method overview, threat model, protocol operations | Manifest-bound client/shuffler sources; five-dataset protocol suite status | supported | Keep as implementation behavior under the stated Shuffler model. |
@@ -40,7 +40,7 @@ Allowed statuses are `supported`, `partial`, `analytical`, `assumption`, and
 | CE17 | Stateful context alone still admits A6, while measured envelope checks expose sharp policy boundaries. | RQ2 | `full_n1000_rq/rq1/contextcommit_admission_summary.csv`; `full_n1000_rq/rq2/*_boundary_results_summary.csv` | supported | Keep baseline definition and parameterization visible. |
 | CE18 | Shuffler-visible timing and chain metadata support behavior inference despite coordinate hiding. | RQ3; Discussion | `full_n1000_rq/rq3/real_metadata_four_real/real_metadata_summary.csv`; `rq3/synthetic_membership_n1000/metrics.json` | supported | Keep as residual leakage, not a coordinate-recovery result. |
 | CE19 | Payload-consistent, in-envelope malicious reports can remain admissible and can pollute hotspots. | RQ4; Discussion | `full_n1000_rq/rq4/*/hotspot_pollution_summary.csv`; `in_envelope_heatmap_bias_summary.csv`; joint-adaptive summary | supported | Keep as a residual-risk result and separate external mitigations. |
-| CE20 | The legacy GeoLife epsilon sweep separates admission behavior from post-admission utility. | Current RQ5 pending replacement | Existing utility sweep receipts and `fig_eval_utility_distribution_column.pdf` | supported | Replace as headline evidence with fixed fair five-dataset table in Task 6. |
+| CE20 | The legacy GeoLife epsilon sweep separates admission behavior from post-admission utility. | RQ5 supporting paragraph | Existing utility sweep receipts | supported | Keep subordinate to CE07; do not use it as the headline utility comparison. |
 | CE21 | Archive compatibility (2,728/14/23), historical performance (3,056/14/23), and current paper (3,547/16/25) are distinct relations. | RQ6 | `V4_METHOD_AUDIT.md`; `circuit_bench/20260504_v4/circuit_perf.csv`; current manifest and evidence JSON | supported | Never transfer measurements across layers. |
 | CE22 | The 2026-05-04 snarkjs timings and 128-byte proof object belong only to the historical 3,056 relation. | RQ6 | `circuit_bench/20260504_v4/circuit_perf.csv` | supported | Keep explicitly historical; omit unreceipted 5,694-byte frame claim. |
 | CE23 | Current three-seed N=1000 latency and throughput are not yet paper-verified. | RQ6; absent from Abstract | `docker_n1000_v4/launch_status.json`; strict aggregate currently absent | partial | Update only after 15/15 unit validation and strict aggregate generation. |
@@ -137,25 +137,28 @@ aggregate.
 | Paragraph | Manuscript location | Topic sentence | Role | Claim IDs |
 |---|---|---|---|---|
 | E01 | Evaluation opening | The evaluation follows the narrowed paper claims. | Map RQ1-RQ6 and exclude general truthfulness/robustness. | CE08, CE16, CE17, CE18, CE19, CE23 |
-| E02 | Experimental Setup | The dataset paragraph defines inputs and design-space comparisons. | Establish data and baseline scope; Task 6 expands it to five datasets. | CE01, CE20 |
+| E02 | Experimental Setup | The dataset paragraph defines four real trajectory-derived inputs and one generated stress input. | Establish the five-dataset, no-bootstrap, N=1000 utility scope and baseline family. | CE01, CE07 |
 | E03 | Experimental Setup | The boundary-violation paragraph defines suites and default configuration. | Bind modeled attacks, parameters, and metrics to receipts. | CE16, CE17, CE19 |
-| E04 | Experimental Setup | The metrics paragraph defines TPR, FRR, utility, and artifact-versioning rules. | Prevent metric and circuit-layer conflation. | CE20, CE21, CE23 |
-| E05 | RQ1 | RQ1 asks whether SHTPC rejects proof/payload-inconsistent reports. | State target attack and ablation purpose. | CE11, CE16 |
-| E06 | RQ1 | SHTPC-Full rejects all modeled A1, A2a, A3, A5, and A6 violations. | Report scoped ablation result and mechanism attribution. | CE16 |
-| E07 | RQ1 | A6 is also tested with private binder, blob, route, and replay mutations. | Connect table-level evidence to static end-to-end negatives. | CE05, CE11 |
-| E08 | RQ2 | RQ2 asks how statefulness affects predecessor, replay, and window consistency. | Compare context-only state to in-relation primary equality. | CE17 |
-| E09 | RQ2 | Boundary sweeps separate per-step and window continuity predicates. | Explain transition locations without changing policy semantics. | CE17 |
-| E10 | RQ2 | A3 is evaluated as a parameterized ADWC admission check. | Report K6/K30 sensitivity and deployment recommendation. | CE17 |
-| E11 | RQ2 | The tau/tau2 sweep checks DP-parameter invariance and session withholding. | Separate admission verification from DP settings. | CE17, CE20 |
-| E12 | RQ3 | RQ3 asks what remains inferable from Shuffler-visible leakage. | Report metadata inference and preserve the leakage boundary. | CE18 |
-| E13 | RQ4 | RQ4 asks what remains after the cryptographic envelope is enforced. | State bounded influence but not ground-truth defense. | CE08, CE19 |
-| E14 | RQ4 proposition | Accepted malicious mass and support are bounded by clipping and reachability. | Provide an analytical influence bound. | CE19 |
-| E15 | RQ4 joint adversary | SHTPC enforces an envelope, not ground truth. | Report payload-decoupled rejection and in-envelope acceptance. | CE19 |
-| E16 | RQ5 | RQ5 asks how much utility is lost after admission and DP release. | Separate epsilon-invariant admission from release utility. | CE20 |
-| E17 | RQ5 | The legacy GeoLife result reports post-release utility and its boundary. | Provide currently supported but non-headline evidence pending Task 6. | CE20 |
-| E18 | RQ6 archive layer | RQ6 begins by identifying non-interchangeable evidence layers. | Restrict archive compatibility to saved witness validation. | CE21 |
-| E19 | RQ6 historical layer | The 2026-05-04 receipt belongs to a distinct historical relation. | Retain only receipted historical timings/proof size. | CE21, CE22 |
-| E20 | RQ6 current layer | The current manifest-bound relation has generated circuit facts and passing gates. | State current evidence and withhold latency/throughput pending strict aggregate. | CE04, CE05, CE06, CE23 |
+| E04 | Experimental Setup | The metrics paragraph defines rejection, utility, and artifact-versioning rules. | Prevent metric and circuit-layer conflation before the evidence-layer split. | CE20, CE21, CE23 |
+| E05 | Experimental Setup | The original-input utility paragraph identifies the source of RQ5 values. | Bind the fixed table and figure to the five prepared inputs and three seeds. | CE07 |
+| E06 | Experimental Setup | The safe-trajectory paragraph isolates the clean Docker protocol smoke. | State what the smoke exercises and why it is not utility evidence. | CE05, CE06 |
+| E07 | Experimental Setup | The full-scale paragraph defines the 15-unit Groth16 matrix. | Separate current protocol execution evidence from original-input utility and withhold unverified performance. | CE23 |
+| E08 | RQ1 | RQ1 asks whether SHTPC rejects proof/payload-inconsistent reports. | State target attack and ablation purpose. | CE11, CE16 |
+| E09 | RQ1 | SHTPC-Full rejects all modeled A1, A2a, A3, A5, and A6 violations. | Report scoped ablation result and mechanism attribution. | CE16 |
+| E10 | RQ1 | A6 is also tested with private binder, blob, route, and replay mutations. | Connect table-level evidence to static end-to-end negatives. | CE05, CE11 |
+| E11 | RQ2 | RQ2 asks how statefulness affects predecessor, replay, and window consistency. | Compare context-only state to in-relation primary equality. | CE17 |
+| E12 | RQ2 | Boundary sweeps separate per-step and window continuity predicates. | Explain transition locations without changing policy semantics. | CE17 |
+| E13 | RQ2 | A3 is evaluated as a parameterized ADWC admission check. | Report K6/K30 sensitivity and deployment recommendation. | CE17 |
+| E14 | RQ2 | The tau/tau2 sweep checks DP-parameter invariance and session withholding. | Separate admission verification from DP settings. | CE17, CE20 |
+| E15 | RQ3 | RQ3 asks what remains inferable from Shuffler-visible leakage. | Report metadata inference and preserve the leakage boundary. | CE18 |
+| E16 | RQ4 | RQ4 asks what remains after the cryptographic envelope is enforced. | State bounded influence but not ground-truth defense. | CE08, CE19 |
+| E17 | RQ4 proposition | Accepted malicious mass and support are bounded by clipping and reachability. | Provide an analytical influence bound. | CE19 |
+| E18 | RQ4 joint adversary | SHTPC enforces an envelope, not ground truth. | Report payload-decoupled rejection and in-envelope acceptance. | CE19 |
+| E19 | RQ5 | RQ5 fixes one five-dataset utility protocol without per-dataset retuning. | Define N=1000, ten rounds, three seeds, epsilon 5, tau 2, 10% A1, and top-50 Jaccard. | CE07 |
+| E20 | RQ5 | SHTPC has five positive Jaccard deltas over Nebula under the fixed protocol. | Report every absolute value and distinguish large gains from the small Porto and Synthetic gains. | CE07, CE20 |
+| E21 | RQ6 archive layer | RQ6 begins by identifying non-interchangeable evidence layers. | Restrict archive compatibility to saved witness validation. | CE21 |
+| E22 | RQ6 historical layer | The 2026-05-04 receipt belongs to a distinct historical relation. | Retain only receipted historical timings/proof size. | CE21, CE22 |
+| E23 | RQ6 current layer | The current manifest-bound relation has generated circuit facts and passing gates. | State current evidence and withhold latency/throughput pending strict aggregate. | CE04, CE05, CE06, CE23 |
 
 ### Discussion
 
@@ -190,7 +193,7 @@ risks.
 - Abstract has exactly five message sentences and excludes the partial scale result.
 - Every retained major claim has a non-`unsupported` status and an action.
 - Historical relation measurements are not evidence for the manifest-bound paper relation.
-- Task 6 must replace E02 and E16-E17 with the fixed fair five-dataset evidence.
+- The fixed fair five-dataset evidence is integrated in E02 and E19-E20.
 - Final-scale writing may update CE23 only after strict aggregate verification.
 
 ## Five-Dimension Adversarial Self-Review
@@ -204,22 +207,22 @@ task and is not treated as paper-ready.
 | Contribution | What new knowledge does the paper provide? | pass | CE02-CE03 isolate same-relation trajectory/payload binding as the contribution. |
 | Contribution | Is the failure case meaningful rather than trivial? | pass | I02-I03 show a valid hidden proof can be paired with a different routed primary without the new relation. |
 | Contribution | Is the idea non-obvious beyond standard composition? | pass | The separation lemmas and CE11 explain why state/context or VDAF-style checks alone do not imply equality. |
-| Contribution | Is the empirical gain stated without exaggeration? | pass | Abstract now says two of five positive Jaccard deltas are small; CE07 retains exact values for Task 6. |
+| Contribution | Is the empirical gain stated without exaggeration? | pass | Abstract and RQ5 say two of five positive Jaccard deltas are small; CE07 retains every exact value. |
 | Contribution | Is at least one novelty type explicit? | pass | The paper claims a new scoped admission property and one-relation system design, not a new proof system or DP mechanism. |
 | Writing clarity | Can a knowledgeable reader reproduce the method? | needs revision | Method is detailed, but Task 7 must add the Heatmap artifact index and exact rerun commands. |
 | Writing clarity | Are key modules technically specified? | pass | M17-M47 cover state, binders, transport, circuit, timing, warmup, DP, and integer semantics. |
 | Writing clarity | Is each module motivated by a concrete challenge? | pass | M17, M27, and M36 explicitly connect design choices to the proof/payload gap and enrollment boundary. |
 | Writing clarity | Are terms and notation consistent? | pass | SHTPC terminology, generated V4 facts, and `eq:r-shtpc` are now consistent; stale current facts are absent. |
-| Writing clarity | Does every core-section paragraph carry one message? | pass | The 86-entry reverse outline records one topic sentence and role per prose paragraph/list contribution. |
-| Experimental strength | Are improvements over the strongest fair baseline meaningful? | needs revision | Task 6 must report all deltas and explicitly distinguish large GeoLife/T-Drive/Rome gains from small Porto/Synthetic gains. |
-| Experimental strength | Is absolute performance competitive? | needs revision | Task 6 must install the fixed table and figure so absolute Jaccard, FRR, MRR, and variability are visible. |
+| Writing clarity | Does every core-section paragraph carry one message? | pass | The 89-entry reverse outline records one topic sentence and role per prose paragraph/list contribution. |
+| Experimental strength | Are improvements over the strongest fair baseline meaningful? | pass | RQ5 reports all five deltas and distinguishes GeoLife/T-Drive/Rome gains from the small Porto/Synthetic gains. |
+| Experimental strength | Is absolute performance competitive? | pass | The generated table and figure expose mean Jaccard, standard deviation, delta, FRR, and MRR under one fixed protocol. |
 | Experimental strength | Are gains consistent across datasets and seeds? | pass | CE07 binds five positive mean deltas and three-seed standard deviations under one fixed configuration. |
 | Experimental strength | Are strengths and failure cases reported honestly? | pass | CE08, CE18, and CE19 keep metadata and in-envelope failures visible in Abstract and Discussion. |
 | Evaluation completeness | Are key design choices ablated? | pass | CE16-CE17 cover ADWC, payload binding, context-only state, and no-admission variants. |
-| Evaluation completeness | Are strong baselines compared fairly? | needs revision | Task 6 must make the fixed epsilon/tau protocol the headline and keep tuned optimizer results out of the fair main table. |
-| Evaluation completeness | Are metrics sufficient and separated by evidence layer? | pass | E04 and CE20-CE23 separate rejection, utility, historical microbenchmarks, and current scale. |
-| Evaluation completeness | Are datasets sufficiently broad? | needs revision | Task 6 must integrate four real trajectory-derived datasets plus one explicitly synthetic stress set into the manuscript. |
-| Evaluation completeness | Is the protocol documented clearly? | needs revision | Task 6 must separate original-input utility, safe-trajectory protocol smoke, and full Groth16 scale in Experimental Setup. |
+| Evaluation completeness | Are strong baselines compared fairly? | pass | The headline uses one epsilon/tau configuration; Nebula is the strongest fixed baseline on all five inputs, and tuned results stay out of the table. |
+| Evaluation completeness | Are metrics sufficient and separated by evidence layer? | pass | E04-E07 and CE20-CE23 separate rejection, utility, protocol smoke, historical microbenchmarks, and current scale. |
+| Evaluation completeness | Are datasets sufficiently broad? | pass | The manuscript integrates four real trajectory-derived inputs and one explicitly generated clustered random-walk stress input. |
+| Evaluation completeness | Is the protocol documented clearly? | pass | Experimental Setup separates original-input utility, safe-trajectory protocol smoke, and full Groth16 scale in three paragraphs. |
 | Method soundness | Is the deployment setting realistic? | pass | CE09, CE25, and CE27 restrict the claim to managed deployments with explicit governance assumptions. |
 | Method soundness | Are hidden technical defects addressed? | pass | CE05 and CE11 bind the current circuit to 22 compatibility/tamper checks and negative fixtures. |
 | Method soundness | Does the fair result avoid per-dataset retuning? | pass | CE07 uses one epsilon/tau pair across all datasets; tuned results are not the headline comparison. |

@@ -1554,11 +1554,15 @@ All rejection results should be read as boundary-enforcement results.
 \label{sec:setup}
 
 \emph{Datasets and design-space comparisons.}
-The evaluation uses public T-Drive taxi trajectories
-(\(10{,}357\) taxis, about 15M GPS points) and GeoLife traces (182 users,
-17K+ trajectories), plus T-Drive rush-hour and GeoLife session-gap subsets to
-stress dense vehicle mobility and re-enrollment behavior
-~\cite{Yuan2010Tdrive,Zheng2010GeoLife}. We compare
+The original-input utility evaluation uses T-Drive taxi trajectories
+(\(10{,}357\) taxis, about 15M GPS points), GeoLife traces (182 users,
+17K+ trajectories), and trajectory-derived Porto and Rome inputs. These four
+real inputs contribute \(N{=}1000\) client records each with bootstrap disabled;
+the fifth input, Synthetic, contains \(N{=}1000\) clustered random-walk records
+generated with seed 20260709. Each fixed-utility input provides ten windows per
+record. Boundary and session experiments additionally use T-Drive rush-hour and
+GeoLife session-gap subsets to stress dense vehicle mobility and re-enrollment
+behavior~\cite{Yuan2010Tdrive,Zheng2010GeoLife}. We compare
 \textsc{SHTPC-Full} with \textsc{No-Admission-Check}, \textsc{No-ADWC},
 \textsc{No-Payload-Bind}, \textsc{Stateful-ContextCommit}, and deployment-layer
 variants. \textsc{Stateful-ContextCommit} tracks uid/epoch/round, predecessor
@@ -1584,7 +1588,9 @@ otherwise, headline numbers use:
     \setlength{\itemsep}{0pt}
     \setlength{\parsep}{0pt}
     \setlength{\topsep}{2pt}
-  \item $N{=}50$ clients and $T{=}10$ rounds.
+  \item Controlled boundary-violation headlines use $N{=}50$ clients and
+    $T{=}10$ rounds; the fixed utility comparison uses $N{=}1000$ and
+    $T{=}10$.
   \item $\varepsilon_{\mathrm{total}}{=}1.0$, $\Delta t{=}\SI{60}{s}$, and
     $K\in\{6,30\}$.
   \item mode table \{walk, bike, vehicle, transit\} with speeds
@@ -1606,6 +1612,27 @@ microservices and Circom/snarkjs Groth16 inside the manifest-bound Docker path.
 RQ6 labels all pre-manifest microbenchmarks as historical, and current scale
 latency/throughput remains withheld until strict receipt validation. Randomized
 sweeps use three seeds unless stated otherwise.
+
+\emph{Original-input utility.}
+The RQ5 evaluator reads the five prepared inputs above directly, uses seeds
+101, 202, and 303, and applies one fixed release configuration to SHTPC and the
+evaluated baselines. These original-input runs supply all utility values in
+Table~\ref{tab:v4-fixed-utility} and Figure~\ref{fig:v4-fixed-utility}.
+
+\emph{Safe-trajectory protocol smoke.}
+The clean Docker protocol suite mounts the manifest-bound circuit and sets
+\texttt{TSIP\_SAFE\_PROTOCOL\_TRAJECTORY=1} to replace timestamp gaps and
+out-of-envelope jumps with safe in-envelope trajectories. This layer isolates
+proof generation, state transitions, reconstruction, and DP release across the
+five dataset-labelled runs; it is not the source of the RQ5 utility values.
+
+\emph{Full Groth16 scale.}
+The scale matrix exercises five datasets and seeds 101, 202, and 303 at
+\(N{=}1000\), with six warmup and ten evaluation rounds under full snarkjs
+Groth16 proving. It uses the same protocol-isolation trajectory and therefore
+measures end-to-end protocol execution rather than original-input utility.
+RQ6 withholds current latency and throughput until a strict aggregate binds all
+15 dataset-seed receipts to the current manifest and launcher.
 
 \subsection{RQ1 Proof-to-Payload Consistency}
 \label{sec:eval-headline}
@@ -1821,36 +1848,41 @@ and 2.12\% on GeoLife.
 \label{sec:eval-utility}
 
 RQ5 asks how much utility is lost after adding \textsc{SHTPC} before the
-unchanged SVT/Laplace DP release. A GeoLife \(\varepsilon\) sweep confirms that
-admission checking is \(\varepsilon\)-invariant
-(\(\mathrm{TPR}=1.00\) at every tested \(\varepsilon\)) because proof
-verification precedes release.
+unchanged SVT/Laplace DP release. The headline protocol fixes
+\(\varepsilon{=}5.0\) and the post-admission release threshold
+\(\tau{=}2.0\) for every dataset,
+uses \(N{=}1000\), \(T{=}10\), 10\% A1 attackers, top-50 released-set Jaccard,
+and seeds 101, 202, and 303. It does not substitute per-dataset tuned settings.
+Among the evaluated fixed-configuration baselines, Nebula has the highest mean
+Jaccard on every dataset~\cite{Shamsabadi2025Nebula,Chowdhury2022EIFFeL}.
+
+\input{tables/tab_v4_fixed_utility}
 
 \begin{figure}[!t]
   \centering
-  \includegraphics[width=\columnwidth]{figures/fig_eval_utility_distribution_column.pdf}
+  \includegraphics[width=\columnwidth]{figures/v4_fixed_utility_heatmap.pdf}
   \vspace{-0.7em}
-  \caption{GeoLife utility distribution over 10 released samples at
-  \(\varepsilon{=}1.0\) with 10\% A1 attackers. Panel (a) plots malicious
-  rejection and pipeline FRR for \textsc{SHTPC-Full} and
-  \textsc{No-Admission-Check}. Panel (b) plots released-set Jaccard. Panel (c)
-  plots count RMSE. Panel (d) plots the number of post-threshold released
-  cells.}
-  \label{fig:eval-utility-dist}
+  \caption{Fixed-configuration released-set Jaccard at \(N{=}1000\) and
+  \(T{=}10\), averaged over seeds 101, 202, and 303. Both methods use
+  \(\varepsilon{=}5.0\); SHTPC uses post-admission release threshold
+  \(\tau{=}2.0\). Table~\ref{tab:v4-fixed-utility} reports standard deviations,
+  absolute deltas, FRR, and MRR.}
+  \label{fig:v4-fixed-utility}
 \end{figure}
 
-At \(\varepsilon=1.0\) with 10\% A1 malicious clients, \textsc{SHTPC-Full}
-achieves median RMSE~2.38 and Pearson~0.926 over 10 released samples
-(Figure~\ref{fig:eval-utility-dist}), versus
-\textsc{No-Admission-Check}'s RMSE~2.25 and Pearson~0.954. The slight count-metric
-advantage of \textsc{No-Admission-Check} is not an integrity gain: the same
-pipeline accepts all modeled violations in Table~\ref{tab:ablation}, so its
-released map can preserve numeric smoothness while carrying invalid malicious
-mass. The benign-only control (RMSE~5.67 under the same session policy) shows
-that count distortion is dominated by thresholding, session-gap, and warmup
-effects rather than by the proof relation itself. In-envelope accepted mass can
-still create false hotspots (Figure~\ref{fig:eval-pollution-cost}(a)); this is
-a deployment residual risk, not a violation of the admission claim.
+Table~\ref{tab:v4-fixed-utility} and Figure~\ref{fig:v4-fixed-utility} show
+SHTPC/Nebula mean Jaccard of 0.671/0.561 on T-Drive, 0.878/0.366 on GeoLife,
+0.305/0.298 on Porto, 0.772/0.664 on Rome, and 0.135/0.128 on Synthetic. The
+absolute gains are therefore +0.110, +0.512, +0.007, +0.108, and +0.007,
+respectively. Porto and Synthetic provide only small gains, so the result
+supports a consistent positive direction under the fixed protocol rather than
+a uniformly large margin. SHTPC has zero honest false rejection and complete
+modeled malicious rejection on every dataset in this comparison. A separate
+legacy GeoLife sweep found admission TPR 1.00 at each tested \(\varepsilon\),
+consistent with proof verification preceding the release stage; it is
+supporting evidence rather than the headline utility comparison. In-envelope
+accepted mass can still create false hotspots
+(Figure~\ref{fig:eval-pollution-cost}(a)), which remains a deployment risk.
 
 \subsection{RQ6 Cost and Scalability}
 \label{sec:eval-scale}
