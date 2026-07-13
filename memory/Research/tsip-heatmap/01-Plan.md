@@ -23,7 +23,7 @@ tags: [tsip-heatmap, plan, v4]
 - [x] 增加 DATA_NOTICE、Heatmap 可复现索引、citation audit 与作者确认声明（`dec09503`）；LICENSE 因缺少作者明确 SPDX 选择而保持阻塞并不创建。
 - [x] 从 clean auxiliary state 重新编译、统计 18 页并完成 18/18 逐页视觉检查；pre-scale verified checkpoint 已提交为 `d54ac1a5`，最终 scale aggregate 写回后须重复该门禁。
 - [x] 建立 Abstract/Introduction claim-evidence map（Task 6 后为 27 claims、五核心章节 89 段 reverse outline、24 项 adversarial self-review；unsupported 0）。
-- [x] 完成 Task 9 五维对抗自审；关闭 citation/artifact 两项 partial，移除过强治理类比，claim map 收敛为 17 supported / 7 analytical / 2 assumption / 1 partial / 0 unsupported，169 tests 通过。
+- [x] 完成并提交 Task 9 五维对抗自审（`a0db10db`）；关闭 citation/artifact 两项 partial，移除过强治理类比，claim map 收敛为 17 supported / 7 analytical / 2 assumption / 1 partial / 0 unsupported，169 tests 通过。
 
 以上任务不写入 15/15 scale 结论；最终规模统计仍受下方实验门禁约束。
 
@@ -44,12 +44,12 @@ tags: [tsip-heatmap, plan, v4]
 - [x] 清理 Rome/303 与 Synthetic/303 的旧空闲 compose 项目并启动新的受控续跑。
 - [x] Rome/303 与 Synthetic/303 受控续跑完成并返回 pass；launcher 于 2026-07-13 23:24:37 +0800 正常退出。
 - [x] 确认 15/15 pass，`launch_status.json` 已从 `running` 收敛为 `pass`，failed units 为 0。
-- [ ] 汇总每单元 proof generation/verification、失败率、每轮耗时、reconstruction 和 DP receipt。
+- [x] 汇总每单元 proof generation/verification、失败率、连续计时、reconstruction 和 DP receipt；Rome/101 与 Synthetic/101 的 host-suspension timing 已明确排除但功能 receipt 保留。
 
 ## P1 论文结果闭环
 
-- [ ] 生成 15 单元 aggregate CSV/JSON 和可审计 manifest。
-- [ ] 报告均值、标准差和 seed 间波动，不只报告最优 seed。
+- [x] 生成 15 单元 aggregate CSV/JSON/LaTeX 和可审计 manifest/launch/unit hash 绑定。
+- [x] 报告均值、样本标准差和 seed 间波动，不只报告最优 seed；同时显式披露 13/15 timing receipts 及排除规则。
 - [x] 将 protocol scalability 与 fixed utility 分成不同表或小节（Experimental Setup 三层分离；RQ5 固定效用；RQ6 scale）。
 - [ ] 更新论文中数据集、实验协议、效用和成本数字。
 - [x] 全文搜索并消除过强的 authenticity、robustness、security guarantee 与现实治理类比表述；最终 scale 写回后再跑同一 checker。
@@ -61,4 +61,4 @@ tags: [tsip-heatmap, plan, v4]
 - 每个单元 warmup 6 轮、evaluation 10 轮；evaluation A/R 计数为 1000/1000，reconstruction 和 DP 均为 true。
 - 所有证明尝试都有对应 verified receipt，proof failed 为 0。
 - 论文表格只引用汇总脚本生成的 artifact，且与 manifest hash 一致。
-- [[Results/Reports/V4实验结果-2026-07]] 从 `partial-verified` 更新为 `verified`。
+- [x] [[Results/Reports/V4实验结果-2026-07]] 已从 `partial-verified` 更新为 `verified`，并披露 timing exclusion。

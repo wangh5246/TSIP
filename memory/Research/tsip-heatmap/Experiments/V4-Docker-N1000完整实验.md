@@ -1,8 +1,8 @@
 ---
 type: experiment
 project: tsip-heatmap
-updated: 2026-07-13
-status: partial-verified
+updated: 2026-07-14
+status: verified
 tags: [tsip-heatmap, docker, n1000, groth16, experiment]
 ---
 
@@ -65,7 +65,7 @@ T-Drive seed 101 于 2026-07-10 12:56 至 16:21 +0800 完成：
 | 202 | pass | pass | pass | pass | pass |
 | 303 | pass | pass | pass | pass | pass |
 
-执行矩阵已为 15/15 pass。`launch_status.json` 于 2026-07-13 23:24:37 +0800 收敛为 `state=pass`、`completed_units=15`、`failed_units=0`、`total_units=15`。strict aggregate receipt 尚未生成，因此论文级汇总状态仍为 `partial-verified`。
+执行矩阵已为 15/15 pass。`launch_status.json` 于 2026-07-13 23:24:37 +0800 收敛为 `state=pass`、`completed_units=15`、`failed_units=0`、`total_units=15`。2026-07-14 strict aggregate 已逐单元验证并返回 `status=verified`。
 
 ## 2026-07-13 首次中断诊断（历史）
 
@@ -91,4 +91,20 @@ T-Drive seed 101 于 2026-07-10 12:56 至 16:21 +0800 完成：
 
 ## 完成判据
 
-见 [[01-Plan]]。执行矩阵已完成 15/15；在严格 aggregate receipt 逐项验证所有 unit receipt 并绑定来源 hash 之前，[[Results/Reports/V4实验结果-2026-07]] 保持 `partial-verified`。
+见 [[01-Plan]]。执行矩阵与 strict aggregate 都已通过；论文写回仍要通过 paper-evidence、manuscript checker 和最终构建门禁。
+可引用数字、timing exclusion 和 artifact hashes 见 [[Results/Reports/V4实验结果-2026-07]]。
+
+## 2026-07-14 Final-scale 接管检查
+
+- 只读检查确认 launcher 为 15/15 pass，Rome/303 与 Synthetic/303 均为 16/16 pass。
+- 无 launcher、worker、`caffeinate` 进程，也无活动 v4n1000 容器；这是已完成后的正常状态，不是中断。
+- 接管分类为 `COMPLETE`，因此不启动 Docker 恢复路径。当前唯一实验证据缺口是 strict aggregate artifacts 未生成。
+
+## 2026-07-14 Strict aggregate
+
+- `script/summarize_v4_n1000_scale.py` fail closed 验证 manifest、launch plan/status、15 个 unit hashes、artifact hashes、config/gates、16 轮语义和逐轮 proof/route/reconstruction/DP 字段。
+- 功能总账为 15 units、240 rounds、225,000 client proofs generated、225,000 shuffler proofs verified、0 failed、150,000/150,000 A/R receipts、150/150 reconstruction 与 150/150 DP release。
+- Rome/101 与 Synthetic/101 的 `round_id` 各出现约 62,962 秒宿主休眠间隔，超过 7,200 秒 round-timeout；两单元功能证据保留，但不进入时间统计。
+- 13 个连续计时单元的 per-unit end-to-end throughput 为 `1.000 +/- 0.069 proofs/s`，单元 wall time 均值约 4.183 h；每数据集仍至少有两个 timing seeds。
+- 生成路径：`docker_n1000_v4/aggregate_summary.json`、`aggregate_by_dataset.csv`、`TSIP/tables/tab_v4_n1000_scale.tex`。对应 SHA-256 为 `2ad8e3...16a95`、`11050a...bbe4`、`d16120...af43`。
+- 确定性重生成哈希一致，33 summarizer tests 和 202 combined Heatmap tests 全部通过；临时 paper-evidence build 已返回 `scale.status=verified`。

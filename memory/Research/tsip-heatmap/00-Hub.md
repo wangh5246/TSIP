@@ -49,6 +49,7 @@ tags: [tsip-heatmap, hub, v4]
 
 ## 最近重要变化
 
+- 2026-07-14 Task 9 对抗自审及 Obsidian 基线已提交为 `a0db10db`。
 - 2026-07-14 Task 9 五维对抗自审完成：27 claims = 17 supported + 7 analytical + 2 assumption + 1 partial + 0 unsupported；169 tests 通过，唯一 partial 是 CE23 strict scale。
 - 2026-07-14 删除 MDS/EETS 治理类比过强的支撑作用，将 HBC/非合谋明确为管理域分离、访问记录与审计的部署假设。
 - 2026-07-13 23:24 +0800 N=1000 scale launcher 正常结束，15/15 单元 pass、failed=0；性能统计仍等待 strict aggregate。
@@ -70,11 +71,11 @@ tags: [tsip-heatmap, hub, v4]
 - [[Daily/2026-07-14]]
 
 ## Recent Changes
+- 2026-07-13T16:39:29Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-precommit).
+- 2026-07-13T16:37:42Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-aggregate-fix).
+- 2026-07-13T16:35:54Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-aggregate).
+- 2026-07-13T16:20:48Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task1-complete).
+- 2026-07-13T16:19:21Z: sync refreshed scaffold, registry, index, and daily note (tdsc-pre-scale-revision-task9-commit).
 - 2026-07-13T16:18:16Z: sync refreshed scaffold, registry, index, and daily note (tdsc-pre-scale-revision-task9).
 - 2026-07-13T16:09:21Z: sync refreshed scaffold, registry, index, and daily note (tdsc-pre-scale-revision-task8-commit).
 - 2026-07-13T16:06:40Z: sync refreshed scaffold, registry, index, and daily note (tdsc-pre-scale-revision-task8).
-- 2026-07-13T15:54:15Z: sync refreshed scaffold, registry, index, and daily note (tdsc-pre-scale-revision-task7-commit).
-- 2026-07-13T15:53:07Z: sync refreshed scaffold, registry, index, and daily note (tdsc-pre-scale-revision-task7).
-- 2026-07-13T15:31:35Z: sync refreshed scaffold, registry, index, and daily note (all).
-- 2026-07-13T15:24:06Z: sync refreshed scaffold, registry, index, and daily note (tdsc-pre-scale-revision-task6-commit).
-- 2026-07-13T15:23:17Z: sync refreshed scaffold, registry, index, and daily note (tdsc-pre-scale-revision-task6).
