@@ -25,6 +25,31 @@ REQUIRED_ARTIFACTS = (
     "zkey",
 )
 
+STATIC_CHECK_NAMES = (
+    "archive_k6_compatibility",
+    "archive_k30_compatibility",
+    "paper_positive",
+    "tampered_public_hash_prev",
+    "changed_blob_hash",
+    "replayed_proof_new_context",
+    "tampered_current_coordinate",
+    "swapped_primary",
+    "swapped_a_share_digest",
+    "swapped_r_share_digest",
+    "cross_swapped_share_digests",
+    "changed_context_commitment",
+    "wrong_predecessor",
+    "wrong_anchor",
+    "wrong_secret",
+    "route_a_positive",
+    "route_r_positive",
+    "swapped_a_share",
+    "swapped_r_share",
+    "a_r_cross_swap",
+    "changed_route_context",
+    "changed_route_blob_hash",
+)
+
 UTILITY_METRICS = {
     "tdrive": {
         "proposed_avg_jaccard": 0.7114,
@@ -81,6 +106,16 @@ EXPECTED_UTILITY_ROWS = [
     r"Synthetic & 0.755 $\pm$ 0.055 & 0.550 $\pm$ 0.065 & +0.205 & 0.005 & 0.905 \\",
 ]
 
+SOURCE_RECEIPT_NAMES = (
+    "manifest",
+    "static",
+    "protocol",
+    "utility",
+    "utility_status",
+    "launch",
+    "scale_summary",
+)
+
 
 def write_json(path: Path, payload: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -113,6 +148,7 @@ def fixture_tree(tmp_path: Path) -> dict[str, Path]:
     static = receipts / "static.json"
     protocol = receipts / "protocol.json"
     utility = receipts / "utility.json"
+    utility_status = receipts / "utility_status.json"
     launch = receipts / "launch.json"
     scale_summary = receipts / "aggregate_summary.json"
     write_json(
@@ -137,8 +173,7 @@ def fixture_tree(tmp_path: Path) -> dict[str, Path]:
             "state": "pass",
             "summary": {"passed": 22, "failed": 0},
             "checks": [
-                {"name": f"static-check-{index:02d}", "passed": True}
-                for index in range(22)
+                {"name": name, "passed": True} for name in STATIC_CHECK_NAMES
             ],
         },
     )
@@ -167,6 +202,20 @@ def fixture_tree(tmp_path: Path) -> dict[str, Path]:
         )
     write_json(utility, {"epsilon": 5, "tau": 2, "pass": True, "rows": rows})
     write_json(
+        utility_status,
+        {
+            "state": "pass",
+            "quality_gate": True,
+            "fair_fixed_gate": True,
+            "config": {
+                "datasets": list(MODULE.DATASETS),
+                "seeds": [101, 202, 303],
+                "users": 1000,
+                "rounds": 10,
+            },
+        },
+    )
+    write_json(
         launch,
         {
             "state": "running",
@@ -181,12 +230,13 @@ def fixture_tree(tmp_path: Path) -> dict[str, Path]:
         "static": static,
         "protocol": protocol,
         "utility": utility,
+        "utility_status": utility_status,
         "launch": launch,
         "scale_summary": scale_summary,
     }
 
 
-def valid_scale_summary() -> dict:
+def valid_scale_summary(paths: dict[str, Path]) -> dict:
     by_dataset = {}
     for index, dataset in enumerate(MODULE.DATASETS):
         by_dataset[dataset] = {
@@ -227,6 +277,10 @@ def valid_scale_summary() -> dict:
         "proof_failed": 0,
         "by_dataset": by_dataset,
         "unit_receipts": unit_receipts,
+        "source_receipts": {
+            "manifest_sha256": MODULE.sha256(paths["manifest"]),
+            "launch_sha256": MODULE.sha256(paths["launch"]),
+        },
     }
 
 
@@ -242,14 +296,21 @@ def write_launcher_pass(paths: dict[str, Path], failed_units: object = 0) -> Non
     )
 
 
+def collect_kwargs(paths: dict[str, Path]) -> dict[str, Path]:
+    kwargs = dict(paths)
+    repo = kwargs["repo"]
+    for name in SOURCE_RECEIPT_NAMES:
+        kwargs[name] = kwargs[name].relative_to(repo)
+    return kwargs
+
+
 def collect(paths: dict[str, Path]) -> dict:
-    return MODULE.collect_evidence(**paths)
+    return MODULE.collect_evidence(**collect_kwargs(paths))
 
 
 def assert_summary_not_verified(
     paths: dict[str, Path], summary: dict, *, allow_nan: bool = False
 ) -> dict:
-    write_launcher_pass(paths)
     if allow_nan:
         paths["scale_summary"].write_text(
             json.dumps(summary, allow_nan=True), encoding="utf-8"
@@ -262,6 +323,11 @@ def assert_summary_not_verified(
     assert evidence["scale"]["summary_sha256"] == digest
     assert evidence["source_receipts"]["scale_summary"]["sha256"] == digest
     return evidence
+
+
+def bound_scale_summary(paths: dict[str, Path]) -> dict:
+    write_launcher_pass(paths)
+    return valid_scale_summary(paths)
 
 
 def test_collect_evidence_separates_verified_and_partial_layers(
@@ -285,7 +351,14 @@ def test_collect_evidence_separates_verified_and_partial_layers(
 def test_collect_evidence_binds_source_receipts(tmp_path: Path) -> None:
     paths = fixture_tree(tmp_path)
     evidence = collect(paths)
-    expected_keys = {"manifest", "static", "protocol", "utility", "launch"}
+    expected_keys = {
+        "manifest",
+        "static",
+        "protocol",
+        "utility",
+        "utility_status",
+        "launch",
+    }
     assert set(evidence["source_receipts"]) == expected_keys
     for name in expected_keys:
         path = paths[name]
@@ -293,6 +366,71 @@ def test_collect_evidence_binds_source_receipts(tmp_path: Path) -> None:
             "path": path.relative_to(paths["repo"]).as_posix(),
             "sha256": MODULE.sha256(path),
         }
+
+
+@pytest.mark.parametrize("source_name", SOURCE_RECEIPT_NAMES)
+@pytest.mark.parametrize("mode", ["absolute", "parent", "symlink"])
+def test_source_receipt_rejects_non_repository_relative_path(
+    tmp_path: Path, source_name: str, mode: str
+) -> None:
+    paths = fixture_tree(tmp_path)
+    kwargs = collect_kwargs(paths)
+    outside = tmp_path / f"outside-{source_name}.json"
+    source = paths[source_name]
+    outside.write_bytes(source.read_bytes() if source.is_file() else b"{}")
+    if mode == "absolute":
+        kwargs[source_name] = source
+    elif mode == "parent":
+        kwargs[source_name] = Path("../") / outside.name
+    else:
+        link = paths["repo"] / "receipts" / f"escape-{source_name}.json"
+        link.symlink_to(outside)
+        kwargs[source_name] = link.relative_to(paths["repo"])
+    with pytest.raises(MODULE.EvidenceError, match="source receipt"):
+        MODULE.collect_evidence(**kwargs)
+
+
+def test_evidence_json_serialization_wraps_value_error() -> None:
+    with pytest.raises(MODULE.EvidenceError, match="serialize"):
+        MODULE._serialize_evidence_json({"unexpected": float("nan")})
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("users", 999),
+        ("seeds", [303, 202, 101]),
+        ("datasets", list(reversed(MODULE.DATASETS))),
+    ],
+)
+def test_utility_status_rejects_mismatched_fixed_run_config(
+    tmp_path: Path, field: str, value: object
+) -> None:
+    paths = fixture_tree(tmp_path)
+    status = read_json(paths["utility_status"])
+    status["config"][field] = value
+    write_json(paths["utility_status"], status)
+    with pytest.raises(MODULE.EvidenceError, match="utility status"):
+        collect(paths)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("state", "failed"),
+        ("quality_gate", False),
+        ("fair_fixed_gate", False),
+    ],
+)
+def test_utility_status_rejects_failed_gate(
+    tmp_path: Path, field: str, value: object
+) -> None:
+    paths = fixture_tree(tmp_path)
+    status = read_json(paths["utility_status"])
+    status[field] = value
+    write_json(paths["utility_status"], status)
+    with pytest.raises(MODULE.EvidenceError, match="utility status"):
+        collect(paths)
 
 
 def test_collect_evidence_rejects_manifest_hash_mismatch(tmp_path: Path) -> None:
@@ -327,6 +465,19 @@ def test_manifest_rejects_wrong_profile(tmp_path: Path) -> None:
     manifest["profile"] = "v4-paper-k30"
     write_json(paths["manifest"], manifest)
     with pytest.raises(MODULE.EvidenceError, match="profile"):
+        collect(paths)
+
+
+def test_manifest_rejects_non_list_public_signal_order(tmp_path: Path) -> None:
+    paths = fixture_tree(tmp_path)
+    manifest = read_json(paths["manifest"])
+    manifest["public_signal_order"] = {
+        signal: True for signal in MODULE.PUBLIC_SIGNALS
+    }
+    paths["manifest"].write_text(
+        json.dumps(manifest, sort_keys=False), encoding="utf-8"
+    )
+    with pytest.raises(MODULE.EvidenceError, match="public-signal"):
         collect(paths)
 
 
@@ -368,6 +519,15 @@ def test_static_gate_rejects_contradictory_details(tmp_path: Path, mode: str) ->
         collect(paths)
 
 
+def test_static_gate_rejects_stale_check_name(tmp_path: Path) -> None:
+    paths = fixture_tree(tmp_path)
+    static = read_json(paths["static"])
+    static["checks"][0]["name"] = "stale_archive_compatibility"
+    write_json(paths["static"], static)
+    with pytest.raises(MODULE.EvidenceError, match="static"):
+        collect(paths)
+
+
 @pytest.mark.parametrize("returncode", [1, False])
 def test_protocol_gate_rejects_failed_result_detail(
     tmp_path: Path, returncode: object
@@ -375,6 +535,18 @@ def test_protocol_gate_rejects_failed_result_detail(
     paths = fixture_tree(tmp_path)
     protocol = read_json(paths["protocol"])
     protocol["results"][0]["returncode"] = returncode
+    write_json(paths["protocol"], protocol)
+    with pytest.raises(MODULE.EvidenceError, match="protocol"):
+        collect(paths)
+
+
+@pytest.mark.parametrize("dataset_count", [4, 5.0, False])
+def test_protocol_gate_rejects_invalid_dataset_count(
+    tmp_path: Path, dataset_count: object
+) -> None:
+    paths = fixture_tree(tmp_path)
+    protocol = read_json(paths["protocol"])
+    protocol["dataset_count"] = dataset_count
     write_json(paths["protocol"], protocol)
     with pytest.raises(MODULE.EvidenceError, match="protocol"):
         collect(paths)
@@ -444,6 +616,30 @@ def test_utility_rejects_inconsistent_delta(tmp_path: Path) -> None:
         collect(paths)
 
 
+def test_utility_output_drops_unknown_nonfinite_fields(tmp_path: Path) -> None:
+    paths = fixture_tree(tmp_path)
+    utility = read_json(paths["utility"])
+    utility["rows"][0]["unknown_metric"] = float("nan")
+    paths["utility"].write_text(
+        json.dumps(utility, allow_nan=True), encoding="utf-8"
+    )
+    evidence = collect(paths)
+    assert set(evidence["fixed_utility"][0]) == {
+        "dataset",
+        "fixed_epsilon",
+        "fixed_tau",
+        "proposed_avg_jaccard",
+        "proposed_std_jaccard",
+        "strongest_baseline",
+        "baseline_avg_jaccard",
+        "baseline_std_jaccard",
+        "delta_jaccard",
+        "proposed_frr",
+        "proposed_mrr",
+        "pass",
+    }
+
+
 def test_rendered_tex_uses_current_artifact_and_five_datasets(
     tmp_path: Path,
 ) -> None:
@@ -498,7 +694,7 @@ def test_launch_pass_is_not_verified_without_strict_summary(tmp_path: Path) -> N
 def test_launcher_bool_failed_units_cannot_verify(tmp_path: Path) -> None:
     paths = fixture_tree(tmp_path)
     write_launcher_pass(paths, failed_units=False)
-    write_json(paths["scale_summary"], valid_scale_summary())
+    write_json(paths["scale_summary"], valid_scale_summary(paths))
     evidence = collect(paths)
     assert evidence["scale"]["status"] == "partial"
 
@@ -506,7 +702,7 @@ def test_launcher_bool_failed_units_cannot_verify(tmp_path: Path) -> None:
 def test_strict_summary_upgrades_scale_to_verified(tmp_path: Path) -> None:
     paths = fixture_tree(tmp_path)
     write_launcher_pass(paths)
-    write_json(paths["scale_summary"], valid_scale_summary())
+    write_json(paths["scale_summary"], valid_scale_summary(paths))
     evidence = collect(paths)
     assert evidence["scale"]["status"] == "verified"
     digest = MODULE.sha256(paths["scale_summary"])
@@ -519,35 +715,58 @@ def test_strict_summary_upgrades_scale_to_verified(tmp_path: Path) -> None:
 
 def test_strict_summary_rejects_missing_unit_matrix(tmp_path: Path) -> None:
     paths = fixture_tree(tmp_path)
-    summary = valid_scale_summary()
+    summary = bound_scale_summary(paths)
     summary["unit_receipts"][-1] = dict(summary["unit_receipts"][0])
     assert_summary_not_verified(paths, summary)
 
 
 def test_strict_summary_rejects_missing_receipt_hash(tmp_path: Path) -> None:
     paths = fixture_tree(tmp_path)
-    summary = valid_scale_summary()
+    summary = bound_scale_summary(paths)
     summary["unit_receipts"][0].pop("receipt_sha256")
+    assert_summary_not_verified(paths, summary)
+
+
+def test_strict_summary_rejects_duplicate_unit_hash(tmp_path: Path) -> None:
+    paths = fixture_tree(tmp_path)
+    summary = bound_scale_summary(paths)
+    summary["unit_receipts"][1]["receipt_sha256"] = summary["unit_receipts"][0][
+        "receipt_sha256"
+    ]
+    assert_summary_not_verified(paths, summary)
+
+
+def test_strict_summary_rejects_stale_manifest_binding(tmp_path: Path) -> None:
+    paths = fixture_tree(tmp_path)
+    summary = bound_scale_summary(paths)
+    summary["source_receipts"]["manifest_sha256"] = "0" * 64
+    assert_summary_not_verified(paths, summary)
+
+
+def test_strict_summary_rejects_stale_launch_binding(tmp_path: Path) -> None:
+    paths = fixture_tree(tmp_path)
+    summary = bound_scale_summary(paths)
+    summary["source_receipts"]["launch_sha256"] = "0" * 64
     assert_summary_not_verified(paths, summary)
 
 
 def test_strict_summary_rejects_wrong_profile(tmp_path: Path) -> None:
     paths = fixture_tree(tmp_path)
-    summary = valid_scale_summary()
+    summary = bound_scale_summary(paths)
     summary["profile"] = "v4-paper-k30"
     assert_summary_not_verified(paths, summary)
 
 
 def test_strict_summary_rejects_wrong_proof_totals(tmp_path: Path) -> None:
     paths = fixture_tree(tmp_path)
-    summary = valid_scale_summary()
+    summary = bound_scale_summary(paths)
     summary["proof_generated"] = 224999
     assert_summary_not_verified(paths, summary)
 
 
 def test_strict_summary_rejects_wrong_unit_proof_totals(tmp_path: Path) -> None:
     paths = fixture_tree(tmp_path)
-    summary = valid_scale_summary()
+    summary = bound_scale_summary(paths)
     summary["unit_receipts"][0]["proof_verified"] = 14999
     assert_summary_not_verified(paths, summary)
 
@@ -557,7 +776,7 @@ def test_strict_summary_rejects_wrong_matrix_metadata(
     tmp_path: Path, mode: str
 ) -> None:
     paths = fixture_tree(tmp_path)
-    summary = valid_scale_summary()
+    summary = bound_scale_summary(paths)
     if mode == "dataset_order":
         summary["datasets"] = list(reversed(summary["datasets"]))
     elif mode == "seed_order":
@@ -572,6 +791,6 @@ def test_strict_summary_rejects_invalid_aggregate_metric(
     tmp_path: Path, value: float
 ) -> None:
     paths = fixture_tree(tmp_path)
-    summary = valid_scale_summary()
+    summary = bound_scale_summary(paths)
     summary["by_dataset"]["tdrive"]["proofs_per_second_mean"] = value
     assert_summary_not_verified(paths, summary, allow_nan=not value == value)

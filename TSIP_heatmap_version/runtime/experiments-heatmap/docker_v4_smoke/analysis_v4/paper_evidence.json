@@ -146,6 +146,10 @@
     "utility": {
       "path": "TSIP_heatmap_version/runtime/experiments-heatmap/docker_v4_smoke/utility/three_seed_n1000/fair_fixed_comparison.json",
       "sha256": "2f8bdd1cd1416ace080e13a83d3e8401fb72ac2352aaa024196211fd9df2facb"
+    },
+    "utility_status": {
+      "path": "TSIP_heatmap_version/runtime/experiments-heatmap/docker_v4_smoke/utility/three_seed_n1000/status.json",
+      "sha256": "7d7defd7d7cd693afaa8b91999e57628b201aef58649040782e643e9c5762c2a"
     }
   }
 }

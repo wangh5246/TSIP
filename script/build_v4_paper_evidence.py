@@ -40,6 +40,32 @@ REQUIRED_ARTIFACTS = (
     "wasm",
     "zkey",
 )
+_STATIC_CHECK_NAMES = frozenset(
+    {
+        "archive_k6_compatibility",
+        "archive_k30_compatibility",
+        "paper_positive",
+        "tampered_public_hash_prev",
+        "changed_blob_hash",
+        "replayed_proof_new_context",
+        "tampered_current_coordinate",
+        "swapped_primary",
+        "swapped_a_share_digest",
+        "swapped_r_share_digest",
+        "cross_swapped_share_digests",
+        "changed_context_commitment",
+        "wrong_predecessor",
+        "wrong_anchor",
+        "wrong_secret",
+        "route_a_positive",
+        "route_r_positive",
+        "swapped_a_share",
+        "swapped_r_share",
+        "a_r_cross_swap",
+        "changed_route_context",
+        "changed_route_blob_hash",
+    }
+)
 
 _EXPECTED_R1CS = {
     "constraints": 3547,
@@ -110,6 +136,38 @@ def _resolved_repo(repo: Path) -> Path:
         return repo.resolve(strict=True)
     except OSError as exc:
         raise EvidenceError(f"cannot resolve repository path {repo}: {exc}") from exc
+
+
+def _resolve_source_receipt(
+    repo_root: Path, path: Path, name: str, *, required: bool
+) -> Path:
+    if (
+        not isinstance(path, Path)
+        or not path.parts
+        or path.is_absolute()
+        or ".." in path.parts
+    ):
+        raise EvidenceError(
+            f"source receipt {name} path must be repository-relative: {path}"
+        )
+    candidate = repo_root / path
+    try:
+        resolved = candidate.resolve(strict=False)
+    except (OSError, RuntimeError) as exc:
+        raise EvidenceError(
+            f"cannot resolve source receipt {name}: {candidate}: {exc}"
+        ) from exc
+    try:
+        resolved.relative_to(repo_root)
+    except ValueError as exc:
+        raise EvidenceError(
+            f"source receipt {name} path escapes repository: {candidate}"
+        ) from exc
+    if required and not resolved.is_file():
+        raise EvidenceError(f"missing source receipt {name}: {candidate}")
+    if not required and resolved.exists() and not resolved.is_file():
+        raise EvidenceError(f"source receipt {name} is not a file: {candidate}")
+    return resolved
 
 
 def verify_manifest(repo: Path, manifest: dict[str, Any]) -> None:
@@ -214,7 +272,11 @@ def _validate_r1cs(manifest: dict[str, Any]) -> None:
         )
     ):
         raise EvidenceError(f"unexpected manifest-bound paper R1CS: {counts}")
-    if tuple(manifest.get("public_signal_order", [])) != PUBLIC_SIGNALS:
+    public_signal_order = manifest.get("public_signal_order")
+    if (
+        not isinstance(public_signal_order, list)
+        or public_signal_order != list(PUBLIC_SIGNALS)
+    ):
         raise EvidenceError("unexpected public-signal order")
 
 
@@ -246,14 +308,15 @@ def _validate_static(static: dict[str, Any]) -> None:
         ):
             raise EvidenceError("static gate has an invalid detailed check")
         names.append(name)
-    if len(set(names)) != 22:
-        raise EvidenceError("static gate check names are not unique")
+    if len(set(names)) != 22 or set(names) != _STATIC_CHECK_NAMES:
+        raise EvidenceError("static gate check identities do not match V4 contract")
 
 
 def _validate_protocol(protocol: dict[str, Any]) -> None:
     rows = _require_exact_datasets(protocol.get("results"), "protocol")
     if (
         protocol.get("state") != "pass"
+        or not _is_exact_int(protocol.get("dataset_count"), 5)
         or not _is_exact_int(protocol.get("pass_count"), 5)
     ):
         raise EvidenceError("five-dataset protocol gate is not pass")
@@ -280,6 +343,7 @@ def _validate_utility(utility: dict[str, Any]) -> tuple[Any, Any, list[dict[str,
     tau = utility.get("tau")
     _validate_fixed_config(epsilon, 5, "epsilon")
     _validate_fixed_config(tau, 2, "tau")
+    normalized_rows = []
     for row in rows:
         dataset = row.get("dataset")
         _validate_fixed_config(row.get("fixed_epsilon"), 5, "fixed_epsilon")
@@ -305,7 +369,50 @@ def _validate_utility(utility: dict[str, Any]) -> tuple[Any, Any, list[dict[str,
             abs_tol=1e-12,
         ):
             raise EvidenceError(f"utility delta mismatch for {dataset}")
-    return epsilon, tau, rows
+        normalized_rows.append(
+            {
+                "dataset": dataset,
+                "fixed_epsilon": row["fixed_epsilon"],
+                "fixed_tau": row["fixed_tau"],
+                "proposed_avg_jaccard": row["proposed_avg_jaccard"],
+                "proposed_std_jaccard": row["proposed_std_jaccard"],
+                "strongest_baseline": row["strongest_baseline"],
+                "baseline_avg_jaccard": row["baseline_avg_jaccard"],
+                "baseline_std_jaccard": row["baseline_std_jaccard"],
+                "delta_jaccard": row["delta_jaccard"],
+                "proposed_frr": row["proposed_frr"],
+                "proposed_mrr": row["proposed_mrr"],
+                "pass": True,
+            }
+        )
+    return epsilon, tau, normalized_rows
+
+
+def _validate_utility_status(utility_status: dict[str, Any]) -> None:
+    if (
+        utility_status.get("state") != "pass"
+        or utility_status.get("quality_gate") is not True
+        or utility_status.get("fair_fixed_gate") is not True
+    ):
+        raise EvidenceError("utility status gates are not pass")
+
+    config = utility_status.get("config")
+    if not isinstance(config, dict):
+        raise EvidenceError("utility status config must be an object")
+    datasets = config.get("datasets")
+    seeds = config.get("seeds")
+    if (
+        not isinstance(datasets, list)
+        or datasets != list(DATASETS)
+        or not isinstance(seeds, list)
+        or seeds != list(_SEEDS)
+        or not all(type(seed) is int for seed in seeds)
+        or not _is_exact_int(config.get("users"), 1000)
+        or not _is_exact_int(config.get("rounds"), 10)
+    ):
+        raise EvidenceError(
+            "utility status config is not the fixed five-dataset N=1000 run"
+        )
 
 
 def _launcher_count(launch: dict[str, Any], key: str) -> int:
@@ -325,7 +432,10 @@ def _validate_launcher(launch: dict[str, Any]) -> tuple[int, int]:
     return completed, total
 
 
-def _strict_scale_summary_is_verified(summary: dict[str, Any]) -> bool:
+def _strict_scale_summary_is_verified(
+    summary: dict[str, Any], *, manifest_digest: str, launch_digest: str
+) -> bool:
+    """Validate the final summarizer's complete, exact-run verification contract."""
     if (
         not _is_exact_int(summary.get("schema_version"), 1)
         or summary.get("profile") != "v4-paper-k6"
@@ -339,6 +449,16 @@ def _strict_scale_summary_is_verified(summary: dict[str, Any]) -> bool:
         or not _is_exact_int(summary.get("proof_generated"), 225000)
         or not _is_exact_int(summary.get("proof_verified"), 225000)
         or not _is_exact_int(summary.get("proof_failed"), 0)
+    ):
+        return False
+
+    # The final scale summarizer must bind its aggregate to the same manifest and
+    # launcher receipt bytes consumed by this evidence builder.
+    source_receipts = summary.get("source_receipts")
+    if (
+        not isinstance(source_receipts, dict)
+        or source_receipts.get("manifest_sha256") != manifest_digest
+        or source_receipts.get("launch_sha256") != launch_digest
     ):
         return False
 
@@ -360,6 +480,7 @@ def _strict_scale_summary_is_verified(summary: dict[str, Any]) -> bool:
         return False
     expected_pairs = {(dataset, seed) for dataset in DATASETS for seed in _SEEDS}
     actual_pairs = []
+    receipt_hashes = []
     for row in unit_receipts:
         if not isinstance(row, dict):
             return False
@@ -379,19 +500,21 @@ def _strict_scale_summary_is_verified(summary: dict[str, Any]) -> bool:
             or _SHA256_RE.fullmatch(receipt_hash) is None
         ):
             return False
-    return len(set(actual_pairs)) == 15 and set(actual_pairs) == expected_pairs
+        receipt_hashes.append(receipt_hash)
+    return (
+        len(set(actual_pairs)) == 15
+        and set(actual_pairs) == expected_pairs
+        and len(set(receipt_hashes)) == 15
+    )
 
 
-def _receipt_metadata(repo: Path, path: Path, digest: str) -> dict[str, str]:
-    repo_root = _resolved_repo(repo)
+def _receipt_metadata(
+    repo_root: Path, path: Path, digest: str
+) -> dict[str, str]:
     try:
-        resolved = path.resolve(strict=True)
-    except OSError as exc:
-        raise EvidenceError(f"cannot resolve source receipt {path}: {exc}") from exc
-    try:
-        display_path = resolved.relative_to(repo_root).as_posix()
-    except ValueError:
-        display_path = resolved.as_posix()
+        display_path = path.relative_to(repo_root).as_posix()
+    except ValueError as exc:
+        raise EvidenceError(f"source receipt path escapes repository: {path}") from exc
     return {"path": display_path, "sha256": digest}
 
 
@@ -402,24 +525,54 @@ def collect_evidence(
     static: Path,
     protocol: Path,
     utility: Path,
+    utility_status: Path,
     launch: Path,
     scale_summary: Path | None,
 ) -> dict[str, Any]:
-    manifest_data, manifest_digest = _load_json_receipt(manifest)
-    static_data, static_digest = _load_json_receipt(static)
-    protocol_data, protocol_digest = _load_json_receipt(protocol)
-    utility_data, utility_digest = _load_json_receipt(utility)
-    launch_data, launch_digest = _load_json_receipt(launch)
-    if scale_summary is not None and scale_summary.is_file():
-        scale_data, scale_digest = _load_json_receipt(scale_summary)
+    repo_root = _resolved_repo(repo)
+    source_paths = {
+        "manifest": _resolve_source_receipt(
+            repo_root, manifest, "manifest", required=True
+        ),
+        "static": _resolve_source_receipt(repo_root, static, "static", required=True),
+        "protocol": _resolve_source_receipt(
+            repo_root, protocol, "protocol", required=True
+        ),
+        "utility": _resolve_source_receipt(
+            repo_root, utility, "utility", required=True
+        ),
+        "utility_status": _resolve_source_receipt(
+            repo_root, utility_status, "utility_status", required=True
+        ),
+        "launch": _resolve_source_receipt(repo_root, launch, "launch", required=True),
+    }
+    resolved_scale_summary = (
+        _resolve_source_receipt(
+            repo_root, scale_summary, "scale_summary", required=False
+        )
+        if scale_summary is not None
+        else None
+    )
+
+    manifest_data, manifest_digest = _load_json_receipt(source_paths["manifest"])
+    static_data, static_digest = _load_json_receipt(source_paths["static"])
+    protocol_data, protocol_digest = _load_json_receipt(source_paths["protocol"])
+    utility_data, utility_digest = _load_json_receipt(source_paths["utility"])
+    utility_status_data, utility_status_digest = _load_json_receipt(
+        source_paths["utility_status"]
+    )
+    launch_data, launch_digest = _load_json_receipt(source_paths["launch"])
+    if resolved_scale_summary is not None and resolved_scale_summary.is_file():
+        scale_data, scale_digest = _load_json_receipt(resolved_scale_summary)
     else:
         scale_data, scale_digest = None, None
 
-    verify_manifest(repo, manifest_data)
+    verify_manifest(repo_root, manifest_data)
     _validate_r1cs(manifest_data)
     _validate_static(static_data)
     _validate_protocol(protocol_data)
     epsilon, tau, utility_rows = _validate_utility(utility_data)
+    _validate_utility_status(utility_status_data)
     completed, total = _validate_launcher(launch_data)
 
     launcher_verified = (
@@ -430,23 +583,32 @@ def collect_evidence(
     scale_verified = (
         launcher_verified
         and scale_data is not None
-        and _strict_scale_summary_is_verified(scale_data)
+        and _strict_scale_summary_is_verified(
+            scale_data,
+            manifest_digest=manifest_digest,
+            launch_digest=launch_digest,
+        )
     )
 
     source_inputs = (
-        ("manifest", manifest, manifest_digest),
-        ("static", static, static_digest),
-        ("protocol", protocol, protocol_digest),
-        ("utility", utility, utility_digest),
-        ("launch", launch, launch_digest),
+        ("manifest", source_paths["manifest"], manifest_digest),
+        ("static", source_paths["static"], static_digest),
+        ("protocol", source_paths["protocol"], protocol_digest),
+        ("utility", source_paths["utility"], utility_digest),
+        ("utility_status", source_paths["utility_status"], utility_status_digest),
+        ("launch", source_paths["launch"], launch_digest),
     )
     source_receipts = {
-        name: _receipt_metadata(repo, path, digest)
+        name: _receipt_metadata(repo_root, path, digest)
         for name, path, digest in source_inputs
     }
-    if scale_data is not None and scale_summary is not None and scale_digest is not None:
+    if (
+        scale_data is not None
+        and resolved_scale_summary is not None
+        and scale_digest is not None
+    ):
         source_receipts["scale_summary"] = _receipt_metadata(
-            repo, scale_summary, scale_digest
+            repo_root, resolved_scale_summary, scale_digest
         )
 
     artifacts = manifest_data["artifacts"]
@@ -519,6 +681,13 @@ def render_utility_table(evidence: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _serialize_evidence_json(evidence: dict[str, Any]) -> str:
+    try:
+        return json.dumps(evidence, allow_nan=False, indent=2, sort_keys=True)
+    except (TypeError, ValueError) as exc:
+        raise EvidenceError(f"cannot serialize evidence JSON: {exc}") from exc
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", type=Path, required=True)
@@ -526,6 +695,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--static", type=Path, required=True)
     parser.add_argument("--protocol", type=Path, required=True)
     parser.add_argument("--utility", type=Path, required=True)
+    parser.add_argument("--utility-status", type=Path)
     parser.add_argument("--launch", type=Path, required=True)
     parser.add_argument("--scale-summary", type=Path)
     parser.add_argument("--out-json", type=Path, required=True)
@@ -536,12 +706,14 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    utility_status = args.utility_status or args.utility.parent / "status.json"
     evidence = collect_evidence(
         repo=args.repo,
         manifest=args.manifest,
         static=args.static,
         protocol=args.protocol,
         utility=args.utility,
+        utility_status=utility_status,
         launch=args.launch,
         scale_summary=args.scale_summary,
     )
@@ -549,9 +721,7 @@ def main() -> int:
     args.out_json.parent.mkdir(parents=True, exist_ok=True)
     args.out_macros.parent.mkdir(parents=True, exist_ok=True)
     args.out_table.parent.mkdir(parents=True, exist_ok=True)
-    evidence_json = json.dumps(
-        evidence, allow_nan=False, indent=2, sort_keys=True
-    )
+    evidence_json = _serialize_evidence_json(evidence)
     args.out_json.write_text(evidence_json + "\n", encoding="utf-8")
     args.out_macros.write_text(render_macros(evidence), encoding="utf-8")
     args.out_table.write_text(render_utility_table(evidence), encoding="utf-8")
