@@ -238,34 +238,23 @@
 % As a general rule, do not put math, special symbols or citations
 % in the abstract
 \begin{abstract}
-  Managed private heatmap systems often combine coordinate-hiding admission,
-  separated aggregation roles, and differentially private release. This
-  architecture hides raw coordinates, but it does not by itself ensure that a
-  hidden trajectory proof and the encrypted or share-encoded heatmap payload
-  refer to the same primary cell.
-
-  This paper introduces Stateful Hidden Trajectory-Payload Consistency (SHTPC),
-  a post-enrollment admission-consistency property for this proof-to-payload
-  boundary. SHTPC requires the hidden coordinate admitted by a stateful
-  trajectory proof to be tied to the previous accepted state, to satisfy a public
-  \(K\)-window mobility envelope, and to derive the same primary heatmap cell
-  that is bound to the forwarded aggregation payload. The key insight is that
-  trajectory continuity and payload validity must be accepted as one
-  zero-knowledge statement; once checked as separated statements, context
-  binding cannot recover equality between private primary-cell witnesses. The
-  property is realized by \textsc{SHTPCMain}, a Groth16 relation whose C21
-  constraint binds the coordinate-derived hidden primary to the report payload
-  and A/R share commitments under the same report context.
-
-  The SHTPC claim is deliberately scoped. SHTPC does not prove physical presence,
-  prevent false genesis or credential transfer, provide trajectory anonymity,
-  secure a malicious Shuffler, or reject reports that remain inside the public
-  envelope. The evaluation is therefore framed as admission-boundary
-  enforcement. It measures proof-to-payload substitution rejection, state and
-  \(K\)-window boundary checks, metadata leakage, utility cost after admission,
-  and prototype overhead. The manifest-bound paper circuit has
-  \VFourConstraints{} constraints, \VFourPublicInputs{} public inputs, and
-  \VFourPrivateInputs{} private inputs.
+  Managed heatmap services need to screen location reports before private
+  aggregation without exposing coordinates or primary cells. Existing
+  compositions can validate a hidden trajectory and an encoded payload
+  separately yet still accept them when they refer to different primary cells,
+  because no single relation enforces their equality. We introduce Stateful
+  Hidden Trajectory-Payload Consistency (SHTPC), a stateful Groth16 admission
+  relation that binds accepted-predecessor continuity, window reachability, the
+  coordinate-derived primary, and A/R payload commitments under one report
+  context. The manifest-bound circuit has \VFourConstraints{} constraints,
+  \VFourPublicInputs{} public inputs, and \VFourPrivateInputs{} private inputs;
+  all \VFourStaticChecks{} static checks pass, and a fixed comparison on five
+  N=1000 datasets and three seeds yields positive released-set Jaccard deltas
+  against Nebula on every dataset, although two gains are small, with zero
+  honest false rejection and complete malicious rejection in that comparison.
+  SHTPC proves post-enrollment proof-to-payload consistency; it does
+  not establish physical presence, eliminate metadata leakage, or reject false
+  reports that remain inside the public mobility envelope.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -356,7 +345,7 @@ This paper makes three contributions.
   \item Evaluates \textsc{SHTPC} as admission-boundary enforcement, with
     design-space baselines, measured proof-to-payload substitutions,
     state/window-boundary checks, metadata leakage analysis, utility cost, and
-    prototype costs under the stated deployment boundary.
+    manifest-bound artifact evidence under the stated deployment boundary.
 \end{itemize}
 
 \section{Related Work}
@@ -1557,8 +1546,8 @@ location truthfulness or poisoning robustness. RQ1 tests whether
 stateful predecessor and \(K\)-window checks enforce the public envelope. RQ3
 quantifies what remains inferable from Shuffler-visible metadata \(L_S\). RQ4
 characterizes residual in-envelope and deployment-scope risks. RQ5 measures
-heatmap utility after admission and DP release. RQ6 reports circuit cost,
-proving cost, report size, mobile measurements, and verifier-only scalability.
+heatmap utility after admission and DP release. RQ6 separates archived cost
+receipts from current manifest-bound circuit and scale evidence.
 All rejection results should be read as boundary-enforcement results.
 
 \subsection{Experimental Setup}
@@ -1612,12 +1601,11 @@ uses \(K{=}6\); \(K{=}30\) is a long-window stress profile.
 TPR is malicious rejection rate; pipeline FRR is circuit rejection plus session
 withholding plus DP-SVT exclusion on benign traces. RMSE/Pearson measure count
 distortion, Jaccard measures released-set stability, false hotspot probability
-and HS@k measure ranking pollution, and bytes measure per-submission overhead.
-The prototype uses Python microservices, Circom/snarkjs Groth16, snarkjs-pool,
-and ark-rs verification. Server runs use a CPU-only 32-core Intel Xeon host;
-client timings use snarkjs/WASM fullprove without GPU/NPU acceleration. Mobile
-measurements use an iPhone 16 Pro Max and two 8-core Android devices with
-8\,GB RAM. Randomized sweeps use three seeds unless stated otherwise.
+and HS@k measure ranking pollution. The current prototype uses Python
+microservices and Circom/snarkjs Groth16 inside the manifest-bound Docker path.
+RQ6 labels all pre-manifest microbenchmarks as historical, and current scale
+latency/throughput remains withheld until strict receipt validation. Randomized
+sweeps use three seeds unless stated otherwise.
 
 \subsection{RQ1 Proof-to-Payload Consistency}
 \label{sec:eval-headline}
@@ -1821,10 +1809,11 @@ and 2.12\% on GeoLife.
   \centering
   \includegraphics[width=\columnwidth]{figures/fig_eval_pollution_cost_column.pdf}
   \vspace{-0.7em}
-  \caption{Residual utility and cost views. Panel (a) plots false-hotspot risk
+  \caption{Residual utility and historical cost views. Panel (a) plots false-hotspot risk
   under accepted in-envelope pollution as the malicious-client fraction varies.
-  Panel (b) plots verifier-only latency for snarkjs and ark-rs against a
-  \(\SI{60}{s}\) release window.}
+  Panel (b) plots pre-manifest verifier-only latency for snarkjs and ark-rs
+  against a \(\SI{60}{s}\) release window; it is not a measurement of the
+  current manifest-bound relation.}
   \label{fig:eval-pollution-cost}
 \end{figure}
 
