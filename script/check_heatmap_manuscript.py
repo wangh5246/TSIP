@@ -11,10 +11,15 @@ from typing import Any
 
 ABSTRACT_RE = re.compile(r"\\begin\{abstract\}(.*?)\\end\{abstract\}", re.S)
 STALE_PATTERNS = {
-    r"3(?:\{,\}|,)056": "stale constraint count 3,056",
-    r"\b14\s+public inputs\b": "stale 14-public-input paper claim",
-    r"\b23\s+private inputs\b": "stale 23-private-input paper claim",
-    r"eq:r-tsip": "stale internal TSIP label",
+    r"(?<!\d)3(?:\{,\}|,)056(?!\d)": "stale constraint count 3,056",
+    r"(?<![A-Za-z0-9_])14\s+public\s+inputs(?![A-Za-z0-9_])": (
+        "stale 14-public-input paper claim"
+    ),
+    r"(?<![A-Za-z0-9_])23\s+private\s+inputs(?![A-Za-z0-9_])": (
+        "stale 23-private-input paper claim"
+    ),
+    r"\\(?:label|ref|eqref|autoref|pageref|cref)\*?\s*"
+    r"\{\s*eq:r-tsip\s*\}": "stale internal TSIP label",
 }
 REQUIRED_MACROS = (
     r"\VFourConstraints",
@@ -22,10 +27,10 @@ REQUIRED_MACROS = (
     r"\VFourPrivateInputs",
 )
 SCALE_COMPLETE_PATTERNS = (
-    r"\b15\s*/\s*15\s+units?\s+"
+    r"\b15\s*/\s*15\s+(?:dataset[- ]seed\s+)?units?\s+"
     r"(?:(?:have|has)\s+been\s+|(?:have|has|are|is|was|were)\s+)?"
     r"(?:passed|completed(?:\s+successfully)?|successful|successfully\s+completed)\b",
-    r"(?<!not\s)\ball\s+15\s+dataset[- ]seed\s+units?\s+"
+    r"\ball\s+15\s+(?:dataset[- ]seed\s+)?units?\s+"
     r"(?:(?:have|has)\s+been\s+|(?:have|has|are|is|was|were)\s+)?"
     r"(?:passed|completed(?:\s+successfully)?|successful|successfully\s+completed)\b",
 )
@@ -33,11 +38,148 @@ SCALE_COMPLETE_PATTERNS = (
 _DATASETS = ("T-Drive", "GeoLife", "Porto", "Rome", "Synthetic")
 _WORD_RE = re.compile(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*")
 _COMMAND_RE = re.compile(r"\\[A-Za-z@]+\*?(?:\s*\[[^]]*\])?")
-_COMMENT_RE = re.compile(r"(?<!\\)%[^\r\n]*")
+_DEFINITION_RE = re.compile(
+    r"\\(?P<command>newcommand|renewcommand|providecommand|def)"
+    r"(?![A-Za-z@])\*?"
+)
+_CONTROL_SEQUENCE_RE = re.compile(r"\\(?:[A-Za-z@]+|.)")
+_NON_COMPLETION_RE = re.compile(
+    r"\s*[,;:]?\s*(?:but\s+)?(?:only\s+)?"
+    r"(?:partial(?:ly)?|incomplete(?:ly)?)\b",
+    re.I,
+)
+
+
+def _is_escaped(text: str, index: int) -> bool:
+    backslashes = 0
+    index -= 1
+    while index >= 0 and text[index] == "\\":
+        backslashes += 1
+        index -= 1
+    return backslashes % 2 == 1
+
+
+def _strip_latex_comments(text: str) -> str:
+    parts: list[str] = []
+    start = 0
+    index = 0
+    while index < len(text):
+        if text[index] == "%" and not _is_escaped(text, index):
+            parts.append(text[start:index])
+            newline = text.find("\n", index)
+            if newline == -1:
+                return "".join(parts)
+            parts.append("\n")
+            index = newline + 1
+            start = index
+        else:
+            index += 1
+    parts.append(text[start:])
+    return "".join(parts)
+
+
+def _skip_whitespace(text: str, index: int) -> int:
+    while index < len(text) and text[index].isspace():
+        index += 1
+    return index
+
+
+def _group_end(
+    text: str, start: int, opening: str, closing: str
+) -> int | None:
+    if start >= len(text) or text[start] != opening:
+        return None
+    depth = 0
+    for index in range(start, len(text)):
+        if _is_escaped(text, index):
+            continue
+        if text[index] == opening:
+            depth += 1
+        elif text[index] == closing:
+            depth -= 1
+            if depth == 0:
+                return index + 1
+    return None
+
+
+def _definition_end(text: str, match: re.Match[str]) -> int:
+    command = match.group("command")
+    index = _skip_whitespace(text, match.end())
+
+    if command == "def":
+        target = _CONTROL_SEQUENCE_RE.match(text, index)
+        if not target:
+            return match.end()
+        index = target.end()
+        while index < len(text):
+            if text[index] == "{" and not _is_escaped(text, index):
+                return _group_end(text, index, "{", "}") or len(text)
+            index += 1
+        return index
+
+    if index < len(text) and text[index] == "{":
+        target_end = _group_end(text, index, "{", "}")
+        if target_end is None:
+            return len(text)
+        index = target_end
+    else:
+        target = _CONTROL_SEQUENCE_RE.match(text, index)
+        if not target:
+            return match.end()
+        index = target.end()
+
+    index = _skip_whitespace(text, index)
+    while index < len(text) and text[index] == "[":
+        option_end = _group_end(text, index, "[", "]")
+        if option_end is None:
+            return len(text)
+        index = _skip_whitespace(text, option_end)
+    if index < len(text) and text[index] == "{":
+        return _group_end(text, index, "{", "}") or len(text)
+    return index
+
+
+def _without_macro_definitions(text: str) -> str:
+    spans: list[tuple[int, int]] = []
+    covered_until = 0
+    for match in _DEFINITION_RE.finditer(text):
+        if match.start() < covered_until:
+            continue
+        covered_until = max(match.end(), _definition_end(text, match))
+        spans.append((match.start(), covered_until))
+    if not spans:
+        return text
+
+    parts: list[str] = []
+    cursor = 0
+    for start, end in spans:
+        parts.append(text[cursor:start])
+        parts.append(re.sub(r"[^\r\n]", " ", text[start:end]))
+        cursor = end
+    parts.append(text[cursor:])
+    return "".join(parts)
+
+
+def _contains_lexical_token(text: str, token: str) -> bool:
+    pattern = rf"(?<![A-Za-z0-9_]){re.escape(token)}(?![A-Za-z0-9_])"
+    return re.search(pattern, text) is not None
+
+
+def _scale_complete_claimed(text: str) -> bool:
+    for pattern in SCALE_COMPLETE_PATTERNS:
+        for match in re.finditer(pattern, text, re.I | re.S):
+            prefix = text[max(0, match.start() - 32) : match.start()]
+            if re.search(r"\b(?:not|no)\s*$", prefix, re.I):
+                continue
+            suffix = text[match.end() : match.end() + 64]
+            if _NON_COMPLETION_RE.match(suffix):
+                continue
+            return True
+    return False
 
 
 def latex_word_count(text: str) -> int:
-    text = _COMMENT_RE.sub(" ", text)
+    text = _strip_latex_comments(text)
     text = _COMMAND_RE.sub(" ", text)
     text = re.sub(r"[{}$~^_]", " ", text)
     return len(_WORD_RE.findall(text))
@@ -55,8 +197,9 @@ def _scale_status(evidence: dict[str, Any]) -> object:
 def check_text(text: str, evidence: dict[str, Any]) -> list[str]:
     scale_status = _scale_status(evidence)
     issues: list[str] = []
+    contract_text = _strip_latex_comments(text)
 
-    match = ABSTRACT_RE.search(text)
+    match = ABSTRACT_RE.search(contract_text)
     if not match:
         issues.append("abstract environment missing")
     else:
@@ -65,21 +208,19 @@ def check_text(text: str, evidence: dict[str, Any]) -> list[str]:
             issues.append(f"abstract word count is {words}, expected 100..200")
 
     for pattern, message in STALE_PATTERNS.items():
-        if re.search(pattern, text, re.I):
+        if re.search(pattern, contract_text, re.I):
             issues.append(message)
 
     for dataset in _DATASETS:
-        if dataset not in text:
+        if not _contains_lexical_token(contract_text, dataset):
             issues.append(f"dataset missing from manuscript: {dataset}")
 
+    macro_text = _without_macro_definitions(contract_text)
     for macro in REQUIRED_MACROS:
-        if not re.search(re.escape(macro) + r"(?![A-Za-z@])", text):
+        if not re.search(re.escape(macro) + r"(?![A-Za-z@])", macro_text):
             issues.append(f"artifact macro missing from manuscript: {macro}")
 
-    scale_complete_claimed = any(
-        re.search(pattern, text, re.I | re.S) for pattern in SCALE_COMPLETE_PATTERNS
-    )
-    if scale_status != "verified" and scale_complete_claimed:
+    if scale_status != "verified" and _scale_complete_claimed(contract_text):
         issues.append(
             "manuscript claims 15/15 completion while scale evidence is partial"
         )
@@ -87,7 +228,7 @@ def check_text(text: str, evidence: dict[str, Any]) -> list[str]:
 
 
 def abstract_words(text: str) -> int | None:
-    match = ABSTRACT_RE.search(text)
+    match = ABSTRACT_RE.search(_strip_latex_comments(text))
     return latex_word_count(match.group(1)) if match else None
 
 

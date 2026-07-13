@@ -55,10 +55,41 @@ def test_abstract_word_boundaries_fail(words: int) -> None:
         ("14 public inputs", "stale 14-public-input paper claim"),
         ("23 private inputs", "stale 23-private-input paper claim"),
         (r"\label{eq:r-tsip}", "stale internal TSIP label"),
+        (r"\ref{eq:r-tsip}", "stale internal TSIP label"),
+        (r"\eqref{eq:r-tsip}", "stale internal TSIP label"),
+        (r"\autoref{eq:r-tsip}", "stale internal TSIP label"),
     ],
 )
 def test_stale_current_paper_facts_fail(stale: str, expected: str) -> None:
     assert expected in MODULE.check_text(paper() + stale, PARTIAL)
+
+
+@pytest.mark.parametrize(
+    "fresh",
+    [
+        "13,056",
+        "3,0560",
+        r"13{,}056",
+        r"3{,}0560",
+        "114 public inputs",
+        "x14 public inputs",
+        "14 public inputs0",
+        "14 public inputsets",
+        "123 private inputs",
+        "x23 private inputs",
+        "23 private inputs0",
+        "23 private inputsets",
+        "eq:r-tsip",
+        r"\label{eq:r-tsip-v2}",
+        r"\ref{eq:r-tsip-v2}",
+        r"\eqref{eq:r-tsip-v2}",
+        r"\autoref{eq:r-tsip-v2}",
+    ],
+)
+def test_stale_patterns_do_not_overmatch(fresh: str) -> None:
+    issues = MODULE.check_text(paper() + fresh, PARTIAL)
+
+    assert not any(issue.startswith("stale") for issue in issues)
 
 
 @pytest.mark.parametrize("dataset", ["Porto", "Rome", "Synthetic"])
@@ -66,6 +97,38 @@ def test_missing_required_dataset_fails(dataset: str) -> None:
     issues = MODULE.check_text(paper().replace(dataset, ""), PARTIAL)
 
     assert any("dataset missing" in issue and dataset in issue for issue in issues)
+
+
+@pytest.mark.parametrize(
+    ("dataset", "lookalike"),
+    [
+        ("T-Drive", "T-Driver"),
+        ("GeoLife", "GeoLifestyle"),
+        ("Porto", "Portoland"),
+        ("Rome", "Romero"),
+        ("Synthetic", "Syntheticity"),
+    ],
+)
+def test_dataset_name_requires_lexical_boundaries(
+    dataset: str, lookalike: str
+) -> None:
+    text = paper().replace(dataset, "") + lookalike
+    issues = MODULE.check_text(text, PARTIAL)
+
+    assert f"dataset missing from manuscript: {dataset}" in issues
+
+
+def test_dataset_names_in_comments_do_not_satisfy_contract() -> None:
+    datasets = ("T-Drive", "GeoLife", "Porto", "Rome", "Synthetic")
+    text = paper()
+    for dataset in datasets:
+        text = text.replace(dataset, "")
+    text += "\n% T-Drive GeoLife Porto Rome Synthetic\n"
+
+    issues = MODULE.check_text(text, PARTIAL)
+
+    for dataset in datasets:
+        assert f"dataset missing from manuscript: {dataset}" in issues
 
 
 @pytest.mark.parametrize(
@@ -78,11 +141,64 @@ def test_missing_generated_artifact_macro_fails(macro: str) -> None:
     assert any("artifact macro missing" in issue and macro in issue for issue in issues)
 
 
+def without_artifact_macro_uses() -> str:
+    text = paper()
+    for macro in MODULE.REQUIRED_MACROS:
+        text = text.replace(f"{macro}{{}}", "")
+    return text
+
+
+def test_artifact_macros_in_comments_do_not_satisfy_contract() -> None:
+    definitions = " ".join(f"{macro}{{}}" for macro in MODULE.REQUIRED_MACROS)
+    issues = MODULE.check_text(
+        without_artifact_macro_uses() + f"\n% {definitions}\n", PARTIAL
+    )
+
+    for macro in MODULE.REQUIRED_MACROS:
+        assert f"artifact macro missing from manuscript: {macro}" in issues
+
+
+@pytest.mark.parametrize(
+    "definitions",
+    [
+        "\n".join(
+            rf"\newcommand{{{macro}}}{{value}}"
+            for macro in MODULE.REQUIRED_MACROS
+        ),
+        "\n".join(
+            rf"\renewcommand{{{macro}}}{{value}}"
+            for macro in MODULE.REQUIRED_MACROS
+        ),
+        "\n".join(
+            rf"\providecommand{{{macro}}}{{value}}"
+            for macro in MODULE.REQUIRED_MACROS
+        ),
+        "\n".join(rf"\def{macro}{{value}}" for macro in MODULE.REQUIRED_MACROS),
+        r"""
+\newcommand{\EvidenceSummary}{
+  \VFourConstraints{} \VFourPublicInputs{} \VFourPrivateInputs{}
+}
+""",
+    ],
+)
+def test_artifact_macro_definitions_do_not_count_as_uses(definitions: str) -> None:
+    issues = MODULE.check_text(
+        without_artifact_macro_uses() + definitions, PARTIAL
+    )
+
+    for macro in MODULE.REQUIRED_MACROS:
+        assert f"artifact macro missing from manuscript: {macro}" in issues
+
+
 @pytest.mark.parametrize(
     "claim",
     [
         "15/15 units passed.",
+        "15/15 dataset-seed units completed successfully.",
+        "15/15 units successful.",
+        "All 15 units passed.",
         "All 15 dataset-seed units completed successfully.",
+        "All 15 dataset-seed units successful.",
     ],
 )
 def test_complete_scale_claim_fails_while_summary_is_partial(claim: str) -> None:
@@ -98,12 +214,30 @@ def test_complete_scale_claim_fails_while_summary_is_partial(claim: str) -> None
     "claim",
     [
         "15/15 units remain incomplete.",
+        "15/15 dataset-seed units remain incomplete.",
         "15/15 units are only partially completed.",
+        "15/15 dataset-seed units are partially completed.",
+        "Not all 15 units passed.",
         "Not all 15 dataset-seed units completed successfully.",
+        "All 15 units are not completed.",
+        "All 15 dataset-seed units remain partially completed.",
+        "15/15 units completed only partially.",
+        "All 15 units passed only partially.",
+        "15/15 units passing checks.",
+        "All 15 units completion remains partial.",
     ],
 )
 def test_incomplete_scale_language_does_not_claim_completion(claim: str) -> None:
     assert MODULE.check_text(paper() + claim, PARTIAL) == []
+
+
+def test_contract_claims_in_comments_are_ignored() -> None:
+    comment = (
+        r"% 3,056; 14 public inputs; 23 private inputs; "
+        r"\ref{eq:r-tsip}; 15/15 units passed."
+    )
+
+    assert MODULE.check_text(paper() + "\n" + comment + "\n", PARTIAL) == []
 
 
 def test_verified_scale_allows_completion_claim() -> None:
