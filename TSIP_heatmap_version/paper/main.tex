@@ -248,10 +248,11 @@
   coordinate-derived primary, and A/R payload commitments under one report
   context. The manifest-bound circuit has \VFourConstraints{} constraints,
   \VFourPublicInputs{} public inputs, and \VFourPrivateInputs{} private inputs;
-  all \VFourStaticChecks{} static checks pass, and a fixed comparison on five
-  N=1000 datasets and three seeds yields positive released-set Jaccard deltas
-  against Nebula on every dataset, although two gains are small, with zero
-  honest false rejection and complete malicious rejection in that comparison.
+  all \VFourStaticChecks{} static checks pass, and \VFourScaleProofs{} proofs
+  verify with \VFourScaleProofFailures{} failures across
+  \VFourScaleUnits{} \(N{=}1000\) dataset-seed units; a fixed three-seed utility
+  comparison yields positive released-set Jaccard deltas against Nebula on all
+  five datasets, although two gains are small.
   SHTPC proves post-enrollment proof-to-payload consistency; it does
   not establish physical presence, eliminate metadata leakage, or reject false
   reports that remain inside the public mobility envelope.
@@ -1611,8 +1612,8 @@ withholding plus DP-SVT exclusion on benign traces. RMSE/Pearson measure count
 distortion, Jaccard measures released-set stability, false hotspot probability
 and HS@k measure ranking pollution. The current prototype uses Python
 microservices and Circom/snarkjs Groth16 inside the manifest-bound Docker path.
-RQ6 labels all pre-manifest microbenchmarks as historical, and current scale
-latency/throughput remains withheld until strict receipt validation. Randomized
+RQ6 labels all pre-manifest microbenchmarks as historical and reports current
+scale only from the strict manifest- and launcher-bound aggregate. Randomized
 sweeps use three seeds unless stated otherwise.
 
 \emph{Original-input utility.}
@@ -1633,8 +1634,10 @@ The scale matrix exercises five datasets and seeds 101, 202, and 303 at
 \(N{=}1000\), with six warmup and ten evaluation rounds under full snarkjs
 Groth16 proving. It uses the same protocol-isolation trajectory and therefore
 measures end-to-end protocol execution rather than original-input utility.
-RQ6 withholds current latency and throughput until a strict aggregate binds all
-15 dataset-seed receipts to the current manifest and launcher.
+The strict aggregate binds all 15 dataset-seed receipts to the current manifest
+and launcher, retains every functionally passing unit in protocol totals, and
+admits a unit to timing statistics only when its maximum inter-round gap is at
+most 7,200 seconds. Each dataset must retain at least two timing-eligible units.
 
 \subsection{RQ1 Proof-to-Payload Consistency}
 \label{sec:eval-headline}
@@ -1906,10 +1909,31 @@ pre-manifest microbenchmark is attributed to the current paper circuit.
 Third, the current manifest-bound paper relation has \VFourConstraints{}
 constraints, \VFourPublicInputs{} public inputs, and \VFourPrivateInputs{}
 private inputs. It passes all \VFourStaticChecks{} static checks and clean
-protocol smoke on \VFourProtocolDatasets{} datasets. Its three-seed \(N=1000\)
-end-to-end matrix is still subject to strict validation of all 15 dataset-seed
-receipts; until that aggregate receipt passes, we make no current-circuit
-latency or throughput claim.
+protocol smoke on \VFourProtocolDatasets{} datasets. The strict three-seed
+\(N{=}1000\) aggregate verifies all \VFourScaleUnits{} dataset-seed receipts,
+with \VFourScaleProofs{} client proofs generated and Shuffler-verified and
+\VFourScaleProofFailures{} proof failures. Across
+\VFourScaleEvaluationRounds{} evaluation rounds, routes A and R receive
+\VFourScaleRouteA{} and \VFourScaleRouteR{} reports, respectively; all
+\VFourScaleReconstructions{} reconstructions and \VFourScaleDPReleases{} DP
+releases pass.
+
+\input{tables/tab_v4_n1000_scale}
+\FloatBarrier
+
+Table~\ref{tab:v4-n1000-scale} separates functional completion from timing
+eligibility. Rome seed 101 and Synthetic seed 101 each contain an inter-round
+gap above 62{,}962 seconds caused by host suspension. Their functional receipts
+remain in every proof, route, reconstruction, and release total, but the two
+units are excluded only from timing statistics under the 7,200-second rule.
+The remaining \VFourScaleTimingUnits{} units, with
+\VFourScaleTimingExcluded{} exclusions, average
+\(\VFourScaleThroughputMean{}\pm\VFourScaleThroughputStd{}\) proofs/s and
+\(\VFourScaleWallHoursMean{}\pm\VFourScaleWallHoursStd{}\) hours per unit
+(mean \(\pm\) sample standard deviation across timing receipts). Thus the
+prototype establishes reproducible full-matrix execution with no proof or
+release failure, but it does not yet provide interactive per-report latency or
+optimized production throughput.
 
 \FloatBarrier
 \section{Discussion and Limitations}
@@ -1962,8 +1986,9 @@ Poseidon and MiMC7 parameters, frame and AEAD context construction,
 share-content digests, seed-compressed share expansion, and Aggregator checks.
 It also separates the static gate, five-dataset protocol smoke, fixed utility,
 publication figure, scale launcher, 15 unit receipts, and hash-bound paper
-evidence. A launcher-level 15/15 pass is not used as a scale-performance result
-until the strict aggregate validates every unit receipt and its bindings.
+evidence. Current scale results enter the manuscript only through the strict
+aggregate that validates every unit receipt, functional counter, timing rule,
+and manifest/launcher binding.
 
 The four real trajectory datasets are obtained directly from their official
 providers under the terms recorded in \texttt{DATA\_NOTICE.md}. Neither raw GPS
@@ -2024,10 +2049,14 @@ Groth16 relation containing \VFourConstraints{} constraints,
 and with a standalone admission functionality that makes leakage and corruption
 boundaries explicit. The evaluation shows that \textsc{SHTPC} rejects
 modeled envelope and proof-payload violations that are accepted by ablations and
-by \textsc{Stateful-ContextCommit}. Boundary tests identify false genesis and
-fully in-envelope false reports as deployment risks, while metadata experiments
-confirm that chain, timing, and participation signals remain outside the
-coordinate-hiding claim. The practical takeaway is that SHTPC fits managed
+by \textsc{Stateful-ContextCommit}; the current-circuit scale matrix verifies
+\VFourScaleProofs{} proofs with no proof, reconstruction, or DP-release failure
+across \VFourScaleUnits{} \(N{=}1000\) units. Its roughly
+\VFourScaleWallHoursMean{}-hour mean unit runtime establishes reproducible
+execution rather than interactive latency. Boundary tests identify false
+genesis and fully in-envelope false reports as deployment risks, while metadata
+experiments confirm that chain, timing, and participation signals remain outside
+the coordinate-hiding claim. The practical takeaway is that SHTPC fits managed
 heatmap systems that can tolerate stateful admission metadata and explicit
 governance, not anonymous trajectory publication or fully untrusted-Shuffler
 deployments.
