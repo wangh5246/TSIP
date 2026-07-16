@@ -746,23 +746,59 @@ def build_code_manifest(root: Path, paths: Sequence[Path]) -> dict[str, Any]:
         if tracked_output.returncode == 0
         else None
     )
-    for raw in paths:
-        path = raw if raw.is_absolute() else root / raw
-        _require(path.exists(), f"code manifest path missing: {path}")
-        candidates = [path] if path.is_file() else sorted(item for item in path.rglob("*") if item.is_file())
-        for item in candidates:
-            if any(part in {".git", "__pycache__", ".pytest_cache"} for part in item.parts):
-                continue
-            relative = str(item.relative_to(root))
-            if tracked_files is not None and relative not in tracked_files:
-                continue
+    if tracked_files is not None:
+        selected: set[str] = set()
+        resolved_root = root.resolve()
+        for raw in paths:
+            path = raw.resolve() if raw.is_absolute() else (root / raw).resolve()
+            try:
+                relative_path = path.relative_to(resolved_root)
+            except ValueError as exc:
+                raise FormalError(f"code manifest path outside repository: {path}") from exc
+            relative = relative_path.as_posix()
+            prefix = f"{relative.rstrip('/')}/"
+            matches = {
+                tracked
+                for tracked in tracked_files
+                if tracked == relative or tracked.startswith(prefix)
+            }
+            _require(bool(matches), f"code manifest path has no tracked files: {path}")
+            selected.update(matches)
+        for relative in sorted(selected):
+            blob = subprocess.run(
+                ["git", "show", f"HEAD:{relative}"],
+                cwd=root,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+            _require(blob.returncode == 0, f"cannot read tracked code blob: {relative}")
             rows.append(
                 {
                     "path": relative,
-                    "bytes": item.stat().st_size,
-                    "sha256": sha256_file(item),
+                    "bytes": len(blob.stdout),
+                    "sha256": hashlib.sha256(blob.stdout).hexdigest(),
                 }
             )
+    else:
+        for raw in paths:
+            path = raw if raw.is_absolute() else root / raw
+            _require(path.exists(), f"code manifest path missing: {path}")
+            candidates = (
+                [path]
+                if path.is_file()
+                else sorted(item for item in path.rglob("*") if item.is_file())
+            )
+            for item in candidates:
+                if any(part in {".git", "__pycache__", ".pytest_cache"} for part in item.parts):
+                    continue
+                rows.append(
+                    {
+                        "path": str(item.relative_to(root)),
+                        "bytes": item.stat().st_size,
+                        "sha256": sha256_file(item),
+                    }
+                )
     dirty = bool(_git_output(root, "status", "--porcelain"))
     return {
         "schema": "waybill.formal.code-manifest/v1",

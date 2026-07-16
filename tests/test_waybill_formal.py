@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,7 @@ from common.resource_probe import parse_time_evidence
 from script import run_waybill_m2_circuit_matrix as m2
 from waybill_formal.core import (
     FormalError,
+    build_code_manifest,
     build_data_manifest,
     canonical_sha256,
     expand_protocol_jobs,
@@ -97,6 +99,37 @@ def test_tariff_registry_separates_capacity_and_economic_semantics() -> None:
 
 def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_code_manifest_reads_skip_worktree_files_from_frozen_commit(
+    tmp_path: Path,
+) -> None:
+    repo = tmp_path / "repo"
+    source = repo / "source"
+    source.mkdir(parents=True)
+    (source / "present.txt").write_text("present\n", encoding="utf-8")
+    hidden = source / "hidden.txt"
+    hidden.write_text("hidden\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
+    subprocess.run(["git", "add", "source"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-qm", "fixture"], cwd=repo, check=True)
+    subprocess.run(
+        ["git", "update-index", "--skip-worktree", "source/hidden.txt"],
+        cwd=repo,
+        check=True,
+    )
+    hidden.unlink()
+
+    manifest = build_code_manifest(repo, [Path("source")])
+
+    assert manifest["git_dirty"] is False
+    assert [row["path"] for row in manifest["files"]] == [
+        "source/hidden.txt",
+        "source/present.txt",
+    ]
+    assert manifest["files"][0]["sha256"] == hashlib.sha256(b"hidden\n").hexdigest()
 
 
 def test_raw_data_manifest_enforces_counts_hashes_and_zero_caps(tmp_path: Path) -> None:
