@@ -32,12 +32,16 @@ Verify and restore them on the target:
 
 ```bash
 sha256sum -c SHA256SUMS
-git clone --branch waybill-formal-readiness-v1 \
+GIT_LFS_SKIP_SMUDGE=1 git clone --branch waybill-formal-readiness-v1 \
   waybill-formal-readiness-v1.bundle waybill_formal
 cd waybill_formal
 docker load -i waybill-formal-readiness-v1-image.tar
 docker image inspect waybill-formal:local
 ```
+
+The LFS skip is intentional: historical proof artifacts are not release
+inputs. The authorized datasets and exact PTAU are transferred separately in
+the following steps.
 
 The observed digest must match the frozen manifest. A mutable tag alone is
 insufficient.
