@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -12,10 +13,11 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+from common.policy_profile import PolicyProfile, PolicyRegistry, sha256_file
 from common.settlement import (
     ReceiverFix,
     TariffTable,
-    build_period_public_statement,
+    build_period_public_statement as _build_period_public_statement,
     field_from_text,
     make_device_attestation_commitment,
     sign_receiver_root_attestation,
@@ -57,6 +59,59 @@ def _tariff() -> TariffTable:
         cell_zones={0: 10, 1: 10, 2: 20, 3: 20},
         zone_rates_cents_per_m={10: 1, 20: 5},
     )
+
+
+def _test_profile() -> PolicyProfile:
+    vkey = ROOT_DIR / "zk" / "settlement_period_v5_k6" / "verification_key.json"
+    tariff = _tariff()
+    return PolicyProfile(
+        authority_id="test-policy-authority",
+        jurisdiction_id="ruc-demo",
+        profile_version=7,
+        valid_from=_MAY_2026_START,
+        valid_to=1_780_272_000,
+        revoked_at=None,
+        min_accepted_version=7,
+        tariff_version=tariff.tariff_version,
+        tariff_root=tariff.root(2),
+        tariff_tree_depth=2,
+        max_fixes=25,
+        max_zone_rate_cents_per_m=tariff.max_zone_rate_cents_per_m,
+        cadence_sec=60,
+        max_dt_sec=600,
+        tier_vmax_mps=33,
+        tier_vmax_sq=33 * 33,
+        mode_vmax_sq=33 * 33,
+        cap_policy_sq=3_000_000_000,
+        cap_policy_hash="test-cap-policy-v1",
+        circuit_id="settlement-period-v5-test",
+        verification_key_hash=sha256_file(vkey),
+        currency="EUR",
+        fixed_point_scale=1,
+        rounding_mode="exact-integer",
+        overflow_policy="reject-u96",
+        monthly_reconciliation_rate_cents_per_m=tariff.max_zone_rate_cents_per_m,
+        fallback_semantics_version="time-speed-max-rate-v5",
+        verification_key_path=str(vkey),
+    )
+
+
+def build_period_public_statement(**kwargs: object) -> dict[str, object]:
+    profile = _test_profile()
+    return _build_period_public_statement(
+        **kwargs,
+        tariff_tree_depth=profile.tariff_tree_depth,
+        policy_profile=profile,
+    )
+
+
+@pytest.fixture(autouse=True)
+def _canonical_policy_fixture(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(charger_app, "policy_registry", PolicyRegistry([_test_profile()]))
+    # These service tests exercise acceptance semantics.  M0's dedicated tests
+    # separately verify missing/hash-mismatched keys fail closed; the legacy
+    # dummy proof objects here represent already-valid Groth16 proofs.
+    monkeypatch.setattr(charger_app, "_verify_zk_proof", lambda *_args, **_kwargs: None)
 
 
 def _register_device(client: TestClient) -> None:
@@ -254,7 +309,7 @@ def test_charger_accepts_proof_only_period_without_raw_fixes():
         tariff=_tariff(),
         period_id="2026-05-p01",
         month_id="2026-05",
-        cadence_sec=300,
+        cadence_sec=60,
         tier_vmax_mps=33,
         device_attestation_commitment=_TEST_DAC,
     )
@@ -281,7 +336,7 @@ def test_charger_rejects_proof_only_payload_with_raw_fixes_field():
         tariff=_tariff(),
         period_id="2026-05-p01",
         month_id="2026-05",
-        cadence_sec=300,
+        cadence_sec=60,
         tier_vmax_mps=33,
         device_attestation_commitment=_TEST_DAC,
     )
@@ -303,7 +358,7 @@ def test_charger_rejects_proof_only_public_signal_drift():
         tariff=_tariff(),
         period_id="2026-05-p01",
         month_id="2026-05",
-        cadence_sec=300,
+        cadence_sec=60,
         tier_vmax_mps=33,
         device_attestation_commitment=_TEST_DAC,
     )
@@ -329,7 +384,7 @@ def test_charger_rejects_proof_only_bad_root_attestation():
         tariff=_tariff(),
         period_id="2026-05-p01",
         month_id="2026-05",
-        cadence_sec=300,
+        cadence_sec=60,
         tier_vmax_mps=33,
         device_attestation_commitment=_TEST_DAC,
     )
@@ -492,6 +547,13 @@ def test_monthly_reconciliation_bills_withheld_kilometres():
     assert rec["total_month_bill_cents"] == 70 + 9_650
 
 
+def test_reconciliation_rate_must_equal_canonical_tariff_max():
+    # M0 freezes this invariant at profile construction, before a service can
+    # accept any period under an unsafe monthly rate.
+    with pytest.raises(ValueError, match="reconciliation rate"):
+        replace(_test_profile(), monthly_reconciliation_rate_cents_per_m=4)
+
+
 def test_overlapping_period_window_rejected():
     client = TestClient(charger_app.app)
     client.post("/settlement/reset")
@@ -576,3 +638,73 @@ def test_bad_or_conflicting_odometer_attestation_rejected():
     )
     assert client.post("/settlement/month/attest", json=conflicting).status_code == 409
     assert client.post("/settlement/month/attest", json=good).status_code == 200
+
+
+def test_missing_monthly_attestation_report_flags_enrolled_devices():
+    from common.settlement import sign_monthly_odometer_attestation
+
+    client = TestClient(charger_app.app)
+    client.post("/settlement/reset")
+    _register_device(client)
+    assert client.post(
+        "/settlement/devices/register",
+        json={"device_id": "dev-2", "public_key_hex": _TEST_PUBLIC_KEY_BYTES_2.hex()},
+    ).status_code == 200
+
+    # Device 1 submits and attests. Device 2 is enrolled but withholds both
+    # period proofs and the month-boundary odometer attestation, so it must
+    # appear in the operator's administrative-path queue.
+    fixes = [_fix(0, 100, 1_000, 0, 0), _fix(1, 110, 1_070, 1, 0)]
+    assert _submit(client, fixes, _statement(fixes, "2026-05-p01", _TEST_DAC)).status_code == 200
+    att = sign_monthly_odometer_attestation(
+        device_id="dev-1",
+        month_id="2026-05",
+        odometer_start_m=1_000,
+        odometer_end_m=1_070,
+        private_key_bytes=_TEST_SEED,
+    )
+    assert client.post("/settlement/month/attest", json=att).status_code == 200
+
+    report = client.get("/settlement/month/2026-05/missing-attestations").json()
+    assert report["ok"] is True
+    assert report["missing_count"] == 1
+    assert report["missing"][0]["device_id"] == "dev-2"
+    assert report["missing"][0]["periods"] == 0
+    assert report["missing"][0]["administrative_path"] is True
+
+
+def test_monthly_odometer_attestations_must_chain_across_adjacent_months():
+    from common.settlement import sign_monthly_odometer_attestation
+
+    client = TestClient(charger_app.app)
+    client.post("/settlement/reset")
+    _register_device(client)
+
+    may = sign_monthly_odometer_attestation(
+        device_id="dev-1",
+        month_id="2026-05",
+        odometer_start_m=0,
+        odometer_end_m=100,
+        private_key_bytes=_TEST_SEED,
+    )
+    assert client.post("/settlement/month/attest", json=may).status_code == 200
+
+    june_bad = sign_monthly_odometer_attestation(
+        device_id="dev-1",
+        month_id="2026-06",
+        odometer_start_m=90,
+        odometer_end_m=200,
+        private_key_bytes=_TEST_SEED,
+    )
+    resp = client.post("/settlement/month/attest", json=june_bad)
+    assert resp.status_code == 409
+    assert "odometer month chain" in resp.json()["detail"]
+
+    june_good = sign_monthly_odometer_attestation(
+        device_id="dev-1",
+        month_id="2026-06",
+        odometer_start_m=100,
+        odometer_end_m=200,
+        private_key_bytes=_TEST_SEED,
+    )
+    assert client.post("/settlement/month/attest", json=june_good).status_code == 200

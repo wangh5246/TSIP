@@ -1,7 +1,7 @@
 ---
 type: project-index
 project: waybill-ruc
-updated: 2026-07-15T15:19:35Z
+updated: 2026-07-16
 status: active
 tags: [waybill, ruc, index]
 ---
@@ -35,6 +35,8 @@ tags: [waybill, ruc, index]
 - [[Results/Reports/V5证据快照与审阅差距-2026-07]]
 - [[Results/Reports/V6方法门禁与实验台账-2026-07]]
 - [[Results/Reports/服务器正式实验就绪性审计-2026-07-15]]
+- [[Results/Reports/顶会与大规模实验预备性复审-2026-07-15]]
+- [[Results/Reports/服务器租用前就绪收口-2026-07-16]]
 
 ## Writing
 
@@ -45,6 +47,7 @@ tags: [waybill, ruc, index]
 - [[Daily/2026-07-13]]
 - [[Daily/2026-07-14]]
 - [[Daily/2026-07-15]]
+- [[Daily/2026-07-16]]
 
 ## System
 
@@ -75,6 +78,8 @@ Managed block. Refresh with `/kb-sync` or `/kb-index`. Put hand-written navigati
 - [[Results/Reports/V5证据快照与审阅差距-2026-07]]
 - [[Results/Reports/V6方法门禁与实验台账-2026-07]]
 - [[Results/Reports/服务器正式实验就绪性审计-2026-07-15]]
+- [[Results/Reports/顶会与大规模实验预备性复审-2026-07-15]]
+- [[Results/Reports/服务器租用前就绪收口-2026-07-16]]
 
 ### Writing
 - [[Writing/WayBill主张与术语修订]]

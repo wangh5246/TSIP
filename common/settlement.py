@@ -598,7 +598,26 @@ def build_period_public_statement(
     device_attestation_commitment: str,
     reveal_total_miles: bool = True,
     tariff_tree_depth: int | None = None,
+    policy_profile: Any | None = None,
 ) -> dict[str, Any]:
+    if policy_profile is not None:
+        policy_profile.assert_tariff_matches(tariff)
+        if int(cadence_sec) != int(policy_profile.cadence_sec):
+            raise ValueError("cadence_sec does not match canonical policy profile")
+        if int(tier_vmax_mps) != int(policy_profile.tier_vmax_mps):
+            raise ValueError("tier_vmax_mps does not match canonical policy profile")
+        if int(max_dt_sec) != int(policy_profile.max_dt_sec):
+            raise ValueError("max_dt_sec does not match canonical policy profile")
+        if mode_vmax_sq is not None and int(mode_vmax_sq) != int(policy_profile.mode_vmax_sq):
+            raise ValueError("mode_vmax_sq does not match canonical policy profile")
+        if int(cap_policy_sq) != int(policy_profile.cap_policy_sq):
+            raise ValueError("cap_policy_sq does not match canonical policy profile")
+        if tariff_tree_depth is not None and int(tariff_tree_depth) != int(
+            policy_profile.tariff_tree_depth
+        ):
+            raise ValueError("tariff_tree_depth does not match canonical policy profile")
+        tariff_tree_depth = int(policy_profile.tariff_tree_depth)
+        mode_vmax_sq = int(policy_profile.mode_vmax_sq)
     dac_field = field_from_text(str(device_attestation_commitment))
     period_start_time = int(fixes[0].auth_gnss_time)
     period_end_time = int(fixes[-1].auth_gnss_time)
@@ -645,6 +664,8 @@ def build_period_public_statement(
     }
     if reveal_total_miles:
         public["total_distance_m"] = int(fee["total_distance_m"])
+    if policy_profile is not None:
+        public.update(policy_profile.public_statement_fields())
     public["statement_commitment"] = compute_public_statement_commitment(public)
     return public
 
@@ -659,6 +680,7 @@ def verify_period_submission(
     tier_vmax_mps: int,
     max_dt_sec: int = SETTLEMENT_MAX_DT_SEC,
     tariff_tree_depth: int | None = None,
+    policy_profile: Any | None = None,
 ) -> dict[str, Any]:
     period_id = str(public_statement["period_id"])
     verify_fix_sequence(fixes, public_key_bytes=public_key_bytes, period_id=period_id)
@@ -673,6 +695,7 @@ def verify_period_submission(
         device_attestation_commitment=str(public_statement["device_attestation_commitment"]),
         reveal_total_miles="total_distance_m" in public_statement,
         tariff_tree_depth=tariff_tree_depth,
+        policy_profile=policy_profile,
     )
     for key, value in expected.items():
         if public_statement.get(key) != value:

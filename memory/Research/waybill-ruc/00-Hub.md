@@ -1,7 +1,7 @@
 ---
 type: project-hub
 project: waybill-ruc
-updated: 2026-07-15
+updated: 2026-07-16
 status: active
 tags: [waybill, ruc, hub, v6]
 ---
@@ -17,11 +17,18 @@ odometer-backed fallback/month close、city-scale normalized capacity benchmark�
 witness/prove/verify 与终端复验均通过。方法门禁已经全部关闭，项目仍保持 `active`，
 后续转入正式服务器实验、可信输入现场证据、隐私评估与论文重写。
 
-2026-07-15 的服务器就绪性审计给出 **No-go**：方法基础已经具备，但当前 V6 主体
-仍未形成可由服务器 clone 的 clean revision，WayBill 专用 Linux 容器、完整数据
-manifest、job-array/resume/strict-aggregate 和目标主机 receipt 尚未关闭。正式矩阵已
-冻结在 [[Experiments/M4-服务器正式大规模实验]]；在 RG0–RG8 全部通过前，不启动或
-聚合论文级服务器结果。
+2026-07-15 的服务器就绪性审计当时给出 **No-go**。2026-07-16 已完成租用前收口：
+clean release 分支、Linux/amd64 容器、完整 raw manifest、formal protocol、
+job-array/resume/strict-aggregate、S5 固定证明 corpus 和本地发布门禁均已建立。
+当前准确状态为 **pre-rental ready / blocked-on-target**：可以租服务器，但必须在实际
+目标机关闭 RG6、物化全量 prepared/canonical corpus 与最终 cardinality 后，才生成
+formal run ID。详见
+[[Results/Reports/服务器租用前就绪收口-2026-07-16]]。
+
+同日完整复审给出双层裁决：**研究可行性通过、顶会论文预备性有条件通过；立即服务器
+开跑和当前投稿成熟度不通过。** 项目不存在已经发现的致命算法/资源障碍，剩余条件均有
+明确关闭路径，但不能把“可行”写成“已就绪”。详见
+[[Results/Reports/顶会与大规模实验预备性复审-2026-07-15]]。
 
 项目继续执行方案 A：先关闭安全与方法门禁，再补部署、隐私与写作。历史目录
 `memory/TSIP_RUC/` 保留为来源，不再作为当前状态的事实源。
@@ -38,9 +45,12 @@ manifest、job-array/resume/strict-aggregate 和目标主机 receipt 尚未关�
 - 以 [[Knowledge/WayBill-v6方法优化决策]] 作为唯一方法路线。
 - M0–M3 均已 verified；下一阶段不再扩大方法门禁主张，而是补可信输入、真实账单、
   隐私与部署证据。
-- 当前 P0 是关闭 [[Results/Reports/服务器正式实验就绪性审计-2026-07-15]] 的
-  RG0–RG8，并执行 [[Experiments/M4-服务器正式大规模实验]] 的 S1–S4 正式矩阵；
-  S5 只作系统执行性补充。
+- 当前 P0 是租用 32 vCPU / 128 GiB / 1 TiB 的 Linux x86_64 服务器，在目标机关闭
+  RG6、全量 prepared/canonical manifest 和最终资源计划，然后执行
+  [[Experiments/M4-服务器正式大规模实验]] 的完整 S1–S5 矩阵；S5 只作系统执行性补充。
+- 顶会定位以 [[Results/Reports/顶会与大规模实验预备性复审-2026-07-15]] 为准：
+  精确新颖性是 policy-pinned settlement + odometer completeness + quantified leakage，
+  不泛称“首次 ZK 车辆税收”。
 - 用 [[Results/Reports/V6方法门禁与实验台账-2026-07]] 记录每个门禁的证据，不以代码存在或单次成功代替 verified。
 - 用 [[Writing/WayBill主张与术语修订]] 限制可信输入、隐私、可部署性和 TEE 表述。
 
@@ -57,9 +67,14 @@ manifest、job-array/resume/strict-aggregate 和目标主机 receipt 尚未关�
 - M3 当前 24/24 certified、全部 gap=0；旧 0.464→0.295 仅是 legacy sensitivity，
   旧 648m→361m 投影被 V6 `ODO_BINDING` 拒绝。
 - 当前 M1 规模仅 226 periods，M3 仅 24 instances；它们足以关闭方法门禁，但不是
-  正式全量服务器实验。WayBill V6 主要新增文件目前未进入可克隆的 clean Git SSOT。
-- 当前 M2 runner 使用 macOS 资源采集，服务器部署文档属于旧 RiseFL/TSIP 栈；不能
-  直接用于 Linux 正式实验。
+  正式全量服务器结果。正式服务器矩阵已另行冻结，不能把这些本机数字复制进主表。
+- WayBill V6 已有 Linux/amd64 OCI 镜像、依赖 lock、GNU time 资源采集、正式 runbook
+  与不可覆盖编排；容器 digest 为
+  `sha256:931cac8c4888478b0da88d66ee7f6113466f5953a6051a60bc34ef3829bd2b9a`。
+- 四数据集 raw manifest 已通过，T-Drive 为完整 10,357 文件；全量 prepared/canonical
+  manifest 将在 1 TiB 目标服务器上无 cap 物化。
+- 冻结 protocol 的非 S3 静态作业为 1,695，静态预估 1,047 CPU-hours、244.4 GiB
+  两次 attempt 存储，峰值调度内存 128 GiB；S3 最终数量等待全量 period count。
 - E5 的精确匿名中位数为 1，一次 level-2 opening 可识别约 76%，不能以 pool size 代替真实匿名性。
 - `WayBill/main.tex` 是带占位符的短骨架，不是可投稿全文。
 
@@ -74,10 +89,13 @@ manifest、job-array/resume/strict-aggregate 和目标主机 receipt 尚未关�
 - [[Results/Reports/V5证据快照与审阅差距-2026-07]]
 - [[Results/Reports/V6方法门禁与实验台账-2026-07]]
 - [[Results/Reports/服务器正式实验就绪性审计-2026-07-15]]
+- [[Results/Reports/顶会与大规模实验预备性复审-2026-07-15]]
+- [[Results/Reports/服务器租用前就绪收口-2026-07-16]]
 - [[Experiments/M4-服务器正式大规模实验]]
 - [[Daily/2026-07-13]]
 - [[Daily/2026-07-14]]
 - [[Daily/2026-07-15]]
+- [[Daily/2026-07-16]]
 
 ## 最近变化
 
@@ -88,13 +106,18 @@ manifest、job-array/resume/strict-aggregate 和目标主机 receipt 尚未关�
   tariff 复核及 depth-14 四组真实证明，后续转入现场证据、隐私与写作。
 - 2026-07-15：正式服务器实验路线获批；审计判定当前为 No-go，建立 M4 的
   RG0–RG8 与 S1–S5 规格，下一步先关闭可复现与全量数据前置条件。
+- 2026-07-15：完成顶会与规模预备性复审；研究/矩阵可行性通过，顶会预备性有条件
+  通过，立即服务器开跑与投稿成熟度保持不通过。
+- 2026-07-16：租用前条件收口；Linux 容器、完整 raw manifest、正式编排、S5 corpus、
+  453 项通过测试和安全审计已完成，项目进入目标服务器 RG6/全量物化阶段。
 
 ## Important Links
 - [[01-Plan]]
 - [[02-Index]]
 - [[_system/registry]]
-- [[Daily/2026-07-15]]
+- [[Daily/2026-07-16]]
 
 ## Recent Changes
+- 2026-07-16: pre-rental readiness passed; target-host RG6 and full materialization remain.
 - 2026-07-15T15:19:35Z: sync refreshed scaffold, registry, index, and daily note (auto).
 - 2026-07-13T20:35:59Z: sync refreshed scaffold, registry, index, and daily note (auto).

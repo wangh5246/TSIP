@@ -1,0 +1,141 @@
+{
+  "artifact_id": "waybill-m2-rome-medium-10000-depth14-v1",
+  "artifacts": {
+    "membership_samples": {
+      "path": "membership_samples_depth14.json",
+      "sha256": "756a62c4ffd59d17dd0c1b86b2f9d44d4eae96b31a93239010a2c86ce29de345"
+    },
+    "tariff_cells": {
+      "path": "tariff_rome_medium_10000_cells.json",
+      "sha256": "bd7ed3f7bbb9669085432e911bd9a11c01a677f48cadf4f9dc25c3abd1c14507"
+    }
+  },
+  "generator": {
+    "deterministic_output": true,
+    "path": "script/build_waybill_m2_tariff.py",
+    "sha256": "29883d04d43cb8beef7bc844e3fc462110b81e21e8355c46f660b12269c4ce2c"
+  },
+  "membership_validation": {
+    "all_samples_verified_by_common_and_independent_implementations": true,
+    "boundary_indices": [
+      0,
+      99,
+      9900,
+      9999
+    ],
+    "path_length": 14,
+    "sample_file": "membership_samples_depth14.json",
+    "seeded_random_indices": [
+      4422,
+      8442,
+      4013,
+      2640,
+      6899,
+      9931,
+      856,
+      8864
+    ]
+  },
+  "root_recomputation": {
+    "independent": {
+      "calls_tariff_table_root": false,
+      "implementation": "script/build_waybill_m2_tariff.py direct Poseidon leaf/tree fold",
+      "root": "13699623093631692182889334311784675380256108557104408704717957921466979708714"
+    },
+    "primary": {
+      "implementation": "common.settlement.TariffTable.root(depth=14)",
+      "root": "13699623093631692182889334311784675380256108557104408704717957921466979708714"
+    },
+    "roots_match": true
+  },
+  "schema": "waybill_m2_tariff_manifest_v1",
+  "source": {
+    "cell_size_m": 100,
+    "city": "rome",
+    "geojson_feature_count": 390,
+    "granularity": "medium",
+    "method_doc": "dataset/osm/zones/README_rome_tariff.md",
+    "official_app_item": "962c8b4334d74dc6ae043a5e4b8643d0",
+    "official_blue_stripe_layer": "https://services2.arcgis.com/NZMqCJwY3kMjFOqf/arcgis/rest/services/strisce_blu_strade/FeatureServer/0",
+    "official_source_description": "Roma Mobilita public ArcGIS FeatureServer, Sosta tariffata web map",
+    "official_webmap_item": "b7be6a72ce2b4e54b1b9adde1a11df8f",
+    "path": "dataset/osm/zones/rome_medium.geojson",
+    "sha256": "d6bd766132c2e8310d486e41b037beee47fc993c292330c06adb5149e62758b7",
+    "spatial_assignment_limit": "This 100x100 nearest-segment overlay is derived from official street-linear parking data; it is not an official road-use charging map or an assertion that parking rules apply over every cell area.",
+    "transformation": "Expand each validated [grid_x_min, grid_x_max_exclusive) row run at grid_y; the upstream overlay assigns every cell the normalized rate of the nearest official blue-stripe parking street segment."
+  },
+  "tariff": {
+    "cell_index_range": [
+      0,
+      9999
+    ],
+    "cell_ordering": {
+      "coordinate_iteration": "y=0..99 outer, x=0..99 inner",
+      "index_formula": "cell_idx = y * grid_w + x",
+      "leaf_position": "equal to cell_idx for this dense artifact",
+      "rule": "ascending cell_idx"
+    },
+    "grid_h": 100,
+    "grid_w": 100,
+    "normalized_rate_histogram": {
+      "10": 8755,
+      "12": 445,
+      "5": 800
+    },
+    "rate_value_semantics": {
+      "actual_billing_amount_claimed": false,
+      "disclaimer": "Values 5, 10, and 12 preserve only the ratios of the official Rome parking hourly rates EUR 0.50/h, EUR 1.00/h, and EUR 1.20/h. They are dimensionless normalized test tiers used only to validate tariff-domain capacity and source provenance. They are not real road-use prices, not cents per metre, and must not be presented as actual billing amounts.",
+      "intended_use": [
+        "tariff-domain capacity validation",
+        "source-provenance validation"
+      ],
+      "legacy_storage_field": "zone_rates_cents_per_m",
+      "normalized_unit": "dimensionless_relative_tier",
+      "official_hourly_rate_to_normalized_value": {
+        "0,50 euro/h": 5,
+        "1 euro/h": 10,
+        "1,20 euro/h": 12
+      },
+      "official_ratio_preserved": "0.50:1.00:1.20 = 5:10:12"
+    },
+    "real_valid_cell_count": 10000,
+    "tariff_version": 202,
+    "zone_histogram": {
+      "100": 8755,
+      "120": 445,
+      "50": 800
+    },
+    "zone_to_normalized_rate": {
+      "100": 10,
+      "120": 12,
+      "50": 5
+    }
+  },
+  "tariff_root": "13699623093631692182889334311784675380256108557104408704717957921466979708714",
+  "tree": {
+    "capacity": 16384,
+    "depth": 14,
+    "empty_leaf_value": "0",
+    "empty_leaf_value_usage": "Only seeds an entirely empty input before fixed-depth repeat-last padding; it is not used by this populated 10,000-cell artifact.",
+    "hash_domain": {
+      "compatibility_name": "tsip-settlement-tariff-leaf-v1-legacy",
+      "domain_note": "Compatibility is defined by hash function, arity, seed, ordered leaf fields, and tree role; the legacy circuit adds no numeric domain-separation tag.",
+      "explicit_numeric_domain_tag": null,
+      "explicit_numeric_domain_tag_present": false,
+      "field": "BN254 scalar field",
+      "field_modulus": "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+      "internal_node_hash": "Poseidon2(left_child,right_child)",
+      "leaf_hash": "state=0; for value in [tariff_version, cell_idx, zone_id, normalized_rate]: state=Poseidon2(state,value); leaf=state"
+    },
+    "padded_leaf_count": 6384,
+    "padding_leaf_source_position": 9999,
+    "padding_leaf_value": "20518819958578729259949065927350246714033400974562170321225700393755990616358",
+    "padding_positions_inclusive": [
+      10000,
+      16383
+    ],
+    "padding_rule": "repeat-last-real-leaf",
+    "real_leaf_count": 10000,
+    "zero_filled_unused_capacity": false
+  }
+}

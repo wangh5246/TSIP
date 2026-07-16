@@ -1,0 +1,58 @@
+{
+  "schema": "waybill.formal.data-sources/v1",
+  "release_policy": {
+    "raw_or_row_level_data_in_git": false,
+    "server_transfer": "authorized private transfer only",
+    "public_artifact": "code, manifests, aggregate receipts, tables, and figures only"
+  },
+  "datasets": [
+    {
+      "dataset": "tdrive",
+      "relative_path": "raw/tdrive/taxi_log_2008_by_id",
+      "kind": "directory",
+      "include_glob": "*.txt",
+      "expected_file_count": 10357,
+      "expected_entity_count": 10357,
+      "entity": "taxi",
+      "official_url": "https://www.microsoft.com/en-us/research/publication/t-drive-trajectory-data-sample/",
+      "terms": "Microsoft Research License Agreement; non-commercial research; no redistribution of data or derivative records",
+      "guide_sha256": "30dfd9aa3e357a074ec373c34e5805b52fa5be97f4fd5b31f39a9a76fcad59e0"
+    },
+    {
+      "dataset": "geolife",
+      "relative_path": "raw/geolife/Geolife Trajectories 1.3/Data",
+      "kind": "directory",
+      "include_glob": "**/*.plt",
+      "expected_file_count": 18670,
+      "expected_entity_count": 182,
+      "entity": "user",
+      "official_url": "https://www.microsoft.com/en-us/research/project/geolife-building-social-networks-using-human-location-history/tools/",
+      "terms": "Microsoft Research License Agreement; non-commercial research; no redistribution of data or derivative records",
+      "guide_sha256": "40eb20104a0a1748c2558bdc922a91cb172e7661476f77cc596e0f1bf2fdb0dd"
+    },
+    {
+      "dataset": "porto",
+      "relative_path": "raw/porto/train.csv.zip",
+      "kind": "file",
+      "expected_file_count": 1,
+      "expected_bytes": 533605607,
+      "expected_sha256": "210dd0a20da66a8fc2de3440aecd84670921bc257591f8365a4475e31453c5ea",
+      "expected_entity_count": 442,
+      "entity": "taxi",
+      "official_url": "https://archive.ics.uci.edu/dataset/339/taxi%2Bservice%2Btrajectory%2Bprediction%2Bchallenge%2Becml%2Bpkdd%2B2015",
+      "terms": "CC BY 4.0; this project still withholds raw and row-level prepared trajectories"
+    },
+    {
+      "dataset": "rome",
+      "relative_path": "raw/rome/Roma.txt",
+      "kind": "file",
+      "expected_file_count": 1,
+      "expected_bytes": 1608435716,
+      "expected_sha256": "ea282cd631b66ebbb79680939293956301be769282c9c02d0d989ecdf53e0cc1",
+      "expected_entity_count": 320,
+      "entity": "approximately_taxis",
+      "official_url": "https://crawdad.org/~crawdadarchive/roma/taxi/20140717/",
+      "terms": "CRAWDAD contributor citation and use guidance; no de-anonymization; later users acquire from CRAWDAD"
+    }
+  ]
+}

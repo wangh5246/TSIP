@@ -1,0 +1,17 @@
+{
+  "name": "waybill-formal-toolchain",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pinned JavaScript dependencies for WayBill formal experiments",
+  "engines": {
+    "node": "26.0.0",
+    "npm": "11.12.1"
+  },
+  "dependencies": {
+    "circomlib": "2.0.5",
+    "snarkjs": "0.7.6"
+  },
+  "overrides": {
+    "underscore": "1.13.8"
+  }
+}

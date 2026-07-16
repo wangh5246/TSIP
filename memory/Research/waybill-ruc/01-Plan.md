@@ -1,7 +1,7 @@
 ---
 type: project-plan
 project: waybill-ruc
-updated: 2026-07-15
+updated: 2026-07-16
 status: active
 tags: [waybill, ruc, plan, v6]
 ---
@@ -23,37 +23,46 @@ V6 方法阶段只有在以下四项均达到 `verified` 后完成：
 
 任何一项未通过，都必须按门禁规则缩小主张，不能用写作润色替代。
 
-当前检查点（2026-07-15）：M0–M3 均为 `verified`，但正式服务器实验就绪性为
-`blocked`。本机方法门禁不能替代 clean Git revision、Linux 容器、完整数据、正式
-job matrix 和目标主机 receipt。详情见
-[[Results/Reports/服务器正式实验就绪性审计-2026-07-15]]。
+当前检查点（2026-07-16）：M0–M3 均为 `verified`，租服务器前就绪性为
+`passed`，正式启动仍为 `blocked-on-target`。clean release、Linux 容器、完整 raw
+data、正式 job matrix 和本地发布门禁已经完成；剩余项只能在目标服务器关闭：
+RG6、无 cap prepared/canonical materialization 和最终 S3 cardinality/resource plan。
+详情见 [[Results/Reports/服务器租用前就绪收口-2026-07-16]]。
+
+完整复审同时确认：研究路线与 M4 正式矩阵在技术和论文价值上可行，适合作为顶会
+论文预备；该 feasibility pass 不改变 RG0–RG8 的 blocked 状态。顶会方法/隐私/写作
+缺口见 [[Results/Reports/顶会与大规模实验预备性复审-2026-07-15]]。
 
 ## P0 — M4 服务器正式大规模实验就绪性
 
 正式设计：[[Experiments/M4-服务器正式大规模实验]]。
 
-- [ ] RG0：把 WayBill V6 代码、circuits、configs、tests 和 Obsidian 固定到 clean
+- [x] RG0：把 WayBill V6 代码、circuits、configs、tests 和 Obsidian 固定到 clean
   commit/tag；raw/restricted data 与 14 GiB M2 artifact 不进入普通 Git，对外用 hash manifest。
-- [ ] RG1：建立 Linux x86_64 OCI/Apptainer 镜像和依赖锁，固定 Python 3.12、Node 26、
+- [x] RG1：建立 Linux x86_64 OCI/Apptainer 镜像和依赖锁，固定 Python 3.12、Node 26、
   Circom 2.1.9、snarkjs 0.7.6、circomlib 与 Python 包。
-- [ ] RG2：取得完整 T-Drive，并为四个真实数据集建立 WayBill 专用 provenance、条款、
-  raw/prepared hash 与完整性计数；所有正式预处理 cap 为 0。
-- [ ] RG3：把 normalized capacity tariff 与现实 economic tariff 分开登记，固定单位、
+- [x] RG2-raw：完整 T-Drive 与四数据集 provenance/条款/raw hash/完整性计数通过；
+  [ ] RG2-prepared：租到服务器后以 cap=0 生成 prepared/canonical hash。
+- [x] RG3：把 normalized capacity tariff 与现实 economic tariff 分开登记，固定单位、
   source、root、maximum 和可用主张。
-- [ ] RG4：把 M2 资源采集移植到 Linux，增加 Linux CI receipt，删除对
+- [x] RG4：把 M2 资源采集移植到 Linux，增加 Linux CI receipt，删除对
   `/usr/bin/time -l` 和 macOS `sysctl` 的硬依赖。
-- [ ] RG5：实现 formal manifest、dry-run、local/Slurm job arrays、immutable run id、
+- [x] RG5：实现 formal manifest、dry-run、local/Slurm job arrays、immutable run id、
   resume、最多两次 attempt、strict merge 和缺单元 fail-closed。
-- [ ] RG6：在目标服务器验证 ≥32 GiB RAM/job、≥100 GiB workspace、CPU/disk/toolchain、
+- [ ] RG6：在目标服务器验证 ≥32 GiB RAM/job、≥500 GiB free workspace、
+  CPU/disk/toolchain、
   container digest 与 PTAU hash；该项不得在本机代签。
-- [ ] RG7：把 S1–S5 expected cardinality、seeds、timeout、并发和统计方法写入 hash 固定
-  的 protocol JSON；禁止正式运行中改配置。
-- [ ] RG8：全套 tests/static/negative/manifest validator 和 Obsidian lint/link check 通过。
+- [x] RG7-static：S1–S5 组合、seeds、timeout、并发和统计方法已写入 hash 固定的
+  protocol JSON；[ ] RG7-materialized：目标机生成全量 S3 cardinality 和最终预算。
+- [x] RG8：全套 tests/static/negative/manifest validator 和 Obsidian lint/link check 通过。
 - [ ] RG0–RG8 全通过后才允许 `--formal`，依次执行 S1 全量公平、S2 16 配置真实证明、
   S3 全量 certified bounds、S4 route/linkability；S5 最后作系统补充。
 
 服务器阶段只接受正式矩阵。环境检查不产生论文结果；`max-trips`、`max-raw-points`、
 `limit-per-input`、`max-fixes` 任一非 0 的运行都标为 debug，不进入 aggregate。
+
+服务器首租规格为 Linux x86_64、32 vCPU、128 GiB RAM、1 TiB SSD/NVMe，无需 GPU。
+如果已有 GPU 服务器，只使用其 CPU/RAM/磁盘；当前冻结代码与容器没有 CUDA 路径。
 
 ## P0 — M0 Canonical Policy Binding
 
@@ -130,6 +139,10 @@ job matrix 和目标主机 receipt。详情见
   或 debug 结果冒充正式服务器实验。
 - [ ] 按 [[Writing/WayBill主张与术语修订]] 全文替换过强术语。
 - [ ] 建立 claim → assumption → theorem/test → artifact 的证据表。
+- [ ] 明确 `position_valid` 的认证主体与 receiver 对 interval root/statement commitment
+  的验证义务，保持 policy-free TCB 叙事与实现一致。
+- [ ] 完成 VPriv/PrETP/Milo/P4TC、2025 ZK vehicle taxation 与 2024 metadata attack 的
+  逐项能力/信任/泄漏对比，未完成前不使用宽泛 first claim。
 - [ ] 删除 `WayBill/main.tex` 的占位符并补齐 bibliography、limitations 和 reproducibility。
 
 ## 执行与记录规则

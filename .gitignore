@@ -17,9 +17,18 @@ zk/hello/
 
 # Virtualenv
 .venv/
+node_modules/
 
 # Raw and processed datasets (reproduce via script/prepare_* / download_osm_vectors.sh)
 dataset/
+!dataset/
+dataset/*
+!dataset/osm/
+dataset/osm/*
+!dataset/osm/zones/
+dataset/osm/zones/*
+!dataset/osm/zones/README_rome_tariff.md
+!dataset/osm/zones/rome_medium.geojson
 data/processed/
 data/processed_check/
 data/processed_grid32_check/
@@ -51,6 +60,13 @@ main.out
 TSIP/main.out
 TSIP/tmp_pages/
 TSIP/tmp_end_pages/
+WayBill/main.pdf
 
 # Scratch
 y.json
+
+# WayBill restricted/formal runtime state
+artifacts/waybill_formal/
+experiments/waybill_server_formal/
+waybill_data/
+*.sif

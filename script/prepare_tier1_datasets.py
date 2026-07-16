@@ -83,6 +83,17 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Prepare Tier-1 TSIP trajectory periods without map matching.")
     parser.add_argument("--dataset", choices=["tdrive", "geolife", "porto", "rome", "all"], default="tdrive")
     parser.add_argument("--output-dir", type=Path, default=ROOT_DIR / "data" / "processed")
+    parser.add_argument(
+        "--data-root",
+        type=Path,
+        default=ROOT_DIR / "dataset",
+        help="Raw data root. Formal layout is selected automatically when raw/ exists.",
+    )
+    parser.add_argument(
+        "--formal",
+        action="store_true",
+        help="Fail closed unless all development caps are zero.",
+    )
     parser.add_argument("--granularity", choices=["coarse", "medium", "fine"], default="medium")
     parser.add_argument("--cell-size-m", type=int, default=CELL_SIZE_M)
     parser.add_argument("--block-width", type=int, default=16, help="Local tariff block width in cells; 16 gives 256 leaves.")
@@ -101,6 +112,8 @@ def main() -> int:
     import pandas as pd
 
     args = parse_args()
+    if args.formal and int(args.max_raw_points) != 0:
+        raise SystemExit("formal preprocessing requires --max-raw-points 0")
     selected = ["tdrive", "geolife", "porto", "rome"] if args.dataset == "all" else [args.dataset]
     args.output_dir.mkdir(parents=True, exist_ok=True)
     manifest_rows: list[dict[str, Any]] = []
@@ -119,7 +132,7 @@ def _prepare_dataset(dataset: str, args: argparse.Namespace, pd) -> list[dict[st
 
     raw_points, stage0_rejects = clean_raw_points(
         dataset,
-        _limit(_iter_raw(dataset), args.max_raw_points),
+        _limit(_iter_raw(dataset, args.data_root), args.max_raw_points),
         city_bbox=CITY_BBOX[city],
     )
     rebased = rebase_points_to_2026(raw_points, anchor=REBASE_ANCHOR)
@@ -247,17 +260,33 @@ def _witness_smoke_count(periods: list[dict[str, Any]], tariff, *, cadence_sec: 
     return count
 
 
-def _iter_raw(dataset: str):
+def _iter_raw(dataset: str, data_root: Path = DATASET_DIR):
+    formal_root = data_root / "raw"
+    if formal_root.is_dir():
+        paths = {
+            "tdrive": formal_root / "tdrive" / "taxi_log_2008_by_id",
+            "geolife": formal_root / "geolife" / "Geolife Trajectories 1.3" / "Data",
+            "porto": formal_root / "porto" / "train.csv.zip",
+            "rome": formal_root / "rome" / "Roma.txt",
+        }
+        selected = paths[dataset]
+        if dataset == "tdrive":
+            return iter_tdrive_raw_points(selected)
+        if dataset == "geolife":
+            return iter_geolife_driving_raw_points(selected)
+        if dataset == "porto":
+            return iter_porto_raw_points(selected)
+        return iter_rome_raw_points(selected)
     if dataset == "tdrive":
-        return iter_tdrive_raw_points(DATASET_DIR / "T-Drive")
+        return iter_tdrive_raw_points(data_root / "T-Drive")
     if dataset == "geolife":
-        return iter_geolife_driving_raw_points(DATASET_DIR / "Geolife Trajectories 1.3" / "Data")
+        return iter_geolife_driving_raw_points(data_root / "Geolife Trajectories 1.3" / "Data")
     if dataset == "porto":
-        csv_path = DATASET_DIR / "porto" / "train.csv"
-        zip_path = DATASET_DIR / "porto" / "train.csv.zip"
+        csv_path = data_root / "porto" / "train.csv"
+        zip_path = data_root / "porto" / "train.csv.zip"
         return iter_porto_raw_points(csv_path if csv_path.exists() else zip_path)
     if dataset == "rome":
-        rome_path = DATASET_DIR / "Rome.txt"
+        rome_path = data_root / "Roma.txt"
         roma_path = DATASET_DIR / "Roma.txt"
         return iter_rome_raw_points(rome_path if rome_path.exists() else roma_path)
     raise ValueError(dataset)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export the fixed-config V4 utility comparison as a paper figure."""
+
 import os
 from pathlib import Path
 
@@ -14,7 +15,7 @@ OUTPUT = ROOT / "docker_v4_smoke/analysis_v4/figures/v4_fixed_utility_heatmap"
 DATASETS = ["tdrive", "geolife", "porto", "rome", "synthetic"]
 DISPLAY_DATASETS = ["T-Drive", "GeoLife", "Porto", "Rome", "Synthetic"]
 DISPLAY_METHODS = ["SHTPC", "Nebula-style"]
-FIGURE_SOURCE_DATE_EPOCH = "1783900800"  # 2026-07-13T00:00:00Z
+FIGURE_SOURCE_DATE_EPOCH = "1783900800"
 REQUIRED_COLUMNS = {
     "dataset",
     "fixed_epsilon",
@@ -37,9 +38,7 @@ def load_fixed_frame(path: Path = INPUT) -> pd.DataFrame:
     if missing:
         raise ValueError(f"fixed utility CSV is missing columns: {missing}")
     if frame["dataset"].tolist() != DATASETS:
-        raise ValueError(
-            "fixed utility CSV must contain the canonical five-dataset order"
-        )
+        raise ValueError("fixed utility CSV must contain the canonical five-dataset order")
 
     numeric_columns = [
         "fixed_epsilon",
@@ -62,9 +61,7 @@ def load_fixed_frame(path: Path = INPUT) -> pd.DataFrame:
     if frame["strongest_baseline"].astype(str).str.lower().tolist() != ["nebula"] * len(
         DATASETS
     ):
-        raise ValueError(
-            "figure label requires Nebula to be the strongest baseline in every row"
-        )
+        raise ValueError("figure label requires Nebula to be the strongest baseline in every row")
     passed = frame["pass"].map(lambda value: str(value).strip().lower() == "true")
     if not passed.all():
         raise ValueError("fixed utility figure requires every row gate to pass")
@@ -84,21 +81,16 @@ def load_fixed_frame(path: Path = INPUT) -> pd.DataFrame:
     if not np.allclose(numeric["delta_jaccard"], expected_delta, rtol=0.0, atol=1e-12):
         raise ValueError("fixed utility delta does not match proposed minus baseline")
     if (numeric["delta_jaccard"] <= 0.0).any():
-        raise ValueError(
-            "fixed utility figure requires a positive delta on every dataset"
-        )
+        raise ValueError("fixed utility figure requires a positive delta on every dataset")
 
     frame[numeric_columns] = numeric
     return frame.set_index("dataset")
 
 
 def main() -> None:
-    # Matplotlib otherwise embeds the wall-clock creation time in the PDF.
     os.environ["SOURCE_DATE_EPOCH"] = FIGURE_SOURCE_DATE_EPOCH
     frame = load_fixed_frame()
-    matrix = frame[["proposed_avg_jaccard", "baseline_avg_jaccard"]].to_numpy(
-        dtype=float
-    )
+    matrix = frame[["proposed_avg_jaccard", "baseline_avg_jaccard"]].to_numpy(dtype=float)
     fig = pf.heatmap(
         matrix,
         x_label="Method",

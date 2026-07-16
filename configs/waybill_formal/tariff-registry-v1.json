@@ -1,0 +1,52 @@
+{
+  "schema": "waybill.formal.tariff-registry/v1",
+  "tariffs": [
+    {
+      "tariff_id": "rome-capacity-d14-v1",
+      "semantic_class": "normalized_capacity",
+      "artifact_path": "experiments/waybill_m2/tariff_rome_medium_10000_cells.json",
+      "artifact_sha256": "bd7ed3f7bbb9669085432e911bd9a11c01a677f48cadf4f9dc25c3abd1c14507",
+      "root": "13699623093631692182889334311784675380256108557104408704717957921466979708714",
+      "unit": "dimensionless_relative_tier",
+      "maximum_value": 12,
+      "source": "Roma Mobilita blue-stripe parking street layer; ratios 0.50:1.00:1.20 normalized to 5:10:12",
+      "allowed_claims": [
+        "tariff-domain capacity",
+        "source provenance",
+        "Groth16 computational scaling"
+      ],
+      "forbidden_claims": [
+        "real road-use charge",
+        "real bill amount",
+        "production tariff"
+      ]
+    },
+    {
+      "tariff_id": "ruc-demo-v7-d8",
+      "semantic_class": "experimental_economic",
+      "artifact_path": "configs/settlement_policy_profiles/ruc-demo-tariff-v7-d8.json",
+      "artifact_sha256": "63013aafb6dbb6916a2d10183f2aa95b97a795ef3015a7ac7e61f755693e20cd",
+      "root_source": "computed from the checked-in artifact by common.settlement.TariffTable.root",
+      "unit": "experimental_cents_per_m",
+      "maximum_value": 5,
+      "source": "WayBill controlled experimental tariff profile; not a government RUC schedule",
+      "allowed_claims": [
+        "relative method comparison",
+        "revenue-safety invariant in experimental integer currency",
+        "fallback surcharge distribution in experimental integer currency"
+      ],
+      "forbidden_claims": [
+        "real taxpayer bill",
+        "jurisdiction deployment accuracy",
+        "official economic welfare"
+      ]
+    }
+  ],
+  "binding": {
+    "S1": "ruc-demo-v7-d8",
+    "S2": "rome-capacity-d14-v1",
+    "S3": "dataset-specific experimental tariff emitted by frozen preprocessing",
+    "S4": "observation schema only; tariff values are features under the S1 claim boundary",
+    "S5": "ruc-demo-v7-d8"
+  }
+}

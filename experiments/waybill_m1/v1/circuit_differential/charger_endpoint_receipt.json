@@ -1,0 +1,64 @@
+{
+  "accepted": {
+    "fallback_intervals": 3,
+    "period_id": "2026-05-v6-k6",
+    "policy_profile_commitment": "13254117629810876594700960416131691042346931883958953200682963773285339498283",
+    "total_distance_m": 2400,
+    "total_fee_cents": 3600
+  },
+  "artifact_sha256": {
+    "policy-profile-v6-k6.json": "e2df733bb518634af043a64e143e0e3e542645cc3ab46d0706fe09c156ade1f1",
+    "proof.json": "41f2bbbf72dba6bf37a2d265c3d52357eb2d1995e8c05f1a13efca941356b091",
+    "public.json": "6940a7fb3ab76aea3b5e73d8ef6d0bb21178b8f37d6fb31de6c30843f8a3db02",
+    "submission.json": "d7f7d48ac3cd909db9f104ec5c9eea2baec3d47ce862ea3e3a0ad3d29abec20f",
+    "tariff-v8-d8.json": "17a7b90cb4f3559e5002d6eada92fb1093e111632a5d119c5043c3f018eeeafd",
+    "verification_key.json": "f1e73b4e91fff595adff551b13466f15351b587231877f45e9d7b0d473b4569d"
+  },
+  "code_sha256": {
+    "common/policy_profile.py": "3caf1723f5f69d08fc1234e204adc8a3743cd9eaf80eeb54a95294131300597e",
+    "common/settlement_v6.py": "c116346db774bfd78a7986f0b5911227c49de3052f184a81fe0c6ac717d82bcc",
+    "script/run_waybill_m1_endpoint_gate.py": "0ffecaa35de83a5e82cc42fc65829f9b774efb6946fbddd0f817cbe276677ca5",
+    "services/charger/app.py": "a1a51ada97bcd9afd2e16087ea834371da443338e49ca2026164e4f70d9bf7f0"
+  },
+  "gates": {
+    "accepted_public_exactly_matches": true,
+    "canonical_proof_accepted": true,
+    "month_attestation_accepted": true,
+    "month_close_completed": true,
+    "nonzero_profile_commitment": true,
+    "only_unaccounted_distance_reconciled": true,
+    "replay_rejected": true,
+    "tampered_public_signal_rejected": true
+  },
+  "hard_gate_passed": true,
+  "http_status": {
+    "accepted": 200,
+    "month_attestation": 200,
+    "month_close": 200,
+    "replay": 409,
+    "tampered_signal": 400
+  },
+  "month_close": {
+    "accepted_period_fee_cents": 3600,
+    "accounted_distance_m": 2400,
+    "device_id": "dev-v6",
+    "idempotent": false,
+    "immutable": true,
+    "month_id": "202605",
+    "month_id_field": 202605,
+    "monthly_distance_m": 3000,
+    "ok": true,
+    "periods": 1,
+    "profile_commitments": [
+      "13254117629810876594700960416131691042346931883958953200682963773285339498283"
+    ],
+    "receipt_sha256": "3de8dc01a21e3002b64cbc607d652307be7b0ae71fe17574209ed4926d7f33d4",
+    "reconciliation_fee_cents": 3000,
+    "reconciliation_rate_cents_per_m": 5,
+    "status": "closed",
+    "total_month_bill_cents": 6600,
+    "unaccounted_distance_m": 600
+  },
+  "schema": "waybill-m1-v6-charger-endpoint-gate-v1",
+  "status": "verified"
+}

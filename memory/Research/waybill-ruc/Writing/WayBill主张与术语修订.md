@@ -17,11 +17,20 @@ assumptions 与 limitations 可以开始重写；Evaluation 的正式全量数�
 作为方法门禁和回归证据，不能替代正式服务器主表。V5 事实边界见
 [[Knowledge/WayBill-v5真实状态与证据边界]]。
 
+2026-07-15 复审确认本项目可以作为顶会论文预备继续，但当前稿件只有 5 页、12 个
+TODO、0 个正式 citation，仍为 major-revision skeleton。顶会与规模裁决见
+[[Results/Reports/顶会与大规模实验预备性复审-2026-07-15]]。
+
 依据来源：[[Sources/Docs/WayBill外部审阅报告-2026-07-13]]、[[Sources/Docs/WayBill当前仓库审计-2026-07-13]]。
 
 ## 核心叙事（门禁通过后的候选）
 
 WayBill V6 研究的不是“零知识自动保证真实道路使用”，而是：在权威 policy profile 与明确测量假设下，如何私密证明道路收费计算、使定位缺失不带来少缴、避免用停车时间虚构行驶距离，并给出城市规模与攻击最坏区间的可审计证据。
+
+推荐差异化表述：在明确的 attested-sensing 假设下，用 authority-pinned settlement
+proof 保证计费正确性，用 odometer-backed reconciliation 保证漏报完整性，从而替代
+VPriv/PrETP/Milo 路线中的 roadside completeness infrastructure，并实测公开结算字段
+造成的 route/cross-period leakage。不得泛称“首次使用 ZK 做车辆税收”。
 
 ## 术语替换
 

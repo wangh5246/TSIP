@@ -1,0 +1,177 @@
+{
+  "$id": "https://waybill.example/schema/policy-profile-v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "authority_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "cadence_sec": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "cap_policy_hash": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "cap_policy_sq": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "circuit_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "commitment_version": {
+      "const": 1
+    },
+    "currency": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "domain_sep": {
+      "const": "waybill_policy_profile_v1"
+    },
+    "fallback_semantics_version": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "fixed_point_scale": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "jurisdiction_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "max_dt_sec": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "max_fixes": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "max_zone_rate_cents_per_m": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "min_accepted_version": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "mode_vmax_sq": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "monthly_reconciliation_rate_cents_per_m": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "overflow_policy": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "policy_profile_commitment": {
+      "pattern": "^[0-9]+$",
+      "type": "string"
+    },
+    "profile_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "profile_version": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "revoked_at": {
+      "minimum": 0,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "rounding_mode": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "tariff_artifact_path": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "tariff_root": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "tariff_tree_depth": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "tariff_version": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "tier_vmax_mps": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "tier_vmax_sq": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "valid_from": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "valid_to": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "verification_key_hash": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "verification_key_path": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "authority_id",
+    "cadence_sec",
+    "cap_policy_hash",
+    "cap_policy_sq",
+    "circuit_id",
+    "commitment_version",
+    "currency",
+    "domain_sep",
+    "fallback_semantics_version",
+    "fixed_point_scale",
+    "jurisdiction_id",
+    "max_dt_sec",
+    "max_fixes",
+    "max_zone_rate_cents_per_m",
+    "min_accepted_version",
+    "mode_vmax_sq",
+    "monthly_reconciliation_rate_cents_per_m",
+    "overflow_policy",
+    "policy_profile_commitment",
+    "profile_sha256",
+    "profile_version",
+    "revoked_at",
+    "rounding_mode",
+    "tariff_artifact_path",
+    "tariff_root",
+    "tariff_tree_depth",
+    "tariff_version",
+    "tier_vmax_mps",
+    "tier_vmax_sq",
+    "valid_from",
+    "valid_to",
+    "verification_key_hash",
+    "verification_key_path"
+  ],
+  "title": "WayBill Canonical PolicyProfile v1",
+  "type": "object"
+}
