@@ -1,7 +1,7 @@
 ---
 type: project-index
 project: waybill-ruc
-updated: 2026-07-16
+updated: 2026-07-17
 status: active
 tags: [waybill, ruc, index]
 ---
@@ -48,6 +48,7 @@ tags: [waybill, ruc, index]
 - [[Daily/2026-07-14]]
 - [[Daily/2026-07-15]]
 - [[Daily/2026-07-16]]
+- [[Daily/2026-07-17]]
 
 ## System
 

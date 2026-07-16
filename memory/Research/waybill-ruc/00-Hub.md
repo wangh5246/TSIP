@@ -1,7 +1,7 @@
 ---
 type: project-hub
 project: waybill-ruc
-updated: 2026-07-16
+updated: 2026-07-17
 status: active
 tags: [waybill, ruc, hub, v6]
 ---
@@ -110,14 +110,18 @@ formal run ID。详见
   通过，立即服务器开跑与投稿成熟度保持不通过。
 - 2026-07-16：租用前条件收口；Linux 容器、完整 raw manifest、正式编排、S5 corpus、
   453 项通过测试和安全审计已完成，项目进入目标服务器 RG6/全量物化阶段。
+- 2026-07-17：补充稀疏检出不变的 code manifest 与 Git LFS 安全迁移路径；测试增至
+  454 passed、2 skipped，冻结 bundle 可在跳过历史 LFS artifact 后干净克隆。
 
 ## Important Links
 - [[01-Plan]]
 - [[02-Index]]
 - [[_system/registry]]
 - [[Daily/2026-07-16]]
+- [[Daily/2026-07-17]]
 
 ## Recent Changes
+- 2026-07-17: release bundle and sparse-checkout-invariant code manifest verified.
 - 2026-07-16: pre-rental readiness passed; target-host RG6 and full materialization remain.
 - 2026-07-15T15:19:35Z: sync refreshed scaffold, registry, index, and daily note (auto).
 - 2026-07-13T20:35:59Z: sync refreshed scaffold, registry, index, and daily note (auto).

@@ -1,7 +1,7 @@
 ---
 type: project-plan
 project: waybill-ruc
-updated: 2026-07-16
+updated: 2026-07-17
 status: active
 tags: [waybill, ruc, plan, v6]
 ---
@@ -23,7 +23,7 @@ V6 方法阶段只有在以下四项均达到 `verified` 后完成：
 
 任何一项未通过，都必须按门禁规则缩小主张，不能用写作润色替代。
 
-当前检查点（2026-07-16）：M0–M3 均为 `verified`，租服务器前就绪性为
+当前检查点（2026-07-17）：M0–M3 均为 `verified`，租服务器前就绪性为
 `passed`，正式启动仍为 `blocked-on-target`。clean release、Linux 容器、完整 raw
 data、正式 job matrix 和本地发布门禁已经完成；剩余项只能在目标服务器关闭：
 RG6、无 cap prepared/canonical materialization 和最终 S3 cardinality/resource plan。
