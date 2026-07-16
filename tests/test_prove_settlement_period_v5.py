@@ -46,6 +46,19 @@ SYM = ROOT_DIR / "zk" / "settlement_period_v5_k6" / "settlement_period_v5_k6.sym
 VKEY = ROOT_DIR / "zk" / "settlement_period_v5_k6" / "verification_key.json"
 
 
+def is_materialized_sym(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    return not path.read_bytes().startswith(b"version https://git-lfs.github.com/spec/v1\n")
+
+
+def is_materialized_wasm(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    with path.open("rb") as handle:
+        return handle.read(4) == b"\x00asm"
+
+
 def wrapper_public_order() -> list[str]:
     text = WRAPPER.read_text(encoding="utf-8")
     match = re.search(r"component\s+main\s*\{public\s*\[(.*?)\]\}\s*=", text, flags=re.S)
@@ -87,7 +100,7 @@ def test_public_signal_layout_matches_wrapper_prover_artifact_and_charger():
     assert wrapper_public_order() == PUBLIC_SIGNAL_ORDER
     assert list(input_json)[:PUBLIC_SIGNAL_COUNT] == PUBLIC_SIGNAL_ORDER
 
-    if SYM.exists():
+    if is_materialized_sym(SYM):
         assert sym_public_order() == PUBLIC_SIGNAL_ORDER
     if VKEY.exists():
         assert json.loads(VKEY.read_text(encoding="utf-8"))["nPublic"] == PUBLIC_SIGNAL_COUNT
@@ -174,7 +187,10 @@ def test_raw_witness_builder_requires_compiled_fix_count():
         build_raw_witness_input_for_fixes(fixes[:-1], build_tariff(), params=params)
 
 
-@pytest.mark.skipif(not WASM.exists() or SNARKJS is None, reason="settlement v5 WASM/snarkjs is not available")
+@pytest.mark.skipif(
+    not is_materialized_wasm(WASM) or SNARKJS is None,
+    reason="materialized settlement v5 WASM/snarkjs is not available",
+)
 def test_witness_rejects_terminal_fix_cell_separated_from_terminal_geometry():
     period_id = f"2026-05-v5-{SETTLEMENT_PROFILE}"
     fixes = build_fixes(period_id)
@@ -190,7 +206,10 @@ def test_witness_rejects_terminal_fix_cell_separated_from_terminal_geometry():
     assert result.returncode != 0, result.stdout
 
 
-@pytest.mark.skipif(not WASM.exists() or SNARKJS is None, reason="settlement v5 WASM/snarkjs is not available")
+@pytest.mark.skipif(
+    not is_materialized_wasm(WASM) or SNARKJS is None,
+    reason="materialized settlement v5 WASM/snarkjs is not available",
+)
 def test_witness_rejects_in_range_terminal_cell_teleport_at_step_continuity():
     period_id = f"2026-05-v5-{SETTLEMENT_PROFILE}"
     tariff = build_tariff()
