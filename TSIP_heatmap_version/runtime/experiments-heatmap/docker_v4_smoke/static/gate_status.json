@@ -1,0 +1,166 @@
+{
+  "checks": [
+    {
+      "detail": "14/14 signals exact; Groth16 verified (k6)",
+      "elapsed_ms": 1257.752,
+      "layer": "archive",
+      "name": "archive_k6_compatibility",
+      "passed": true
+    },
+    {
+      "detail": "14/14 signals exact; Groth16 verified (k30)",
+      "elapsed_ms": 815.721,
+      "layer": "archive",
+      "name": "archive_k30_compatibility",
+      "passed": true
+    },
+    {
+      "detail": "16/16 public signals exact; Groth16 verified",
+      "elapsed_ms": 1532.313,
+      "layer": "groth16",
+      "name": "paper_positive",
+      "passed": true
+    },
+    {
+      "detail": "tampered public[0] rejected",
+      "elapsed_ms": 368.59,
+      "layer": "groth16-verify",
+      "name": "tampered_public_hash_prev",
+      "passed": true
+    },
+    {
+      "detail": "tampered public[12] rejected",
+      "elapsed_ms": 451.406,
+      "layer": "groth16-verify",
+      "name": "changed_blob_hash",
+      "passed": true
+    },
+    {
+      "detail": "tampered public[11] rejected",
+      "elapsed_ms": 523.539,
+      "layer": "groth16-verify",
+      "name": "replayed_proof_new_context",
+      "passed": true
+    },
+    {
+      "detail": "constraint violation rejected",
+      "elapsed_ms": 170.758,
+      "layer": "witness",
+      "name": "tampered_current_coordinate",
+      "passed": true
+    },
+    {
+      "detail": "constraint violation rejected",
+      "elapsed_ms": 431.299,
+      "layer": "witness",
+      "name": "swapped_primary",
+      "passed": true
+    },
+    {
+      "detail": "constraint violation rejected",
+      "elapsed_ms": 172.209,
+      "layer": "witness",
+      "name": "swapped_a_share_digest",
+      "passed": true
+    },
+    {
+      "detail": "constraint violation rejected",
+      "elapsed_ms": 188.611,
+      "layer": "witness",
+      "name": "swapped_r_share_digest",
+      "passed": true
+    },
+    {
+      "detail": "constraint violation rejected",
+      "elapsed_ms": 123.243,
+      "layer": "witness",
+      "name": "cross_swapped_share_digests",
+      "passed": true
+    },
+    {
+      "detail": "constraint violation rejected",
+      "elapsed_ms": 104.845,
+      "layer": "witness",
+      "name": "changed_context_commitment",
+      "passed": true
+    },
+    {
+      "detail": "constraint violation rejected",
+      "elapsed_ms": 96.479,
+      "layer": "witness",
+      "name": "wrong_predecessor",
+      "passed": true
+    },
+    {
+      "detail": "constraint violation rejected",
+      "elapsed_ms": 212.355,
+      "layer": "witness",
+      "name": "wrong_anchor",
+      "passed": true
+    },
+    {
+      "detail": "constraint violation rejected",
+      "elapsed_ms": 152.379,
+      "layer": "witness",
+      "name": "wrong_secret",
+      "passed": true
+    },
+    {
+      "detail": "canonical A route accepted",
+      "elapsed_ms": 6.313,
+      "layer": "route-binding",
+      "name": "route_a_positive",
+      "passed": true
+    },
+    {
+      "detail": "canonical R route accepted",
+      "elapsed_ms": 0.687,
+      "layer": "route-binding",
+      "name": "route_r_positive",
+      "passed": true
+    },
+    {
+      "detail": "tsip A share-content commitment mismatch (C21)",
+      "elapsed_ms": 0.295,
+      "layer": "route-binding",
+      "name": "swapped_a_share",
+      "passed": true
+    },
+    {
+      "detail": "tsip R share-content commitment mismatch (C21)",
+      "elapsed_ms": 0.215,
+      "layer": "route-binding",
+      "name": "swapped_r_share",
+      "passed": true
+    },
+    {
+      "detail": "tsip A share-content commitment mismatch (C21)",
+      "elapsed_ms": 0.215,
+      "layer": "route-binding",
+      "name": "a_r_cross_swap",
+      "passed": true
+    },
+    {
+      "detail": "tsip report context mismatch",
+      "elapsed_ms": 0.02,
+      "layer": "route-binding",
+      "name": "changed_route_context",
+      "passed": true
+    },
+    {
+      "detail": "tsip blob_hash same-primary mismatch (C21)",
+      "elapsed_ms": 0.887,
+      "layer": "route-binding",
+      "name": "changed_route_blob_hash",
+      "passed": true
+    }
+  ],
+  "finished_at": "2026-07-10T04:41:19Z",
+  "manifest": "/workspace/TSIP_heatmap_version/runtime/experiments-heatmap/docker_v4_smoke/manifest.json",
+  "started_at": "2026-07-10T04:41:11Z",
+  "state": "pass",
+  "summary": {
+    "failed": 0,
+    "passed": 22
+  }
+}

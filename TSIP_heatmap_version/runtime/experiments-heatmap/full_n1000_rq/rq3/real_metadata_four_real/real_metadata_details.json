@@ -1,0 +1,1270 @@
+{
+  "runs": [
+    {
+      "active": {
+        "features": [
+          "chain_len_total",
+          "chain_len_norm",
+          "accepted_total",
+          "rejected_total",
+          "accept_rate",
+          "reject_rate",
+          "recent_count_1",
+          "recent_count_2",
+          "recent_count_4",
+          "recent_accept_rate_4",
+          "recent_reject_rate_4",
+          "last_seen_age",
+          "last_submit_phase",
+          "mean_submit_phase",
+          "std_submit_phase",
+          "phase_entropy_4bin",
+          "interarrival_mean",
+          "interarrival_std",
+          "interarrival_min",
+          "interarrival_max",
+          "accept_transition_rate",
+          "last_accept",
+          "tail_accept_streak",
+          "tail_reject_streak"
+        ],
+        "metrics": {
+          "accuracy_at_0_5": 0.9985714285714286,
+          "auc": 0.9960858265720081,
+          "f1_at_0_5": 0.9881422924901185,
+          "fpr_at_0_5": 0.0,
+          "positive_rate": 0.06092857142857143,
+          "precision_at_0_5": 1.0,
+          "samples_test": 4200.0,
+          "samples_total": 14000.0,
+          "tpr_at_0_5": 0.9765625
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.000724476108753639,
+          "max_iter": 500,
+          "n_iter": 29
+        }
+      },
+      "bin_mode": "timestamp",
+      "dataset": "T-Drive",
+      "linkability": {
+        "metrics": {
+          "accuracy_at_0_5": 0.73,
+          "auc": 0.7284444444444444,
+          "f1_at_0_5": 0.7862796833773087,
+          "fpr_at_0_5": 0.5333333333333333,
+          "positive_rate": 0.5,
+          "precision_at_0_5": 0.6506550218340611,
+          "samples_test": 600.0,
+          "samples_total": 2000.0,
+          "samples_train": 1400.0,
+          "tpr_at_0_5": 0.9933333333333333
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.46714890075176635,
+          "max_iter": 500,
+          "n_iter": 37
+        },
+        "split": {
+          "negative_pair_scope": "within-partition",
+          "test_samples": 600,
+          "test_size": 0.3,
+          "test_users": 300,
+          "train_samples": 1400,
+          "train_users": 700,
+          "type": "user-disjoint"
+        }
+      },
+      "seed": 7,
+      "selected_bins": [
+        333877,
+        333878,
+        333879,
+        333880,
+        333881,
+        333882,
+        333883,
+        333884,
+        333885,
+        333886,
+        333887,
+        333888,
+        333891,
+        333892,
+        333893,
+        333894,
+        333895
+      ],
+      "time_bin_sec": 3600
+    },
+    {
+      "active": {
+        "features": [
+          "chain_len_total",
+          "chain_len_norm",
+          "accepted_total",
+          "rejected_total",
+          "accept_rate",
+          "reject_rate",
+          "recent_count_1",
+          "recent_count_2",
+          "recent_count_4",
+          "recent_accept_rate_4",
+          "recent_reject_rate_4",
+          "last_seen_age",
+          "last_submit_phase",
+          "mean_submit_phase",
+          "std_submit_phase",
+          "phase_entropy_4bin",
+          "interarrival_mean",
+          "interarrival_std",
+          "interarrival_min",
+          "interarrival_max",
+          "accept_transition_rate",
+          "last_accept",
+          "tail_accept_streak",
+          "tail_reject_streak"
+        ],
+        "metrics": {
+          "accuracy_at_0_5": 0.9993333333333333,
+          "auc": 0.9998589250085652,
+          "f1_at_0_5": 0.9949066213921901,
+          "fpr_at_0_5": 0.00023781212841854935,
+          "positive_rate": 0.06553333333333333,
+          "precision_at_0_5": 0.9965986394557823,
+          "samples_test": 4500.0,
+          "samples_total": 15000.0,
+          "tpr_at_0_5": 0.9932203389830508
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 8.227166487196572e-05,
+          "max_iter": 500,
+          "n_iter": 30
+        }
+      },
+      "bin_mode": "timestamp",
+      "dataset": "GeoLife",
+      "linkability": {
+        "metrics": {
+          "accuracy_at_0_5": 0.7333333333333333,
+          "auc": 0.7531722222222222,
+          "f1_at_0_5": 0.7883597883597884,
+          "fpr_at_0_5": 0.5266666666666666,
+          "positive_rate": 0.5,
+          "precision_at_0_5": 0.6535087719298246,
+          "samples_test": 600.0,
+          "samples_total": 2000.0,
+          "samples_train": 1400.0,
+          "tpr_at_0_5": 0.9933333333333333
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.47089168449720903,
+          "max_iter": 500,
+          "n_iter": 33
+        },
+        "split": {
+          "negative_pair_scope": "within-partition",
+          "test_samples": 600,
+          "test_size": 0.3,
+          "test_users": 300,
+          "train_samples": 1400,
+          "train_users": 700,
+          "type": "user-disjoint"
+        }
+      },
+      "seed": 7,
+      "selected_bins": [
+        335272,
+        335280,
+        335310,
+        335341,
+        335342,
+        335356,
+        335357,
+        335359,
+        337140,
+        337152,
+        337213,
+        337399,
+        337404,
+        337408,
+        339324,
+        339326,
+        339334,
+        339335
+      ],
+      "time_bin_sec": 3600
+    },
+    {
+      "active": {
+        "features": [
+          "chain_len_total",
+          "chain_len_norm",
+          "accepted_total",
+          "rejected_total",
+          "accept_rate",
+          "reject_rate",
+          "recent_count_1",
+          "recent_count_2",
+          "recent_count_4",
+          "recent_accept_rate_4",
+          "recent_reject_rate_4",
+          "last_seen_age",
+          "last_submit_phase",
+          "mean_submit_phase",
+          "std_submit_phase",
+          "phase_entropy_4bin",
+          "interarrival_mean",
+          "interarrival_std",
+          "interarrival_min",
+          "interarrival_max",
+          "accept_transition_rate",
+          "last_accept",
+          "tail_accept_streak",
+          "tail_reject_streak"
+        ],
+        "metrics": {
+          "accuracy_at_0_5": 0.9955555555555555,
+          "auc": 0.9993241923891323,
+          "f1_at_0_5": 0.9798657718120807,
+          "fpr_at_0_5": 0.0012505210504376823,
+          "positive_rate": 0.11144444444444444,
+          "precision_at_0_5": 0.9898305084745763,
+          "samples_test": 2700.0,
+          "samples_total": 9000.0,
+          "tpr_at_0_5": 0.9700996677740864
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.012028731624142358,
+          "max_iter": 500,
+          "n_iter": 40
+        }
+      },
+      "bin_mode": "timestamp",
+      "dataset": "Porto",
+      "linkability": {
+        "metrics": {
+          "accuracy_at_0_5": 0.6583333333333333,
+          "auc": 0.7165333333333334,
+          "f1_at_0_5": 0.7140864714086472,
+          "fpr_at_0_5": 0.5366666666666666,
+          "positive_rate": 0.5,
+          "precision_at_0_5": 0.6139088729016786,
+          "samples_test": 600.0,
+          "samples_total": 2000.0,
+          "samples_train": 1400.0,
+          "tpr_at_0_5": 0.8533333333333334
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.5118202254107524,
+          "max_iter": 500,
+          "n_iter": 32
+        },
+        "split": {
+          "negative_pair_scope": "within-partition",
+          "test_samples": 600,
+          "test_size": 0.3,
+          "test_users": 300,
+          "train_samples": 1400,
+          "train_users": 700,
+          "type": "user-disjoint"
+        }
+      },
+      "seed": 7,
+      "selected_bins": [
+        381288,
+        381289,
+        381290,
+        381291,
+        381292,
+        381293,
+        381294,
+        381295,
+        381296,
+        381297,
+        381298
+      ],
+      "time_bin_sec": 3600
+    },
+    {
+      "active": {
+        "features": [
+          "chain_len_total",
+          "chain_len_norm",
+          "accepted_total",
+          "rejected_total",
+          "accept_rate",
+          "reject_rate",
+          "recent_count_1",
+          "recent_count_2",
+          "recent_count_4",
+          "recent_accept_rate_4",
+          "recent_reject_rate_4",
+          "last_seen_age",
+          "last_submit_phase",
+          "mean_submit_phase",
+          "std_submit_phase",
+          "phase_entropy_4bin",
+          "interarrival_mean",
+          "interarrival_std",
+          "interarrival_min",
+          "interarrival_max",
+          "accept_transition_rate",
+          "last_accept",
+          "tail_accept_streak",
+          "tail_reject_streak"
+        ],
+        "metrics": {
+          "accuracy_at_0_5": 0.9980952380952381,
+          "auc": 0.9999806576402321,
+          "f1_at_0_5": 0.9908675799086757,
+          "fpr_at_0_5": 0.0005319148936170213,
+          "positive_rate": 0.10471428571428572,
+          "precision_at_0_5": 0.9954128440366973,
+          "samples_test": 2100.0,
+          "samples_total": 7000.0,
+          "tpr_at_0_5": 0.9863636363636363
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.0023174747511014032,
+          "max_iter": 500,
+          "n_iter": 51
+        }
+      },
+      "bin_mode": "timestamp",
+      "dataset": "Rome",
+      "linkability": {
+        "metrics": {
+          "accuracy_at_0_5": 0.715,
+          "auc": 0.7233833333333334,
+          "f1_at_0_5": 0.7776332899869961,
+          "fpr_at_0_5": 0.5666666666666667,
+          "positive_rate": 0.5,
+          "precision_at_0_5": 0.6375266524520256,
+          "samples_test": 600.0,
+          "samples_total": 2000.0,
+          "samples_train": 1400.0,
+          "tpr_at_0_5": 0.9966666666666667
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.5041701992190698,
+          "max_iter": 500,
+          "n_iter": 32
+        },
+        "split": {
+          "negative_pair_scope": "within-partition",
+          "test_samples": 600,
+          "test_size": 0.3,
+          "test_users": 300,
+          "train_samples": 1400,
+          "train_users": 700,
+          "type": "user-disjoint"
+        }
+      },
+      "seed": 7,
+      "selected_bins": [
+        386447,
+        386448,
+        386449,
+        386450,
+        386451,
+        386452,
+        386453,
+        386454
+      ],
+      "time_bin_sec": 3600
+    },
+    {
+      "active": {
+        "features": [
+          "chain_len_total",
+          "chain_len_norm",
+          "accepted_total",
+          "rejected_total",
+          "accept_rate",
+          "reject_rate",
+          "recent_count_1",
+          "recent_count_2",
+          "recent_count_4",
+          "recent_accept_rate_4",
+          "recent_reject_rate_4",
+          "last_seen_age",
+          "last_submit_phase",
+          "mean_submit_phase",
+          "std_submit_phase",
+          "phase_entropy_4bin",
+          "interarrival_mean",
+          "interarrival_std",
+          "interarrival_min",
+          "interarrival_max",
+          "accept_transition_rate",
+          "last_accept",
+          "tail_accept_streak",
+          "tail_reject_streak"
+        ],
+        "metrics": {
+          "accuracy_at_0_5": 0.9990476190476191,
+          "auc": 0.9999692967165315,
+          "f1_at_0_5": 0.9921259842519685,
+          "fpr_at_0_5": 0.0,
+          "positive_rate": 0.06092857142857143,
+          "precision_at_0_5": 1.0,
+          "samples_test": 4200.0,
+          "samples_total": 14000.0,
+          "tpr_at_0_5": 0.984375
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.0001565008263316233,
+          "max_iter": 500,
+          "n_iter": 34
+        }
+      },
+      "bin_mode": "timestamp",
+      "dataset": "T-Drive",
+      "linkability": {
+        "metrics": {
+          "accuracy_at_0_5": 0.75,
+          "auc": 0.7555722222222222,
+          "f1_at_0_5": 0.7994652406417112,
+          "fpr_at_0_5": 0.49666666666666665,
+          "positive_rate": 0.5,
+          "precision_at_0_5": 0.6674107142857143,
+          "samples_test": 600.0,
+          "samples_total": 2000.0,
+          "samples_train": 1400.0,
+          "tpr_at_0_5": 0.9966666666666667
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.4772116864700065,
+          "max_iter": 500,
+          "n_iter": 34
+        },
+        "split": {
+          "negative_pair_scope": "within-partition",
+          "test_samples": 600,
+          "test_size": 0.3,
+          "test_users": 300,
+          "train_samples": 1400,
+          "train_users": 700,
+          "type": "user-disjoint"
+        }
+      },
+      "seed": 11,
+      "selected_bins": [
+        333877,
+        333878,
+        333879,
+        333880,
+        333881,
+        333882,
+        333883,
+        333884,
+        333885,
+        333886,
+        333887,
+        333888,
+        333891,
+        333892,
+        333893,
+        333894,
+        333895
+      ],
+      "time_bin_sec": 3600
+    },
+    {
+      "active": {
+        "features": [
+          "chain_len_total",
+          "chain_len_norm",
+          "accepted_total",
+          "rejected_total",
+          "accept_rate",
+          "reject_rate",
+          "recent_count_1",
+          "recent_count_2",
+          "recent_count_4",
+          "recent_accept_rate_4",
+          "recent_reject_rate_4",
+          "last_seen_age",
+          "last_submit_phase",
+          "mean_submit_phase",
+          "std_submit_phase",
+          "phase_entropy_4bin",
+          "interarrival_mean",
+          "interarrival_std",
+          "interarrival_min",
+          "interarrival_max",
+          "accept_transition_rate",
+          "last_accept",
+          "tail_accept_streak",
+          "tail_reject_streak"
+        ],
+        "metrics": {
+          "accuracy_at_0_5": 0.9997777777777778,
+          "auc": 0.9998363530099357,
+          "f1_at_0_5": 0.99830220713073,
+          "fpr_at_0_5": 0.0,
+          "positive_rate": 0.06553333333333333,
+          "precision_at_0_5": 1.0,
+          "samples_test": 4500.0,
+          "samples_total": 15000.0,
+          "tpr_at_0_5": 0.9966101694915255
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.00010894724737718932,
+          "max_iter": 500,
+          "n_iter": 29
+        }
+      },
+      "bin_mode": "timestamp",
+      "dataset": "GeoLife",
+      "linkability": {
+        "metrics": {
+          "accuracy_at_0_5": 0.7483333333333333,
+          "auc": 0.7417388888888888,
+          "f1_at_0_5": 0.7978580990629183,
+          "fpr_at_0_5": 0.49666666666666665,
+          "positive_rate": 0.5,
+          "precision_at_0_5": 0.6666666666666666,
+          "samples_test": 600.0,
+          "samples_total": 2000.0,
+          "samples_train": 1400.0,
+          "tpr_at_0_5": 0.9933333333333333
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.47900645725655794,
+          "max_iter": 500,
+          "n_iter": 30
+        },
+        "split": {
+          "negative_pair_scope": "within-partition",
+          "test_samples": 600,
+          "test_size": 0.3,
+          "test_users": 300,
+          "train_samples": 1400,
+          "train_users": 700,
+          "type": "user-disjoint"
+        }
+      },
+      "seed": 11,
+      "selected_bins": [
+        335272,
+        335280,
+        335310,
+        335341,
+        335342,
+        335356,
+        335357,
+        335359,
+        337140,
+        337152,
+        337213,
+        337399,
+        337404,
+        337408,
+        339324,
+        339326,
+        339334,
+        339335
+      ],
+      "time_bin_sec": 3600
+    },
+    {
+      "active": {
+        "features": [
+          "chain_len_total",
+          "chain_len_norm",
+          "accepted_total",
+          "rejected_total",
+          "accept_rate",
+          "reject_rate",
+          "recent_count_1",
+          "recent_count_2",
+          "recent_count_4",
+          "recent_accept_rate_4",
+          "recent_reject_rate_4",
+          "last_seen_age",
+          "last_submit_phase",
+          "mean_submit_phase",
+          "std_submit_phase",
+          "phase_entropy_4bin",
+          "interarrival_mean",
+          "interarrival_std",
+          "interarrival_min",
+          "interarrival_max",
+          "accept_transition_rate",
+          "last_accept",
+          "tail_accept_streak",
+          "tail_reject_streak"
+        ],
+        "metrics": {
+          "accuracy_at_0_5": 0.9951851851851852,
+          "auc": 0.9983111733986614,
+          "f1_at_0_5": 0.9782971619365609,
+          "fpr_at_0_5": 0.0020842017507294707,
+          "positive_rate": 0.11144444444444444,
+          "precision_at_0_5": 0.9832214765100671,
+          "samples_test": 2700.0,
+          "samples_total": 9000.0,
+          "tpr_at_0_5": 0.973421926910299
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.01281162631110295,
+          "max_iter": 500,
+          "n_iter": 55
+        }
+      },
+      "bin_mode": "timestamp",
+      "dataset": "Porto",
+      "linkability": {
+        "metrics": {
+          "accuracy_at_0_5": 0.6516666666666666,
+          "auc": 0.7075,
+          "f1_at_0_5": 0.7303225806451614,
+          "fpr_at_0_5": 0.64,
+          "positive_rate": 0.5,
+          "precision_at_0_5": 0.5957894736842105,
+          "samples_test": 600.0,
+          "samples_total": 2000.0,
+          "samples_train": 1400.0,
+          "tpr_at_0_5": 0.9433333333333334
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.5324311045786629,
+          "max_iter": 500,
+          "n_iter": 35
+        },
+        "split": {
+          "negative_pair_scope": "within-partition",
+          "test_samples": 600,
+          "test_size": 0.3,
+          "test_users": 300,
+          "train_samples": 1400,
+          "train_users": 700,
+          "type": "user-disjoint"
+        }
+      },
+      "seed": 11,
+      "selected_bins": [
+        381288,
+        381289,
+        381290,
+        381291,
+        381292,
+        381293,
+        381294,
+        381295,
+        381296,
+        381297,
+        381298
+      ],
+      "time_bin_sec": 3600
+    },
+    {
+      "active": {
+        "features": [
+          "chain_len_total",
+          "chain_len_norm",
+          "accepted_total",
+          "rejected_total",
+          "accept_rate",
+          "reject_rate",
+          "recent_count_1",
+          "recent_count_2",
+          "recent_count_4",
+          "recent_accept_rate_4",
+          "recent_reject_rate_4",
+          "last_seen_age",
+          "last_submit_phase",
+          "mean_submit_phase",
+          "std_submit_phase",
+          "phase_entropy_4bin",
+          "interarrival_mean",
+          "interarrival_std",
+          "interarrival_min",
+          "interarrival_max",
+          "accept_transition_rate",
+          "last_accept",
+          "tail_accept_streak",
+          "tail_reject_streak"
+        ],
+        "metrics": {
+          "accuracy_at_0_5": 0.9980952380952381,
+          "auc": 0.9997219535783366,
+          "f1_at_0_5": 0.9908256880733944,
+          "fpr_at_0_5": 0.0,
+          "positive_rate": 0.10471428571428572,
+          "precision_at_0_5": 1.0,
+          "samples_test": 2100.0,
+          "samples_total": 7000.0,
+          "tpr_at_0_5": 0.9818181818181818
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.002391090225842683,
+          "max_iter": 500,
+          "n_iter": 33
+        }
+      },
+      "bin_mode": "timestamp",
+      "dataset": "Rome",
+      "linkability": {
+        "metrics": {
+          "accuracy_at_0_5": 0.7183333333333334,
+          "auc": 0.7579333333333333,
+          "f1_at_0_5": 0.7796610169491526,
+          "fpr_at_0_5": 0.56,
+          "positive_rate": 0.5,
+          "precision_at_0_5": 0.6402569593147751,
+          "samples_test": 600.0,
+          "samples_total": 2000.0,
+          "samples_train": 1400.0,
+          "tpr_at_0_5": 0.9966666666666667
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.49903014071886437,
+          "max_iter": 500,
+          "n_iter": 50
+        },
+        "split": {
+          "negative_pair_scope": "within-partition",
+          "test_samples": 600,
+          "test_size": 0.3,
+          "test_users": 300,
+          "train_samples": 1400,
+          "train_users": 700,
+          "type": "user-disjoint"
+        }
+      },
+      "seed": 11,
+      "selected_bins": [
+        386447,
+        386448,
+        386449,
+        386450,
+        386451,
+        386452,
+        386453,
+        386454
+      ],
+      "time_bin_sec": 3600
+    },
+    {
+      "active": {
+        "features": [
+          "chain_len_total",
+          "chain_len_norm",
+          "accepted_total",
+          "rejected_total",
+          "accept_rate",
+          "reject_rate",
+          "recent_count_1",
+          "recent_count_2",
+          "recent_count_4",
+          "recent_accept_rate_4",
+          "recent_reject_rate_4",
+          "last_seen_age",
+          "last_submit_phase",
+          "mean_submit_phase",
+          "std_submit_phase",
+          "phase_entropy_4bin",
+          "interarrival_mean",
+          "interarrival_std",
+          "interarrival_min",
+          "interarrival_max",
+          "accept_transition_rate",
+          "last_accept",
+          "tail_accept_streak",
+          "tail_reject_streak"
+        ],
+        "metrics": {
+          "accuracy_at_0_5": 0.9990476190476191,
+          "auc": 0.999996038286004,
+          "f1_at_0_5": 0.9921568627450981,
+          "fpr_at_0_5": 0.0002535496957403651,
+          "positive_rate": 0.06092857142857143,
+          "precision_at_0_5": 0.9960629921259843,
+          "samples_test": 4200.0,
+          "samples_total": 14000.0,
+          "tpr_at_0_5": 0.98828125
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.000695878664362787,
+          "max_iter": 500,
+          "n_iter": 28
+        }
+      },
+      "bin_mode": "timestamp",
+      "dataset": "T-Drive",
+      "linkability": {
+        "metrics": {
+          "accuracy_at_0_5": 0.745,
+          "auc": 0.74625,
+          "f1_at_0_5": 0.7968127490039841,
+          "fpr_at_0_5": 0.51,
+          "positive_rate": 0.5,
+          "precision_at_0_5": 0.6622516556291391,
+          "samples_test": 600.0,
+          "samples_total": 2000.0,
+          "samples_train": 1400.0,
+          "tpr_at_0_5": 1.0
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.47979574648382145,
+          "max_iter": 500,
+          "n_iter": 33
+        },
+        "split": {
+          "negative_pair_scope": "within-partition",
+          "test_samples": 600,
+          "test_size": 0.3,
+          "test_users": 300,
+          "train_samples": 1400,
+          "train_users": 700,
+          "type": "user-disjoint"
+        }
+      },
+      "seed": 19,
+      "selected_bins": [
+        333877,
+        333878,
+        333879,
+        333880,
+        333881,
+        333882,
+        333883,
+        333884,
+        333885,
+        333886,
+        333887,
+        333888,
+        333891,
+        333892,
+        333893,
+        333894,
+        333895
+      ],
+      "time_bin_sec": 3600
+    },
+    {
+      "active": {
+        "features": [
+          "chain_len_total",
+          "chain_len_norm",
+          "accepted_total",
+          "rejected_total",
+          "accept_rate",
+          "reject_rate",
+          "recent_count_1",
+          "recent_count_2",
+          "recent_count_4",
+          "recent_accept_rate_4",
+          "recent_reject_rate_4",
+          "last_seen_age",
+          "last_submit_phase",
+          "mean_submit_phase",
+          "std_submit_phase",
+          "phase_entropy_4bin",
+          "interarrival_mean",
+          "interarrival_std",
+          "interarrival_min",
+          "interarrival_max",
+          "accept_transition_rate",
+          "last_accept",
+          "tail_accept_streak",
+          "tail_reject_streak"
+        ],
+        "metrics": {
+          "accuracy_at_0_5": 0.9997777777777778,
+          "auc": 0.9998299038674702,
+          "f1_at_0_5": 0.99830220713073,
+          "fpr_at_0_5": 0.0,
+          "positive_rate": 0.06553333333333333,
+          "precision_at_0_5": 1.0,
+          "samples_test": 4500.0,
+          "samples_total": 15000.0,
+          "tpr_at_0_5": 0.9966101694915255
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.00016367186746888635,
+          "max_iter": 500,
+          "n_iter": 27
+        }
+      },
+      "bin_mode": "timestamp",
+      "dataset": "GeoLife",
+      "linkability": {
+        "metrics": {
+          "accuracy_at_0_5": 0.7416666666666667,
+          "auc": 0.7523222222222222,
+          "f1_at_0_5": 0.7941567065073042,
+          "fpr_at_0_5": 0.5133333333333333,
+          "positive_rate": 0.5,
+          "precision_at_0_5": 0.6600441501103753,
+          "samples_test": 600.0,
+          "samples_total": 2000.0,
+          "samples_train": 1400.0,
+          "tpr_at_0_5": 0.9966666666666667
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.482870202563861,
+          "max_iter": 500,
+          "n_iter": 31
+        },
+        "split": {
+          "negative_pair_scope": "within-partition",
+          "test_samples": 600,
+          "test_size": 0.3,
+          "test_users": 300,
+          "train_samples": 1400,
+          "train_users": 700,
+          "type": "user-disjoint"
+        }
+      },
+      "seed": 19,
+      "selected_bins": [
+        335272,
+        335280,
+        335310,
+        335341,
+        335342,
+        335356,
+        335357,
+        335359,
+        337140,
+        337152,
+        337213,
+        337399,
+        337404,
+        337408,
+        339324,
+        339326,
+        339334,
+        339335
+      ],
+      "time_bin_sec": 3600
+    },
+    {
+      "active": {
+        "features": [
+          "chain_len_total",
+          "chain_len_norm",
+          "accepted_total",
+          "rejected_total",
+          "accept_rate",
+          "reject_rate",
+          "recent_count_1",
+          "recent_count_2",
+          "recent_count_4",
+          "recent_accept_rate_4",
+          "recent_reject_rate_4",
+          "last_seen_age",
+          "last_submit_phase",
+          "mean_submit_phase",
+          "std_submit_phase",
+          "phase_entropy_4bin",
+          "interarrival_mean",
+          "interarrival_std",
+          "interarrival_min",
+          "interarrival_max",
+          "accept_transition_rate",
+          "last_accept",
+          "tail_accept_streak",
+          "tail_reject_streak"
+        ],
+        "metrics": {
+          "accuracy_at_0_5": 0.9959259259259259,
+          "auc": 0.999612241534748,
+          "f1_at_0_5": 0.9813874788494078,
+          "fpr_at_0_5": 0.0,
+          "positive_rate": 0.11144444444444444,
+          "precision_at_0_5": 1.0,
+          "samples_test": 2700.0,
+          "samples_total": 9000.0,
+          "tpr_at_0_5": 0.9634551495016611
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.013621126009061242,
+          "max_iter": 500,
+          "n_iter": 38
+        }
+      },
+      "bin_mode": "timestamp",
+      "dataset": "Porto",
+      "linkability": {
+        "metrics": {
+          "accuracy_at_0_5": 0.7116666666666667,
+          "auc": 0.7565111111111111,
+          "f1_at_0_5": 0.7702523240371847,
+          "fpr_at_0_5": 0.5433333333333333,
+          "positive_rate": 0.5,
+          "precision_at_0_5": 0.6401766004415012,
+          "samples_test": 600.0,
+          "samples_total": 2000.0,
+          "samples_train": 1400.0,
+          "tpr_at_0_5": 0.9666666666666667
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.5146566222261998,
+          "max_iter": 500,
+          "n_iter": 62
+        },
+        "split": {
+          "negative_pair_scope": "within-partition",
+          "test_samples": 600,
+          "test_size": 0.3,
+          "test_users": 300,
+          "train_samples": 1400,
+          "train_users": 700,
+          "type": "user-disjoint"
+        }
+      },
+      "seed": 19,
+      "selected_bins": [
+        381288,
+        381289,
+        381290,
+        381291,
+        381292,
+        381293,
+        381294,
+        381295,
+        381296,
+        381297,
+        381298
+      ],
+      "time_bin_sec": 3600
+    },
+    {
+      "active": {
+        "features": [
+          "chain_len_total",
+          "chain_len_norm",
+          "accepted_total",
+          "rejected_total",
+          "accept_rate",
+          "reject_rate",
+          "recent_count_1",
+          "recent_count_2",
+          "recent_count_4",
+          "recent_accept_rate_4",
+          "recent_reject_rate_4",
+          "last_seen_age",
+          "last_submit_phase",
+          "mean_submit_phase",
+          "std_submit_phase",
+          "phase_entropy_4bin",
+          "interarrival_mean",
+          "interarrival_std",
+          "interarrival_min",
+          "interarrival_max",
+          "accept_transition_rate",
+          "last_accept",
+          "tail_accept_streak",
+          "tail_reject_streak"
+        ],
+        "metrics": {
+          "accuracy_at_0_5": 0.9980952380952381,
+          "auc": 0.9999782398452611,
+          "f1_at_0_5": 0.9908256880733944,
+          "fpr_at_0_5": 0.0,
+          "positive_rate": 0.10471428571428572,
+          "precision_at_0_5": 1.0,
+          "samples_test": 2100.0,
+          "samples_total": 7000.0,
+          "tpr_at_0_5": 0.9818181818181818
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.004114404727103011,
+          "max_iter": 500,
+          "n_iter": 30
+        }
+      },
+      "bin_mode": "timestamp",
+      "dataset": "Rome",
+      "linkability": {
+        "metrics": {
+          "accuracy_at_0_5": 0.715,
+          "auc": 0.7134555555555555,
+          "f1_at_0_5": 0.7776332899869961,
+          "fpr_at_0_5": 0.5666666666666667,
+          "positive_rate": 0.5,
+          "precision_at_0_5": 0.6375266524520256,
+          "samples_test": 600.0,
+          "samples_total": 2000.0,
+          "samples_train": 1400.0,
+          "tpr_at_0_5": 0.9966666666666667
+        },
+        "model": {
+          "backend": "sklearn_mlp",
+          "fallback": false,
+          "hidden_layer_sizes": [
+            32,
+            16
+          ],
+          "loss": 0.5167139688253145,
+          "max_iter": 500,
+          "n_iter": 34
+        },
+        "split": {
+          "negative_pair_scope": "within-partition",
+          "test_samples": 600,
+          "test_size": 0.3,
+          "test_users": 300,
+          "train_samples": 1400,
+          "train_users": 700,
+          "type": "user-disjoint"
+        }
+      },
+      "seed": 19,
+      "selected_bins": [
+        386447,
+        386448,
+        386449,
+        386450,
+        386451,
+        386452,
+        386453,
+        386454
+      ],
+      "time_bin_sec": 3600
+    }
+  ]
+}

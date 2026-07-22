@@ -252,7 +252,7 @@
   \(N{=}1000\) dataset-seed units, \VFourScaleProofs{} proofs verify with
   \VFourScaleProofFailures{} failures. Under one fixed three-seed
   configuration, SHTPC yields positive released-set Jaccard differences
-  against a mechanism-level Nebula-style adapter on all five datasets,
+  against a mechanism-level external ESA adapter on all five datasets,
   although two differences are small. SHTPC proves post-enrollment
   proof-to-payload consistency. It does not establish physical presence,
   eliminate metadata leakage, or reject false reports that remain inside the
@@ -1582,12 +1582,18 @@ drop-in baselines for the same privacy and trust boundary. We therefore use
 them as analytical design points and measure the closest low-cost composition
 that keeps coordinate hiding and stateful context binding.
 
-For RQ5, the shared heatmap harness also includes mechanism-level Nebula-style
-and EIFFeL-style adapters. The Nebula-style adapter models report sampling,
-shuffling, thresholding, and debiasing. The EIFFeL-style adapter models the
-single-round range and norm validation outcome. These adapters do not reproduce
-native deployments of the complete upstream systems. Utility comparisons are
-therefore limited to the evaluated adapters under the shared fixed protocol.
+For RQ5, the shared heatmap harness also includes a generic external ESA
+adapter and an EIFFeL-style adapter. The external ESA adapter is the
+mechanism-level Nebula-style comparison used in Figure~\ref{fig:v4-fixed-utility}.
+For each submitted cell, it emits that cell with probability
+\(p=1-\exp(-\varepsilon)\) and otherwise emits a uniformly sampled dummy from
+the \(D=10{,}000\) cell domain. It shuffles the \(N\) reports, filters out each
+cell whose raw count is below 3, and returns
+\(\max\{0,(c-Nq)/(p-q)\}\), where \(q=(1-p)/D\). It applies no trajectory or
+cross-round rejection rule. The EIFFeL-style adapter models the single-round
+range and norm validation outcome. These adapters do not reproduce native
+deployments of the complete upstream systems. Utility comparisons are therefore
+limited to the evaluated adapters under the shared fixed protocol.
 
 \emph{Boundary-violation suites and configuration.}
 The controlled harness covers A1 teleportation, A2a secret substitution, A3
@@ -1712,10 +1718,15 @@ loses A3 because gradual drift is the anchor-window invariant.
 \textsc{No-Payload-Bind} and \textsc{Stateful-ContextCommit} both admit A6
 because trajectory and payload statements are separated.
 
-A6 is also tested through a private payload-binding harness that mutates hidden
-primary commitments, report payload binders, A/R share-content commitments,
-ciphertext packages, channel labels, replay state, and report context. Negative
-cases are rejected across proof, transport, and aggregation validation.
+A6 is also tested through a private payload-binding harness with exactly 12
+deterministic negative attempts against one passing fixture. Each mutation is
+attempted once. Two attempts substitute proof or public-signal context. Five
+substitute the hidden primary, A-share digest, R-share digest, both share
+digests, or the private context commitment. Five mutate the post-proof A share,
+R share, cross-routed shares, route context, or blob hash. All 12 attempts are
+rejected across proof, transport, and aggregation validation. The 22-check
+static gate also includes five independent state or identity mutations and five
+passing compatibility cases.
 
 \subsection{RQ2 Stateful Envelope Boundary}
 \label{sec:eval-stateful-boundary}
@@ -1778,24 +1789,40 @@ is expected because proof verification precedes the DP/SVT release stage.
   \centering
   \includegraphics[width=\columnwidth]{figures/fig_eval_boundary_leakage_column.pdf}
   \vspace{-0.7em}
-  \caption{Dense evaluation summary. Panel (a) reports metadata-only inference
-  from Shuffler-visible \(L_S\), with the dashed line marking random AUC.
-  Panel (b) reports adaptive boundary outcomes and separates rejected attempts
-  from accepted polluted outcomes.}
+  \caption{Dense evaluation summary. Panel (a) reports synthetic feature-view
+  ablations in blue and user-disjoint real-trace session linking in orange.
+  The dashed line marks random AUC. Panel (b) reports adaptive boundary outcomes
+  and separates rejected attempts from accepted polluted outcomes.}
   \label{fig:eval-boundary-leakage}
 \end{figure}
 
 RQ3 asks what behavior remains inferable from \(L_S\). The adversary observes
 only Shuffler-visible metadata such as chain length, timing, topology, and
-accept/reject histories. On synthetic calibrated traces with 500 users, 30
-rounds, delay mean 1.5 rounds, and three seeds, timing-only and chain-topology
-views reach AUC \(0.748\pm0.005\) and \(0.751\pm0.004\), nearly matching full
-metadata (\(0.751\pm0.003\)). Accept/reject history is weaker but still above
-random (\(0.679\pm0.011\)). On 50-user, 30-round real fragments, active-period
-inference is highly predictable on GeoLife (\(0.963\pm0.056\)) and T-Drive
-(\(0.978\pm0.011\)), while lightweight session linking remains near random.
-Thus \textsc{SHTPC} hides coordinates and primary cells under Game~3, but not
-participation, chain growth, timing regularity, or accept/reject traces.
+accept/reject histories. Every reported classifier fits a StandardScaler on
+the training set and then trains a two-hidden-layer MLP with 32 and 16 ReLU
+units, Adam, an \(L_2\) coefficient of \(10^{-4}\), learning rate \(10^{-3}\),
+and 15\% early-stopping validation. The iteration caps are 150 for the
+synthetic ablation and 500 for the real-trace tasks.
+
+The synthetic ablation uses a label-stratified 70/30 sample split. Each seed
+has 8,750 training samples and 3,750 test samples. With 500 users, 30 rounds,
+delay mean 1.5 rounds, and seeds 7, 11, and 19, timing-only and chain-topology
+views reach AUC \(0.748\pm0.005\) and \(0.751\pm0.004\). Full metadata reaches
+\(0.751\pm0.003\). Accept/reject history reaches \(0.679\pm0.011\).
+
+The real session-linking task uses a stricter user-disjoint split. Each trace
+is divided at its temporal midpoint. Every user contributes one same-user pair
+and one cross-user pair. Users are split 700/300 before pairs are generated,
+and negative partners are drawn only within the same partition. This produces
+1,400 balanced training pairs and 600 balanced test pairs per seed with no user
+shared across partitions. At \(N=1000\), the 30-bin selection cap yields 17
+T-Drive, 18 GeoLife, 11 Porto, and 8 Rome hourly bins. Mean AUC and sample
+standard deviation over seeds 7, 11, and 19 are
+\(0.7434\pm0.0138\), \(0.7491\pm0.0064\), \(0.7268\pm0.0261\), and
+\(0.7316\pm0.0233\), respectively. Session linking is therefore consistently
+above random on all four real inputs. Active-period AUC ranges from 0.9987 to
+0.9999. Thus \textsc{SHTPC} hides coordinates and primary cells under Game~3,
+but not participation, chain growth, timing regularity, or accept/reject traces.
 
 \subsection{RQ4 Residual In-Envelope and Deployment-Scope Risks}
 \label{sec:eval-reach}
@@ -1864,7 +1891,7 @@ unchanged SVT/Laplace DP release. The headline protocol fixes
 \(\tau{=}2.0\) for every dataset,
 uses \(N{=}1000\), \(T{=}10\), 10\% A1 attackers, top-50 released-set Jaccard,
 and seeds 101, 202, and 303. It does not substitute per-dataset tuned settings.
-Among the evaluated fixed-configuration adapters, the Nebula-style adapter has
+Among the evaluated fixed-configuration adapters, the external ESA adapter has
 the highest mean Jaccard on every dataset~\cite{Shamsabadi2025Nebula,
 Chowdhury2022EIFFeL}.
 
@@ -1876,14 +1903,17 @@ Chowdhury2022EIFFeL}.
   \vspace{-0.7em}
   \caption{Fixed-configuration released-set Jaccard at \(N{=}1000\) and
   \(T{=}10\), averaged over seeds 101, 202, and 303. Both methods use
-  \(\varepsilon{=}5.0\). SHTPC uses post-admission release threshold
-  \(\tau{=}2.0\). Table~\ref{tab:v4-fixed-utility} reports standard deviations,
+  \(\varepsilon{=}5.0\). SHTPC uses post-admission threshold 2. The external
+  ESA adapter emits the submitted cell with probability
+  \(1-\exp(-\varepsilon)\), otherwise emits a uniform dummy, shuffles reports,
+  filters raw counts below 3, and applies the stated nonnegative debiasing
+  formula. Table~\ref{tab:v4-fixed-utility} reports standard deviations,
   absolute deltas, FRR, and MRR.}
   \label{fig:v4-fixed-utility}
 \end{figure}
 
 Table~\ref{tab:v4-fixed-utility} and Figure~\ref{fig:v4-fixed-utility} report
-mean Jaccard for SHTPC and the Nebula-style adapter. The respective values are
+mean Jaccard for SHTPC and the external ESA adapter. The respective values are
 0.671/0.561 on T-Drive, 0.878/0.366 on GeoLife, 0.305/0.298 on Porto,
 0.772/0.664 on Rome, and 0.135/0.128 on Synthetic. The absolute gains are
 therefore +0.110, +0.512, +0.007, +0.108, and +0.007, respectively. Porto and

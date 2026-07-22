@@ -893,12 +893,12 @@ def render_utility_table(evidence: dict[str, Any]) -> str:
         r"\begin{table*}[t]",
         r"\centering",
         r"\scriptsize",
-        r"\caption{Fixed fair five-dataset utility comparison at $N{=}1000$, three seeds, $\varepsilon{=}5.0$, and $\tau{=}2.0$. Nebula-style denotes the mechanism-level adapter in the shared heatmap harness. Higher Jaccard is better.}",
+        r"\caption{Fixed fair five-dataset utility comparison at $N{=}1000$, three seeds, and $\varepsilon{=}5.0$. SHTPC uses threshold 2. External ESA denotes the mechanism-level Nebula-style adapter, which uses raw-count threshold 3. Higher Jaccard is better.}",
         r"\label{tab:v4-fixed-utility}",
         r"\setlength{\tabcolsep}{3pt}",
         r"\begin{tabular}{lrrrrr}",
         r"\toprule",
-        r"Dataset & SHTPC $\pm$ std & Nebula-style $\pm$ std & $\Delta$ & FRR & MRR \\",
+        r"Dataset & SHTPC $\pm$ std & External ESA $\pm$ std & $\Delta$ & FRR & MRR \\",
         r"\midrule",
     ]
     for row in evidence["fixed_utility"]:

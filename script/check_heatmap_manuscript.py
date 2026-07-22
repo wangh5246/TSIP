@@ -122,6 +122,61 @@ POLISH_DISCLOSURES = (
         ),
         "small-gain significance boundary missing",
     ),
+    (
+        re.compile(
+            r"\bexactly\s+12\s+deterministic\s+negative\s+attempts\b",
+            re.I,
+        ),
+        "RQ1 payload-mutation attempt count missing",
+    ),
+    (
+        re.compile(
+            r"\bTwo\s+attempts\b.{0,400}\bFive\b.{0,400}\bFive\b",
+            re.I | re.S,
+        ),
+        "RQ1 payload-mutation category breakdown missing",
+    ),
+    (
+        re.compile(
+            r"\bStandardScaler\b[^.]{0,160}\bMLP\b[^.]{0,100}"
+            r"\b32\b[^.]{0,60}\b16\b",
+            re.I | re.S,
+        ),
+        "RQ3 classifier architecture disclosure missing",
+    ),
+    (
+        re.compile(
+            r"\buser[- ]disjoint\b.{0,1000}\b700/300\b.{0,400}"
+            r"\b1,400\b.{0,240}\b600\b",
+            re.I | re.S,
+        ),
+        "RQ3 user-disjoint train/test split disclosure missing",
+    ),
+    (
+        re.compile(
+            r"0\.7434.{0,120}0\.7491.{0,120}0\.7268.{0,120}0\.7316",
+            re.S,
+        ),
+        "RQ3 four-dataset session-linking AUC disclosure missing",
+    ),
+    (
+        re.compile(
+            r"\bgeneric\s+external\s+ESA\b.{0,800}"
+            r"p\s*=\s*1\s*-\s*\\exp\s*\(\s*-\\varepsilon\s*\)"
+            r".{0,400}D\s*=\s*10\{,\}000",
+            re.I | re.S,
+        ),
+        "external ESA sampling rule disclosure missing",
+    ),
+    (
+        re.compile(
+            r"\bfilters?\s+(?:out\s+)?(?:each\s+)?(?:cell\s+whose\s+)?"
+            r"raw\s+counts?\s+(?:(?:is|are)\s+)?below\s+3\b[^.]{0,240}"
+            r"q\s*=\s*\(\s*1\s*-\s*p\s*\)\s*/\s*D",
+            re.I | re.S,
+        ),
+        "external ESA threshold and debiasing disclosure missing",
+    ),
 )
 SCALE_COMPLETE_PATTERNS = (
     r"\b15\s*/\s*15\s+(?:dataset[- ]seed\s+)?units?\s+"

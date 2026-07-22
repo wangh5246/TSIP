@@ -57,7 +57,7 @@ def test_load_fixed_frame_accepts_canonical_receipt(tmp_path: Path) -> None:
 
     assert frame.index.tolist() == MODULE.DATASETS
     assert frame["strongest_baseline"].tolist() == ["nebula"] * 5
-    assert MODULE.DISPLAY_METHODS == ["SHTPC", "Nebula-style"]
+    assert MODULE.DISPLAY_METHODS == ["SHTPC", "External ESA"]
     assert MODULE.FIGURE_SOURCE_DATE_EPOCH == "1783900800"
 
 

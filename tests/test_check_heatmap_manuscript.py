@@ -25,6 +25,13 @@ The experiments ran on an Apple M4 host with 16 GB memory. The scale preflight
 recorded 10 Docker CPUs and 8.22 GB of Docker memory. We compare a
 mechanism-level Nebula-style adapter. We do not claim statistical significance
 for the small Porto and Synthetic differences.
+The payload harness uses exactly 12 deterministic negative attempts. Two attempts
+target proof context. Five target witnesses. Five target routes.
+RQ3 uses StandardScaler and then an MLP with 32 and 16 hidden units. The
+user-disjoint split uses 700/300 users, 1,400 training pairs, and 600 test pairs.
+Session-linking AUC is 0.7434, 0.7491, 0.7268, and 0.7316.
+The generic external ESA adapter uses p=1-\exp(-\varepsilon) over
+D=10{,}000. It filters raw counts below 3 and uses q=(1-p)/D for debiasing.
 \label{eq:r-shtpc}
 """
 PARTIAL = {"scale": {"status": "partial"}}
@@ -224,6 +231,13 @@ def test_dataset_names_in_comments_do_not_satisfy_contract() -> None:
         ("Nebula-style", "mechanism-level Nebula-style adapter disclosure missing"),
         ("mechanism-level", "mechanism-level Nebula-style adapter disclosure missing"),
         ("do not claim statistical significance", "small-gain significance boundary missing"),
+        ("exactly 12 deterministic negative attempts", "RQ1 payload-mutation attempt count missing"),
+        ("Two attempts", "RQ1 payload-mutation category breakdown missing"),
+        ("StandardScaler", "RQ3 classifier architecture disclosure missing"),
+        ("user-disjoint", "RQ3 user-disjoint train/test split disclosure missing"),
+        ("0.7434", "RQ3 four-dataset session-linking AUC disclosure missing"),
+        ("generic external ESA", "external ESA sampling rule disclosure missing"),
+        ("filters raw counts below 3", "external ESA threshold and debiasing disclosure missing"),
     ],
 )
 def test_polished_manuscript_requires_setup_and_comparison_disclosures(
