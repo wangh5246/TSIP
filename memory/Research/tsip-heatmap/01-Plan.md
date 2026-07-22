@@ -91,3 +91,12 @@ Pre-scale 阶段不提前写入 15/15 scale 结论；final-scale 严格聚合通
 - [x] 明确 Figure 5 external ESA adapter 的 sampling、shuffle、raw-count threshold 3 和 debiasing rules，并与 SHTPC threshold 2 分离。
 - [x] 完成 265 tests、checker 0 issues、18 页 clean build、18/18 页 visual QA 和 Obsidian 回填。
 - [x] 形成 [[Results/Reports/论文实验复现细节补强-2026-07-22]]。
+
+## P0 16 页写作压缩与 Baseline 重构
+
+- [x] 按章节规范完成全文反向提纲与五维对抗审阅。
+- [x] 删除与图或 design-space matrix 重复的三张表，保留图与不可替代的 RQ6 scale table。
+- [x] 压缩 Problem/Composition Gaps、Method Threat Model 和 Discussion/Limitations，不删形式化定理和实验事实。
+- [x] 在 Experimental Setup 前置 measured baselines、公平协议、adapter/native 边界，并在 RQ5 报告 EIFFeL-style 结果。
+- [x] 完成 265 tests、checker 0 issues、16 页 clean build、16/16 页 visual QA 和 canonical/mirror 比较。
+- [x] 形成 [[Results/Reports/论文16页压缩与Baseline重构-2026-07-22]]。
