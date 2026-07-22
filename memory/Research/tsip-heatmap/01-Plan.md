@@ -1,7 +1,7 @@
 ---
 type: project-plan
 project: tsip-heatmap
-updated: 2026-07-14
+updated: 2026-07-22
 status: active
 tags: [tsip-heatmap, plan, v4]
 ---
@@ -22,7 +22,7 @@ tags: [tsip-heatmap, plan, v4]
 - [x] 把四个真实数据集加一个 Synthetic 及固定公平效用接入正文（`3f1d5d4b`；固定主比较、生成表图、checker 0 issue、focused 169）。
 - [x] 增加 DATA_NOTICE、Heatmap 可复现索引、citation audit 与作者确认声明（`dec09503`）；LICENSE 因缺少作者明确 SPDX 选择而保持阻塞并不创建。
 - [x] 从 clean auxiliary state 重新编译、统计 18 页并完成 18/18 逐页视觉检查；pre-scale verified checkpoint 已提交为 `d54ac1a5`，最终 scale aggregate 写回后须重复该门禁。
-- [x] 建立 Abstract/Introduction claim-evidence map（final-scale 后为 27 claims：18 supported、7 analytical、2 assumption、0 partial、0 unsupported）。
+- [x] 建立 Abstract/Introduction claim-evidence map；2026-07-22 退出不再进入论文的两项旧关系/旧性能主张后，当前为 25 active claims：16 supported、7 analytical、2 assumption、0 partial、0 unsupported。
 - [x] 完成并提交 Task 9 五维对抗自审（`a0db10db`）；关闭 citation/artifact 两项 partial，移除过强治理类比，claim map 收敛为 17 supported / 7 analytical / 2 assumption / 1 partial / 0 unsupported，169 tests 通过。
 
 Pre-scale 阶段不提前写入 15/15 scale 结论；final-scale 严格聚合通过后已按下方门禁完成一次性传播。
@@ -71,3 +71,13 @@ Pre-scale 阶段不提前写入 15/15 scale 结论；final-scale 严格聚合通
 - [x] 补充论文硬件环境与 adapter baseline 说明。
 - [x] 按 claim-safe 原则润色 Abstract、Introduction、Related Work、Method、Evaluation、Discussion 和 Conclusion。
 - [x] 复跑 237 项 evidence/figure/manuscript tests、clean LaTeX/Biber build、18/18 页视觉检查和 mirror 字节比较；final-polish 提交为 `43f84752`。
+
+## P0 Reviewer-facing 版本卫生
+
+- [x] 对 `TSIP/main.tex` 与最终 PDF 文本分别检查 `V1/V2/V3/V4`、旧版/新版、修正前后、legacy、archive、historical benchmark、内部评审记录和投稿 TODO。
+- [x] 删除 RQ6 的旧关系与旧性能叙事，只保留 evaluated 3,547/16/25 Groth16 relation 和 verified 五数据集 N=1000 scale matrix。
+- [x] 删除由旧 verifier benchmark 组成的历史成本图，保留 RQ4/RQ5/RQ6 的正文证据链和现有 scale/utility 表图。
+- [x] 将 release license、模拟评审、自审说明和 ethics author TODO 移出 reviewer-facing 正文；作者确认门继续保留在 submission checklist。
+- [x] 在 manuscript checker 中加入 reviewer-visible version/process gate，并确认 `VFour*` 宏、`tab_v4_*` 标签、图文件名和 IEEE 注释不会误报。
+- [x] 256 项 focused tests、Abstract 147 words / checker 0 issues、18 页 clean build、0 warning/undefined/overfull、18/18 页视觉 QA 和 canonical/mirror 字节比较通过。
+- [x] 形成 [[Results/Reports/论文内部版本与投稿痕迹审计-2026-07-22]]。
