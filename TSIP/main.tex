@@ -282,29 +282,16 @@ This setting is narrower than fully anonymous trajectory publication. It assumes
 enrollment, persistent pseudonymous admission state, and separated aggregation
 roles.
 
-The structural gap is a proof-to-payload gap. A coordinate-hiding system may
-validate a hidden trajectory proof and a heatmap payload through different
-artifacts. The proof can show that a hidden coordinate \(x_t\) follows the
-previous accepted hidden state and remains inside a public \(K\)-window
-envelope. The payload can separately pass encoding, context, or share-validation
-checks. If these checks use independent private primary-cell witnesses, the
-system may accept a proof generated for one hidden primary while forwarding a
-payload that contributes to another primary cell. The Shuffler cannot see the
-coordinate, and an Aggregator cannot see the proof witness. Neither role can
-detect the mismatch unless the coordinate-derived primary and the routed payload
-are bound within the same accepted relation.
-
-A concrete adversarial report illustrates the problem. The client proves
-admissibility for a hidden coordinate whose primary cell is \(p_t\). It then
-substitutes encrypted or share-encoded heatmap material whose one-hot
-contribution is assigned to \(p'_t\ne p_t\). Context hashes and transport
-authentication can bind a report frame, but they do not establish that the
-payload primary was derived from the same hidden coordinate used in the
-trajectory proof. Preventing this attack under coordinate hiding requires one
-of three choices. The system can reveal the primary to a checking role, rely on
-a trusted plaintext checker, or introduce an in-relation binding between the
-coordinate-derived primary and the encoded payload. This paper studies the
-third choice.
+The structural gap is a proof-to-payload gap. A coordinate-hiding proof can
+show that \(x_t\) follows the accepted state and remains inside a public
+\(K\)-window envelope, while a separate payload passes encoding and context
+checks. If the two checks use independent private primary witnesses, a client
+can prove for \(p_t=\mathrm{Grid}(x_t)\) but route a one-hot contribution to
+\(p'_t\ne p_t\). Context hashes authenticate the frame, not this hidden
+equality; the Shuffler cannot see \(x_t\), and an Aggregator cannot inspect the
+proof witness. Avoiding the mismatch therefore requires revealing the primary,
+trusting a plaintext checker, or proving coordinate-to-payload equality inside
+one relation. This paper studies the third option.
 
 \textsc{SHTPC} addresses this gap as a stateful zero-knowledge admission layer
 placed before private heatmap aggregation. Each submission carries a compact
@@ -337,7 +324,7 @@ This paper makes three contributions.
     leakage, and corruption boundaries.
 
   \item Designs a zero-knowledge admission layer that binds these predicates in
-    one accepted statement. The paper further proves separation lemmas showing
+    one accepted statement. The paper further gives separation arguments showing
     why stateless ZK, VDAF-style validation, context commitments, and
     post-admission defenses do not imply SHTPC, and gives an end-to-end
     payload-consistency theorem connecting the circuit witness, public binders,
@@ -357,56 +344,24 @@ This paper makes three contributions.
 \section{Related Work}
 \label{sec:related-work}
 
-\textsc{SHTPC} is closest to work that protects location analytics, validates
-private aggregate inputs, and proves predicates over hidden data, but those
-systems target different consistency boundaries. Dwork et al. protect released
-statistics with differential privacy~\cite{Dwork2006calibrating}. Bittau et al.
-separate encoding, shuffling, and analysis in Prochlo~\cite{Bittau2017Prochlo}.
-Corrigan-Gibbs and Boneh validate secret-shared measurements in
-Prio~\cite{Corrigan2017Prio}. Tippenhauer et al. study how a location claim can
-be spoofed or authenticated~\cite{Tippenhauer2011GPS}. Our work instead defines
-a post-enrollment admission relation for private heatmap aggregation. The
-verifier accepts a hidden report only when its predecessor state,
-\(K\)-window trajectory envelope, coordinate-derived primary cell, and routed
-aggregation payload are mutually consistent. Table~\ref{tab:positioning}
-summarizes this boundary.
+\textsc{SHTPC} is closest to work on private location analytics, aggregate-input
+validation, and proofs over hidden data. These systems protect outputs,
+measurements, or location claims, whereas SHTPC targets the consistency of an
+accepted hidden report: predecessor state, \(K\)-window reachability,
+coordinate-derived primary, and routed payload must agree before aggregation.
 
-\subsection{Comparison with Existing Families}
-\label{sec:comparison}
-
-\begin{table}[t]
-  \centering
-  \caption{Comparison with adjacent system families.}
-  \label{tab:positioning}
-  \scriptsize
-  \setlength{\tabcolsep}{2pt}
-  \renewcommand{\arraystretch}{1.02}
-  \begin{tabularx}{\columnwidth}{@{}p{2.35cm}X@{}}
-    \toprule
-    Family & Boundary relative to SHTPC \\
-    \midrule
-    Prio3/VDAF~\cite{Corrigan2017Prio,Barnes2026VDAF} & Validates encoded measurements, but not accepted-predecessor continuity, \(K\)-anchor reachability, or same-primary trajectory-payload equality. \\
-    Prochlo/Nebula~\cite{Bittau2017Prochlo,Shamsabadi2025Nebula} & Separates encode, shuffle, and analyze roles, but admission remains local to a submitted report and visible metadata remains a system boundary. \\
-    Private location-service accounting~\cite{Popa2009VPriv,Balasch2010PrETP,Troncoso2011PriPAYD} & Audits or prices location-dependent records, but does not provide payload-bound private heatmap admission. \\
-    Trusted plaintext filter & Can check coordinate and payload equality if it sees coordinates, but does not preserve coordinate hiding at admission. \\
-    Stateless ZK filter~\cite{Chowdhury2022EIFFeL,Groth2016pairing} & Can prove one hidden predicate, but lacks accepted-state continuity and \(K\)-window drift control. \\
-    Robust aggregation~\cite{Blanchard2017Krum,Yin2018Byzantine,Cao2021FLTrust,Nguyen2022FLAME} & Mitigates aggregate poisoning after inputs are admitted, but does not prove hidden report consistency before secure aggregation. \\
-    Proof-of-location~\cite{Tippenhauer2011GPS} & Establishes presence or proximity, not payload-bound private heatmap admission. \\
-    \textsc{Stateful-ContextCommit} & Tracks state and context, but no same-primary equality is proved in one relation. \\
-    \midrule
-    \textbf{\textsc{SHTPC}} & Accepted predecessor, \(K\)-anchor, hidden-primary derivation, and payload binding under explicit \(L_S\). \\
-    \bottomrule
-  \end{tabularx}
-\end{table}
-
-This comparison fixes the scope of the contribution. \textsc{SHTPC} is not a new
-VDAF, differential-privacy mechanism, robust statistic, proof-of-location
-protocol, or proof system. It is an admission layer that rejects hidden reports
-whose accepted state, reachable envelope, derived primary, and routed payload
-are inconsistent. The \textsc{Stateful-ContextCommit} row is the measured
-composition harness used in Section~\ref{sec:eval-stateful-boundary}. It captures
-a natural state-and-context composition that still keeps trajectory and payload
-validity as separated statements.
+Prio/VDAF validates encoded measurements, and Prochlo/Nebula separates encode,
+shuffle, and analyze roles, but neither supplies accepted-predecessor,
+\(K\)-anchor, and hidden same-primary equality by itself
+~\cite{Corrigan2017Prio,Barnes2026VDAF,Bittau2017Prochlo,Shamsabadi2025Nebula}.
+EIFFeL-style or stateless ZK filters can prove a report-local predicate, while
+robust aggregation acts after admission~\cite{Chowdhury2022EIFFeL,
+Blanchard2017Krum,Yin2018Byzantine,Cao2021FLTrust,Nguyen2022FLAME}.
+Proof-of-location and trusted filters strengthen physical or plaintext checks
+but change the target trust boundary~\cite{Tippenhauer2011GPS}. The measured
+\textsc{Stateful-ContextCommit} baseline instead preserves hidden state and
+context yet omits in-relation same-primary equality; the full design-space
+comparison appears in Table~\ref{tab:composition-failure-matrix}.
 
 \subsection{Private Location Analytics}
 \label{sec:related-location-analytics}
@@ -437,7 +392,7 @@ oriented. \textsc{SHTPC} addresses the preceding admission boundary. The hidden
 trajectory relation and heatmap payload must be one accepted statement before
 secure aggregation separates the report across roles.
 
-\subsection{Location Authenticity and Private Accounting}
+\subsection{Location Authenticity and ZK Binding}
 \label{sec:related-location-authenticity}
 
 Location authenticity and private accounting systems provide useful deployment
@@ -453,9 +408,6 @@ its sensor evidence, or how a private service audits billing outcomes. Their
 predicates do not express repeated heatmap admission with predecessor
 continuity, \(K\)-window reachability, and same-primary payload binding.
 
-\subsection{Zero-Knowledge Proofs and Circuit Binding}
-\label{sec:related-zk}
-
 Zero-knowledge proof systems provide the substrate for checking private
 relations without revealing witnesses~\cite{Goldwasser1989ZK,BenSasson2014SNARKs,Parno2013Pinocchio,Sasson2014Zerocash,Groth2016pairing,Gabizon2019PLONK,BenSasson2019Aurora,Setty2020Spartan,Kothapalli2022Nova,Bunz2018Bulletproofs,Wahby2018Doubly,Kate2010KZG,Grassi2021Poseidon,Albrecht2016MiMC,Grassi2022RC}.
 For SHTPC, the central question is not merely proof size or verifier time, but
@@ -466,22 +418,19 @@ derive the hidden primary from the hidden coordinate and bind that primary to
 the report-level payload and A/R share commitments under one report context.
 
 
-\section{SHTPC Problem Definition and Composition Gaps}
+\section{Problem Definition and Composition Gaps}
 \label{sec:prelim}
 
-This section defines the admission problem addressed by \textsc{SHTPC}. The goal
-is not to prove physical presence or trajectory anonymity. The goal is to decide
-whether a hidden report may enter private heatmap aggregation while preserving
-coordinate and primary-cell hiding under the stated Shuffler leakage.
+\textsc{SHTPC} decides whether a hidden report may enter private heatmap
+aggregation. It targets post-enrollment consistency, not physical-presence
+proof or trajectory anonymity.
 
 \subsection{Report and Admission Model}
 \label{sec:prelim-model}
 
-The notation uses \(uid\) for the enrolled pseudonymous chain handle, \(e\) for
-the enrollment or reset epoch, \(t\) for the admission round, and \(w\) for the
-heatmap release window. The hidden coordinate at round \(t\) is \(x_t=(x,y)\),
-its derived heatmap cell is \(\mathrm{primary}_t\), and \(L_S\) denotes
-Shuffler-visible leakage.
+Let \(uid\) be the pseudonymous chain handle, \(e\) the enrollment/reset epoch,
+\(t\) the admission round, \(w\) the release window, \(x_t=(x,y)\) the hidden
+coordinate, and \(L_S\) the Shuffler-visible leakage.
 
 The monitored region is partitioned into a public \(W\times H\) grid with cell
 size \(s\). A hidden coordinate determines
@@ -501,12 +450,10 @@ It only decides whether a hidden report is admissible before aggregation. This
 DP guarantee applies to the released heatmap only. It does not protect \(L_S\)
 metadata.
 
-\textsc{SHTPC} uses salted commitments and a zero-knowledge admission relation to
-check hidden location consistency without exposing coordinates or primary cells.
-The concrete Groth16, Poseidon, and MiMC7 instantiations are specified in
-Sections~\ref{sec:commitment} and~\ref{sec:circuit-constraints}, and the
-corresponding assumptions are used in
-Section~\ref{sec:security}~\cite{Groth2016pairing,Grassi2021Poseidon,Albrecht2016MiMC}.
+Salted commitments and a zero-knowledge admission relation check this hidden
+state without exposing coordinates or primary cells; Sections~\ref{sec:commitment}
+and~\ref{sec:circuit-constraints} give the concrete Groth16/Poseidon/MiMC7
+instantiation~\cite{Groth2016pairing,Grassi2021Poseidon,Albrecht2016MiMC}.
 
 \subsection{Stateful Hidden Trajectory-Payload Consistency}
 \label{sec:prelim-goals}
@@ -549,33 +496,21 @@ coordinate and primary cell remain circuit witnesses.
   accepted public statement.
 \end{definition}
 
-The \textsc{SHTPCMain} relation realizes SHTPC. It proves knowledge of hidden
-coordinates, commitment salts, the primary cell, payload-binding openings, and
-the enrollment secret such that
+The \textsc{SHTPCMain} relation proves one witness for state, mobility, grid,
+payload, and context consistency:
 \begin{equation}
   \label{eq:r-shtpc}
-  \begin{aligned}
-  \mathcal{R}_{\mathrm{SHTPC}}\quad
-  &\ell_t=\mathrm{Poseidon}(x_t,y_t,r_t),\\
-  &\ell_{t-1},\ell_a \text{ open accepted predecessor}\\
-  &\quad \text{and anchor states},\\
-  &\|p_t-p_{t-1}\|^2\le \tau_u^2\Delta t_t^2,\\
-  &\mathrm{ADWC}(p_t,p_a,K)=1,\\
-  &\mathrm{primary}_t
-    =W\lfloor y_t/s\rfloor+\lfloor x_t/s\rfloor,\\
-  &(\mathsf{Com}_{\mathsf{pri}},\mathsf{Com}_{\mathsf{pay}},
-    \mathsf{Com}_A,\mathsf{Com}_R)\\
-  &\quad \text{bind the same }\mathrm{primary}_t,\\
-  &\mathrm{Poseidon}(\mathrm{secret},uid)=\mathrm{com}_{\mathrm{sec}},
-    \\
-  &\mathrm{SRV\text{-}TS}(uid,\mathrm{epoch},t)=1,\\
-  &\mathsf{ctx}_t=(uid,\mathrm{epoch},t,\mathrm{token},\mathrm{task}),\\
-  &\mathsf{ctx}_t \text{ matches all public binders and blobs.}
-  \end{aligned}
+  \mathcal{R}_{\mathrm{SHTPC}}=
+  R_{\mathrm{state}}\land R_{\mathrm{ADWC}}\land R_{\mathrm{grid}}
+  \land R_{\mathrm{payload}}\land R_{\mathrm{context}}.
 \end{equation}
-The Shuffler checks the public predecessor state, timing token, and transport
-hash around this relation. The Aggregators validate only their channel-local
-share packages.
+Here \(R_{\mathrm{state}}\) opens the accepted predecessor and anchor;
+\(R_{\mathrm{ADWC}}\) enforces step and window bounds;
+\(R_{\mathrm{grid}}\) derives \(\mathrm{primary}_t\) from \(x_t\);
+\(R_{\mathrm{payload}}\) binds that primary to the report and A/R share
+commitments; and \(R_{\mathrm{context}}\) binds identity, epoch, round, timing
+token, and report context. The Shuffler checks public state, timing, and
+transport hashes; each Aggregator validates only its channel-local package.
 
 \subsection{Leakage Boundary and Goal Scope}
 \label{sec:prelim-dp}
@@ -592,33 +527,23 @@ share packages.
   provide trajectory anonymity or report unlinkability.
 \end{definition}
 
-\textsc{SHTPC} uses four goal labels. In Game~1, an adversary wins if a report
-is accepted while its extracted witness violates predecessor consistency,
-per-step continuity, or the ADWC anchor predicate. In Game~2, an adversary wins
-if a report is accepted and the forwarded share package is bound to a primary
-cell different from the primary cell derived from the hidden coordinate in the
-accepted trajectory proof. In Game~3, two executions with equal \(L_S\), chain
-topology, timing bins, message-size classes, and accept/reject traces must be
-indistinguishable with respect to hidden coordinates and primary cells for an
-allowed single-server view. In Game~4, the released heatmap satisfies output DP
-only. After per-user, per-round \(L_1\) clipping, the sequence of released
-heatmaps satisfies pure \(\varepsilon_{\mathrm{total}}\)-DP under user-level
-adjacency. This goal applies only to the public heatmap release, not to \(L_S\)
-or other protocol-control metadata. Section~\ref{sec:security} gives the formal
-bounds.
+Four games delimit the claims. Game~1 excludes accepted predecessor, step, or
+ADWC violations. Game~2 excludes a forwarded payload whose primary differs
+from the coordinate-derived primary. Game~3 hides coordinates and primaries
+between executions with equal \(L_S\). Game~4 gives pure
+\(\varepsilon_{\mathrm{total}}\)-DP for the clipped released heatmaps under
+user-level adjacency, not for protocol metadata. Section~\ref{sec:security}
+gives the bounds.
 
 \noindent\textbf{Admission functionality.}
 \label{sec:formal-model}
-\textsc{SHTPC} is modeled as an admission functionality
-\(\mathcal{F}_{\mathrm{SHTPC\text{-}Adm}}\) before private aggregation. For each
-\((uid,e)\), it stores accepted state \(c_t\), a round counter, an anchor
-pointer, and warmup status. A submission is accepted and forwarded only if
-Definition~\ref{def:shtpc}, SRV-TS, SCS, and transport authentication all hold.
-Warmup updates state but does not contribute payloads. Reset creates a new
-epoch. The Shuffler receives exactly \(L_S\). A single Aggregator receives only
-its channel-local share package and validation outcome. The Decoder receives
-aggregates for downstream DP release. This is a standalone admission model, not
-UC security for the complete deployment.
+The admission functionality \(\mathcal{F}_{\mathrm{SHTPC\text{-}Adm}}\) stores
+\((c_t,t,\mathrm{anchor},\mathrm{warmup})\) per \((uid,e)\) and forwards a
+report only when SHTPC, SRV-TS, SCS, and transport authentication hold. Warmup
+updates state without contributing a payload; reset starts a new epoch. The
+Shuffler receives \(L_S\), each Aggregator receives one channel-local package,
+and the Decoder receives only aggregates. This is not a UC model of the full
+deployment.
 
 \begin{table}[t]
   \centering
@@ -647,12 +572,9 @@ UC security for the complete deployment.
   \end{tabularx}
 \end{table}
 
-Enrollment consistency and Sybil cost are deployment propositions rather than
-core cryptographic games. A valid enrollment tuple
-\((uid,\mathrm{tier\_vmax\_sq},\mathrm{com}_{\mathrm{sec}},
-\mathrm{com}_{\mathrm{modeset}})\) must be bound to threshold-valid EA
-attestations. The number of simultaneous Sybil identities is bounded only by the
-adversary's external credential budget and the deployment's enrollment controls.
+Enrollment and Sybil resistance are deployment assumptions: each enrollment
+tuple must have threshold-valid EA attestations, and simultaneous Sybils remain
+bounded only by credential cost and external enrollment controls.
 
 \subsection{Violation Families and Coverage}
 \label{sec:taxonomy}
@@ -682,73 +604,30 @@ controls.
 \subsection{Why Natural Compositions Are Insufficient}
 \label{sec:composition-failures}
 
-This subsection states why SHTPC is not obtained by placing an ordinary local
-validity proof before a private aggregation protocol. The statements are
-predicate-omission separations rather than impossibility theorems. If an
-admission relation omits a predicate required by SHTPC, then there is an
-accepted adversarial construction that violates the corresponding SHTPC
-condition while satisfying the predicates that remain.
+SHTPC is not obtained by placing a report-local proof before private
+aggregation. The following predicate-omission result collects the four relevant
+separations; it is not an impossibility theorem.
 
-\begin{lemma}[Stateless local validity does not imply predecessor consistency]
-  \label{lem:sep-stateless}
-  Consider any admission protocol whose verification predicate at round \(t\) is
-  independent of the previously accepted commitment state for the same \(uid\)
-  and epoch. Then there exists a malicious client that produces individually
-  valid reports whose accepted hidden states do not form a valid predecessor
-  chain. Therefore stateless local validity does not imply SHTPC condition~(i).
-\end{lemma}
+\begin{proposition}[Composition-gap separations]
+  \label{prop:composition-separations}
+  An admission relation does not imply SHTPC if it omits any of the following:
+  (i) the accepted predecessor, because individually valid states need not form
+  a chain; (ii) the \(K\)-anchor predicate, because step-valid motion can drift
+  beyond the window cap; (iii) a shared hidden primary, because trajectory and
+  payload statements can open to different cells; or (iv) the hidden
+  state-transition predicates, because context validation alone checks frame
+  consistency rather than trajectory consistency.
+\end{proposition}
 
-\noindent\emph{Sketch.}
-Let \(x\) and \(x'\) both satisfy the local range, grid, and payload-format
-predicates, while their commitments are not linked by the current Shuffler
-state. If the predicate omits \(C_{t-1}\), the report for \(x'\) is accepted
-whenever the local predicate holds. The accepted sequence can violate
-predecessor consistency while every local proof verifies.
-
-\begin{lemma}[Step-only continuity does not imply \(K\)-window envelope consistency]
-  \label{lem:sep-step-only}
-  Per-step continuity does not imply the \(K\)-window ADWC predicate. For any
-  protocol that checks only
-  \(\|x_i-x_{i-1}\|\le \tau\Delta t\), there exists a sequence of locally valid
-  steps whose displacement from the \(K\)-window anchor exceeds a public
-  deployment cap.
-\end{lemma}
-
-\noindent\emph{Sketch.}
-Let \(x_i=x_0+i\cdot\tau\Delta t\cdot e\) for a unit direction \(e\). Each
-transition satisfies the per-step bound. After \(K\) steps,
-\(\|x_K-x_0\|=K\tau\Delta t\), which can exceed a public cap even though every
-adjacent transition is locally valid.
-
-\begin{lemma}[Separated trajectory and payload statements do not imply
-same-primary binding]
-  \label{lem:sep-separated-payload}
-  Independent trajectory and payload-validity statements do not imply
-  same-primary payload binding. If the trajectory relation and payload relation
-  use independently chosen primary witnesses, or expose only separate
-  commitments without an in-circuit equality constraint, then there exists a
-  proof-payload mismatch adversary.
-\end{lemma}
-
-\noindent\emph{Sketch.}
-The adversary proves trajectory admissibility for a hidden coordinate \(x\)
-whose derived primary is \(p=\mathrm{Grid}(x)\). It then constructs an
-aggregation payload committed or routed to \(p'\ne p\). Without a common
-committed primary and in-circuit equality, both statements can verify.
-
-\begin{lemma}[Context-only validation does not express SHTPC]
-  \label{lem:sep-context-only}
-  Context-bound measurement validation does not imply SHTPC unless the
-  context-validity predicate includes the accepted predecessor, \(K\)-window
-  anchor, hidden coordinate-to-primary derivation, and same-primary equality
-  relation.
-\end{lemma}
-
-\noindent\emph{Sketch.}
-Context validation can bind an encoded measurement to public metadata such as
-epoch, task identifier, aggregation parameters, or blob hashes. Without a hidden
-state-transition predicate and a common primary witness shared by trajectory and
-payload relations, it validates report format or context, not SHTPC.
+\begin{proof}
+  For (i), choose two locally valid states whose commitments are unrelated to
+  the accepted predecessor. For (ii), let
+  \(x_i=x_0+i\tau\Delta t\,e\); each step is valid while
+  \(\|x_K-x_0\|=K\tau\Delta t\) can exceed the cap. For (iii), prove for
+  \(p=\mathrm{Grid}(x)\) and route a payload committed to \(p'\ne p\). For
+  (iv), keep epoch, task, parameters, and blob hashes valid while choosing a
+  state transition that the omitted hidden predicates would reject.
+\end{proof}
 
 \begin{table*}[t]
   \centering
@@ -799,15 +678,10 @@ equivalent to adding an SHTPC-style in-relation primary binding.
 \section{Method}
 \label{sec:system}
 
-\textsc{SHTPC} follows the Encode-Shuffle-Analyze (ESA) pipeline. It inserts a
-proof-carrying admission layer at the Shuffler before forwarding to secure
-aggregation. The protocol involves five role types, namely Client, Enrollment
-Attestation Authority (EA), Shuffler, two non-colluding Aggregators A and R,
-and Decoder. The design objective is to realize SHTPC
-(Definition~\ref{def:shtpc}), not to replace the downstream private
-aggregation or DP release. Section~\ref{sec:composition-failures} explains why
-natural stateless, context-only, or separated-proof compositions miss at least
-one SHTPC condition.
+\textsc{SHTPC} inserts proof-carrying Shuffler admission into the ESA pipeline
+before secure aggregation. Its Client, EA, Shuffler, non-colluding Aggregators
+A/R, and Decoder realize Definition~\ref{def:shtpc} without replacing the
+downstream private aggregation or DP release.
 
 \begin{figure*}[!t]
   \centering
@@ -910,31 +784,16 @@ Enrollment authorization follows assumption CA3. Under CA3, at least $t$ out of
 $n$ enrollment anchors are non-colluding. The default profile is $t=3$, $n=5$,
 and a single-operator deployment is the degenerate case $t=1$, $n=1$.
 
-\textsc{SHTPC} deliberately leaves two issues to the deployment layer. They are
-ground-truth enrollment ($c_0$) and voluntary credential or device transfer
-(A2b). These risks fall outside
-Theorems~\ref{thm:traj-integrity}--\ref{thm:payload-binding} and require
-proof-of-location at enrollment, device attestation or secure-element sealing,
-re-enrollment monitoring, and behavioral risk scoring.
-
-Even under credential or device transfer, the transferred identity still must
-satisfy the public trajectory envelope, payload binding, timing tokens, and
-chain continuity. Proposition~\ref{prop:bounded-sybil} gives a deployment cost
-bound for creating additional accepted identities, but it does not prevent a
-legitimate user from voluntarily transferring an existing credential or device.
-
-Warmup raises the cost of false-genesis by requiring
-$N_{\mathrm{warm}}{=}\max(K,2)$ plausible rounds before aggregation. Collusion of
-both Aggregators lies outside Game~3's single-Aggregator privacy guarantee, in which
-case input privacy degrades to the public output DP layer while Shuffler-side
-admission checks still run.
-
-Independent operation can make the non-collusion assumption auditable, but it
-cannot enforce that assumption cryptographically. A conforming deployment must
-therefore place the Shuffler and Aggregators in distinct administrative domains,
-document their data access, and audit state transitions and cross-role flows.
-If one operator controls or can silently correlate these roles, the
-single-server privacy claim does not apply.
+Ground-truth enrollment and voluntary credential/device transfer (A2b) remain
+deployment risks outside Theorems~\ref{thm:traj-integrity}--
+\ref{thm:payload-binding}. A transferred identity still obeys the envelope,
+timing, chain, and payload predicates; warmup requires
+\(N_{\mathrm{warm}}=\max(K,2)\) plausible rounds, while
+Proposition~\ref{prop:bounded-sybil} bounds only the cost of new identities.
+Deployments therefore need enrollment evidence, device binding, re-enrollment
+monitoring, distinct administrative domains, and audited cross-role flows.
+These controls make non-collusion auditable but do not enforce it
+cryptographically.
 
 The component leakage boundary is summarized in
 Table~\ref{tab:privacy-boundary}. The Shuffler sees \textsc{SHTPCMain}, public
@@ -1006,9 +865,7 @@ uncompressed wire vector. After local expansion, every cell position has a
 share, and any one Aggregator's per-cell shares are indistinguishable from
 random without the other Aggregator's share. On the wire, the prototype sends
 seed-compressed encrypted share envelopes plus public proof material rather
-than a \(D\)-element wire vector. The prototype does not report an aggregate
-frame size because no dedicated serialization benchmark covers the complete
-report object.
+than a \(D\)-element wire vector.
 
 \noindent\textbf{Report frame and payload validation syntax.}
 Each submitted report is represented as
@@ -1558,110 +1415,62 @@ All rejection results should be read as boundary-enforcement results.
 \subsection{Experimental Setup}
 \label{sec:setup}
 
-\emph{Datasets and design-space comparisons.}
-The original-input utility evaluation uses T-Drive taxi trajectories
-(\(10{,}357\) taxis and about 15M GPS points), GeoLife mixed-mode traces
-(182 users and more than 17K trajectories), and taxi trajectories from Porto
-and Rome. Each prepared real input contains \(N{=}1000\) client records with
-bootstrap disabled and ten windows per record. The fifth input, Synthetic,
-contains \(N{=}1000\) clustered random-walk records with the same ten-window
-format and generation seed 20260709. Boundary and session experiments also use
-T-Drive rush-hour and GeoLife session-gap subsets to stress dense vehicle
-mobility and re-enrollment behavior~\cite{Yuan2010Tdrive,Yuan2011Driving,Zheng2008Understanding,
-Zheng2009Mining,Zheng2010GeoLife,MoreiraMatias2015Porto,
-Bracciale2014Rome}. We compare
-\textsc{SHTPC-Full} with \textsc{No-Admission-Check}, \textsc{No-ADWC},
-\textsc{No-Payload-Bind}, \textsc{Stateful-ContextCommit}, and deployment-layer
-variants. \textsc{Stateful-ContextCommit} tracks uid/epoch/round, predecessor
-state, report context, blob hashes, and share validation, but still separates
-trajectory admission from payload validation. Plaintext trusted filtering is
-reported only as an upper bound because it sees coordinates and primary cells.
-Table~\ref{tab:composition-failure-matrix} explains why these are the relevant
-comparisons. Complete VDAF, TEE, or proof-of-location systems are not
-drop-in baselines for the same privacy and trust boundary. We therefore use
-them as analytical design points and measure the closest low-cost composition
-that keeps coordinate hiding and stateful context binding.
+\noindent\textbf{Datasets and evaluation tracks.}
+The four real inputs are T-Drive (10,357 taxis, about 15M points), GeoLife
+(182 users, over 17K trajectories), Porto, and Rome; the fifth is a clustered
+random-walk Synthetic input (seed 20260709)
+~\cite{Yuan2010Tdrive,Yuan2011Driving,Zheng2008Understanding,Zheng2009Mining,
+Zheng2010GeoLife,MoreiraMatias2015Porto,Bracciale2014Rome}. Each prepared input
+contains 1,000 records and ten windows without bootstrap resampling. The
+evaluation is organized by claim rather than by dataset alone: RQ1--RQ2 test
+mechanism removal and state/window boundaries, RQ3 measures metadata leakage,
+RQ4 stresses residual attacks, RQ5 compares released-heatmap utility, and RQ6
+measures full proving scale. Dense T-Drive and GeoLife subsets additionally
+stress rush-hour mobility and session gaps.
 
-For RQ5, the shared heatmap harness also includes a generic external ESA
-adapter and an EIFFeL-style adapter. The external ESA adapter is the
-mechanism-level Nebula-style comparison used in Figure~\ref{fig:v4-fixed-utility}.
-For each submitted cell, it emits that cell with probability
-\(p=1-\exp(-\varepsilon)\) and otherwise emits a uniformly sampled dummy from
-the \(D=10{,}000\) cell domain. It shuffles the \(N\) reports, filters out each
-cell whose raw count is below 3, and returns
-\(\max\{0,(c-Nq)/(p-q)\}\), where \(q=(1-p)/D\). It applies no trajectory or
-cross-round rejection rule. The EIFFeL-style adapter models the single-round
-range and norm validation outcome. These adapters do not reproduce native
-deployments of the complete upstream systems. Utility comparisons are therefore
-limited to the evaluated adapters under the shared fixed protocol.
+\noindent\textbf{Baselines and fairness.}
+Admission experiments compare \textsc{SHTPC-Full} with four measured variants:
+\textsc{No-Admission-Check}, \textsc{No-ADWC},
+\textsc{No-Payload-Bind}, and \textsc{Stateful-ContextCommit}. The last is the
+strongest coordinate-hiding composition baseline: it binds identity, epoch,
+round, predecessor, frame, and share context, but proves no same-primary
+equality. Table~\ref{tab:composition-failure-matrix} maps these variants to
+their missing predicates. A trusted plaintext filter is only an analytical
+upper bound because it reveals coordinates. For RQ5, a generic external ESA
+(Nebula-style) adapter and an EIFFeL-style range/norm adapter run on the same
+reports. The ESA adapter is the strongest external utility comparator and is
+shown in Figure~\ref{fig:v4-fixed-utility}; the EIFFeL-style adapter has no
+cross-round rule and rejects none of the valid-range A1 reports, so it is not
+presented as a privacy-equivalent release mechanism. These are mechanism-level
+adapters, not reproductions of complete upstream deployments. No baseline is
+tuned per dataset, and all fixed-utility methods use the same inputs, attacker
+assignment, seeds, and top-50 Jaccard metric.
 
-\emph{Boundary-violation suites and configuration.}
-The controlled harness covers A1 teleportation, A2a secret substitution, A3
-gradual drift, A5 replay or chain-state reuse, and A6 proof-payload
-substitution. A4 Sybil creation is analyzed by
-Proposition~\ref{prop:bounded-sybil}. A2b transfer and false genesis are
-deployment-scope risks. The adaptive suite maximizes accepted pollution under
-public parameters and covers reset/warmup abuse, false genesis followed by
-plausible motion, near-boundary drift, and proof-payload mismatch. Unless stated
-otherwise, the headline configuration uses the following settings.
-\begin{itemize}
-    \setlength{\itemsep}{0pt}
-    \setlength{\parsep}{0pt}
-    \setlength{\topsep}{2pt}
-  \item Controlled boundary-violation headlines use $N{=}50$ clients and
-    $T{=}10$ rounds. The fixed utility comparison uses $N{=}1000$ and
-    $T{=}10$.
-  \item $\varepsilon_{\mathrm{total}}{=}1.0$, $\Delta t{=}\SI{60}{s}$, and
-    $K\in\{6,30\}$.
-  \item mode table \{walk, bike, vehicle, transit\} with speeds
-    \{3, 10, 33, 40\}\,m/s.
-  \item $\mathrm{cap}_{\mathrm{policy}}{=}\SI{3.3}{km}$ ($K{=}6$) and
-    $\SI{16.5}{km}$ ($K{=}30$), satisfying
-    $\mathrm{cap\_policy\_sq}\le\mathrm{tier\_anchor\_cap\_sq}$.
-  \item \SI{100}{m} cells over a $\SI{10000}{m}$ domain.
-\end{itemize}
-The count payload is \(L_1\)-clipped to one primary cell. Headline rejection
-uses \(K{=}6\). The \(K{=}30\) setting is a long-window stress profile.
+\noindent\textbf{Attacks, parameters, and metrics.}
+The controlled suite covers A1 teleportation, A2a secret substitution, A3
+drift, A5 replay/state reuse, and A6 proof-payload substitution; A4 and A2b are
+deployment-scope cases. Controlled runs use \(N=50,T=10\); utility uses
+\(N=1000,T=10\). Unless stated otherwise,
+\(\varepsilon_{\mathrm{total}}=1\), \(\Delta t=\SI{60}{s}\),
+\(K\in\{6,30\}\), 100-m cells over a 10-km domain, and walk/bike/vehicle/transit
+caps of 3/10/33/40 m/s. The policy caps are 3.3 km (\(K=6\)) and 16.5 km
+(\(K=30\)); the latter is a stress profile. Reports are \(L_1\)-clipped to one
+cell. TPR/FRR measure malicious/benign rejection; Jaccard measures released-set
+stability; RMSE, Pearson, false-hotspot probability, and HS@k measure count and
+ranking distortion. Randomized experiments use three seeds unless noted.
 
-\emph{Metrics and implementation.}
-TPR is the malicious rejection rate. Pipeline FRR is circuit rejection plus
-session withholding plus DP-SVT exclusion on benign traces. RMSE/Pearson measure
-count distortion, Jaccard measures released-set stability, false hotspot
-probability and HS@k measure ranking pollution. The prototype uses Python
-microservices and Circom/snarkjs Groth16 inside Docker. RQ6 reports end-to-end
-scale from the validated five-dataset, three-seed aggregate. Randomized sweeps
-use three seeds unless stated otherwise.
-
-\emph{Hardware and software.}
-All experiments ran on an Apple M4 MacBook Pro with 10 CPU cores and 16 GB of
-host memory. The scale evaluation used two concurrent jobs. Docker was
-allocated 10 CPUs and 8.22 GB of memory. The software environment used Python
-3.10.20, Node.js 20.20.2, Circom 2.1.9, snarkjs 0.7.6, and Docker Server 29.1.3
-on Linux arm64 containers.
-
-\emph{Original-input utility.}
-The RQ5 evaluator reads the five prepared inputs above directly, uses seeds
-101, 202, and 303, and applies one fixed release configuration to SHTPC and the
-evaluated baselines. These original-input runs supply all utility values in
-Table~\ref{tab:v4-fixed-utility} and Figure~\ref{fig:v4-fixed-utility}.
-
-\emph{Safe-trajectory protocol smoke.}
-The clean Docker protocol suite uses the evaluated circuit with
-protocol-isolation trajectories. It replaces timestamp gaps and out-of-envelope
-jumps with safe in-envelope trajectories. This layer isolates proof generation,
-state transitions, reconstruction, and DP release across the five
-dataset-labelled runs. It is not the source of the RQ5 utility values.
-
-\emph{Full Groth16 scale.}
-The scale matrix exercises five datasets and seeds 101, 202, and 303 at
-\(N{=}1000\), with six warmup and ten evaluation rounds under full snarkjs
-Groth16 proving. It uses the same protocol-isolation trajectory and therefore
-measures end-to-end protocol execution rather than original-input utility.
-The validated aggregate binds all 15 dataset-seed records to one circuit and
-execution configuration. It retains every functionally passing unit in protocol
-totals and admits a unit to timing statistics only when its maximum inter-round
-gap is at most 7,200 seconds. Each dataset must retain at least two
-timing-eligible units.
+\noindent\textbf{Implementation and execution protocols.}
+The Python/Circom/snarkjs prototype ran in Docker on an Apple M4 MacBook Pro
+(10 CPU cores, 16 GB RAM; Docker: 10 CPUs, 8.22 GB) using Python 3.10.20,
+Node.js 20.20.2, Circom 2.1.9, snarkjs 0.7.6, and Docker Server 29.1.3 on
+Linux arm64. RQ5 reads the original inputs with seeds 101/202/303 and one fixed
+release configuration. Separately, five clean protocol-smoke runs replace gaps
+and out-of-envelope jumps with safe trajectories to isolate proving, state,
+reconstruction, and release; they are not utility evidence. RQ6 uses the same
+protocol-isolation trajectories for a 15-unit matrix (five datasets, three
+seeds, six warmup plus ten evaluation rounds). Functional totals retain every
+passing unit; timing excludes only units whose maximum inter-round gap exceeds
+7,200 s, with at least two eligible units required per dataset.
 
 \subsection{RQ1 Proof-to-Payload Consistency}
 \label{sec:eval-headline}
@@ -1671,46 +1480,23 @@ payload are inconsistent. The main target is A6, where a valid trajectory proof
 is paired with payload material for a different primary cell. We also report
 the other SHTPC violation families in the same matrix to show which mechanism
 guards each admission boundary.
-Table~\ref{tab:ablation}
-reports the within-pipeline ablation on GeoLife under the default controlled
-violation configuration. Each row removes one mechanism and checks which report
-family becomes admissible.
-
-\begin{table}[t]
-  \centering
-  \caption{Within-pipeline admission ablation. Entries are malicious rejection
-  rates for SHTPC-violation families under the GeoLife default controlled
-  configuration.}
-  \label{tab:ablation}
-  \scriptsize
-  \setlength{\tabcolsep}{4pt}
-  \begin{tabular}{lccccc}
-    \toprule
-    Scheme & A1 & A2a & A3 & A5 & A6 \\
-    \midrule
-    \textsc{SHTPC-Full} & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
-    \textsc{No-ADWC} & 1.00 & 1.00 & 0.00 & 1.00 & 1.00 \\
-    \textsc{No-Payload-Bind} & 1.00 & 1.00 & 1.00 & 1.00 & 0.00 \\
-    \textsc{Stateful-ContextCommit} & 1.00 & 1.00 & 1.00 & 1.00 & 0.00 \\
-    \textsc{No-Admission-Check} & 0.00 & 0.00 & 0.00 & 0.00 & 0.00 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+Figure~\ref{fig:eval-ablation-matrix} reports the GeoLife within-pipeline
+ablation under the default controlled configuration. Each row removes one
+mechanism and shows which violation family becomes admissible.
 
 \begin{figure}[!t]
   \centering
   \includegraphics[width=\columnwidth]{figures/fig_eval_ablation_matrix_column.pdf}
   \vspace{-0.7em}
-  \caption{Mechanism-level rejection matrix for Table~\ref{tab:ablation}.
-  A value of 1 means that the violation family is rejected by the admission
-  layer, and 0 means that it is admitted. The matrix shows that ADWC is needed
-  for A3 and same-primary binding is needed for A6.}
+  \caption{Mechanism-level admission ablation on GeoLife. A value of 1 means
+  rejection and 0 means admission. ADWC is necessary for A3, while
+  same-primary payload binding is necessary for A6.}
   \label{fig:eval-ablation-matrix}
 \end{figure}
 
 \textsc{SHTPC-Full} rejects all modeled A1, A2a, A3, A5, and A6 violations, so
-Table~\ref{tab:ablation} and Figure~\ref{fig:eval-ablation-matrix} should be
-read as admission-consistency results. Primary-cell hiding is a formal Game~3
+Figure~\ref{fig:eval-ablation-matrix} is an admission-consistency result.
+Primary-cell hiding is a formal Game~3
 claim under equal \(L_S\), and post-admission utility is evaluated separately in
 RQ5.
 \textsc{No-Admission-Check} accepts every modeled violation. \textsc{No-ADWC}
@@ -1738,7 +1524,7 @@ rejects stale predecessor replay, gradual drift, timing-token replay, and
 context substitution, but it still admits A6 because the trajectory proof can be
 valid for one hidden primary while the payload is routed to another.
 \textsc{SHTPC-Full} is the only coordinate-hiding row in
-Table~\ref{tab:ablation} that rejects A6 because the trajectory-derived primary
+Figure~\ref{fig:eval-ablation-matrix} that rejects A6 because the trajectory-derived primary
 and payload primary are constrained inside one relation.
 
 \emph{Boundary sharpness.}
@@ -1895,25 +1681,25 @@ Among the evaluated fixed-configuration adapters, the external ESA adapter has
 the highest mean Jaccard on every dataset~\cite{Shamsabadi2025Nebula,
 Chowdhury2022EIFFeL}.
 
-\input{tables/tab_v4_fixed_utility}
-
 \begin{figure}[!t]
   \centering
   \includegraphics[width=\columnwidth]{figures/v4_fixed_utility_heatmap.pdf}
   \vspace{-0.7em}
   \caption{Fixed-configuration released-set Jaccard at \(N{=}1000\) and
   \(T{=}10\), averaged over seeds 101, 202, and 303. Both methods use
-  \(\varepsilon{=}5.0\). SHTPC uses post-admission threshold 2. The external
-  ESA adapter emits the submitted cell with probability
-  \(1-\exp(-\varepsilon)\), otherwise emits a uniform dummy, shuffles reports,
-  filters raw counts below 3, and applies the stated nonnegative debiasing
-  formula. Table~\ref{tab:v4-fixed-utility} reports standard deviations,
-  absolute deltas, FRR, and MRR.}
+  \(\varepsilon{=}5.0\). SHTPC uses post-admission threshold 2. The generic
+  external ESA adapter uses \(p=1-\exp(-\varepsilon)\): it emits the submitted cell
+  with probability \(p\), otherwise a uniform dummy over \(D=10{,}000\), and
+  shuffles reports. It filters raw counts below 3; with \(q=(1-p)/D\), it
+  outputs \(\max\{0,(c-Nq)/(p-q)\}\). Across datasets, SHTPC standard
+  deviations are 0.006--0.044 and
+  external-ESA standard deviations are 0.000--0.003. SHTPC has FRR 0 and MRR
+  1; both external adapters have MRR 0 for valid-range A1 reports.}
   \label{fig:v4-fixed-utility}
 \end{figure}
 
-Table~\ref{tab:v4-fixed-utility} and Figure~\ref{fig:v4-fixed-utility} report
-mean Jaccard for SHTPC and the external ESA adapter. The respective values are
+Figure~\ref{fig:v4-fixed-utility} reports mean Jaccard for SHTPC and the
+strongest external utility adapter. The respective values are
 0.671/0.561 on T-Drive, 0.878/0.366 on GeoLife, 0.305/0.298 on Porto,
 0.772/0.664 on Rome, and 0.135/0.128 on Synthetic. The absolute gains are
 therefore +0.110, +0.512, +0.007, +0.108, and +0.007, respectively. Porto and
@@ -1924,6 +1710,10 @@ direction under the fixed protocol rather than a uniformly large margin. All
 significance for the small Porto and Synthetic differences. SHTPC also has zero
 honest false rejection and
 complete modeled malicious rejection on every dataset in this comparison. A
+single-round EIFFeL-style range/norm adapter yields Jaccard
+0.543/0.300/0.294/0.644/0.127 on the same dataset order and rejects none of the
+valid-range A1 reports; it is dominated by the external ESA adapter on utility
+and does not match SHTPC's stateful admission boundary. A
 separate GeoLife sensitivity sweep found admission TPR 1.00 at each tested
 \(\varepsilon\),
 consistent with proof verification preceding the release stage. It is
@@ -1968,96 +1758,49 @@ optimized production throughput.
 \section{Discussion and Limitations}
 \label{sec:discussion}
 
-The TCB consists of the Groth16 setup, EA Ed25519 anchor keys, AEAD/channel
-authentication, and Poseidon/MiMC7 collision resistance over
-BN254~\cite{shoup97}. Aggregator collusion degrades input privacy to the public
-DP release while admission consistency still holds. A compromised Groth16 setup
-mainly threatens soundness.
+The TCB comprises the Groth16 setup, EA Ed25519 keys, authenticated channels,
+and Poseidon/MiMC7 assumptions over BN254~\cite{shoup97}. Aggregator collusion
+reduces input privacy to the public DP release; a compromised setup threatens
+soundness, and a malicious Shuffler requires replicated state or external
+audit. SHTPC is therefore intended for managed deployments with accountable
+enrollment and separated roles, not fully anonymous or unlinkable reporting.
 
-Metadata is an intentional boundary rather than an implementation artifact.
-The Shuffler sees \(L_S\), including chain topology, timing bins, mode/tier
-metadata, message-size classes, and accept/reject outcomes. These signals can
-support operational admission control, but they are not protected by the public
-heatmap's \(\varepsilon_{\mathrm{total}}\)-DP accounting and can reveal behavioral
-regularity. Thus SHTPC should not be read as trajectory anonymity or report
-unlinkability.
+Metadata remains an explicit boundary. The Shuffler observes \(L_S\), including
+chain topology, timing, tier, message size, and outcomes; output DP does not
+protect these signals. Fixed-rate batching, dummy warmup traffic, coarser time
+bins, reset cooldowns, and auditable logs can reduce exposure, but change
+latency or bandwidth and must be included in \(L_S\) before extending Game~3.
 
-Several mitigations can reduce \(L_S\) in deployments, including fixed-rate
-reporting, batching, dummy warmup traffic, coarser timing bins, reset cooldowns,
-and externally auditable Shuffler logs. These mitigations trade latency,
-bandwidth, and operational complexity for less metadata exposure. They are not
-part of the core SHTPC claim unless they are explicitly included in the leakage
-function and evaluated under the same Game~3 comparison.
-
-\textsc{SHTPC} enforces an envelope, not ground truth. Fully in-envelope false
-reports remain admissible when they satisfy predecessor continuity, ADWC, timing
-tokens, and same-primary payload binding. False genesis and credential/device
-transfer (A2b) remain outside the circuit guarantee.\label{sec:a2b} These risks
-can preserve all post-enrollment invariants and therefore require operational
-controls such as proof-of-location at enrollment, device attestation,
-secure-element sealing, behavioral scoring, quotas, reset cooldowns, and
-enrollment throttling.
-
-\textsc{SHTPC} is best suited to managed heatmap deployments where enrollment,
-device credentials, and Shuffler accountability are controllable. It is a poor
-fit for fully anonymous trajectory systems, deployments that need report
-unlinkability, or settings that require security against a completely untrusted
-Shuffler without replicated logs or external audit.
+SHTPC also enforces an envelope rather than ground truth. In-envelope false
+reports, false genesis, and credential/device transfer (A2b) remain possible.
+\label{sec:a2b} They require enrollment proof, device attestation or secure
+elements, quotas, behavioral controls, and re-enrollment monitoring rather than
+additional circuit predicates.
 
 \subsection{Artifact and Reproducibility Details}
 \label{sec:artifact}
 
-The proof-to-payload claim depends on implementation-level binding, so the
-artifact index records the protocol interface and source metadata rather than
-only aggregate metrics. It identifies the Circom source, R1CS and verification
-key hashes, public-signal order, C21 formulas, coordinate and grid mapping,
-Poseidon and MiMC7 parameters, frame and AEAD context construction,
-share-content digests, seed-compressed share expansion, and Aggregator checks.
-It also separates the static checks, five-dataset protocol smoke, fixed utility,
-publication figure, execution configuration, 15 unit records, and hash-bound
-aggregate. Scale results enter the manuscript only through the validated
-aggregate that checks every unit record, functional counter, timing rule, and
-circuit/configuration binding.
-
-The four real trajectory datasets are obtained directly from their official
-providers under the terms recorded in \texttt{DATA\_NOTICE.md}. Neither raw GPS
-records nor row-level prepared real trajectories are redistributed. The
-artifact contains preparation code, a non-row-level source manifest, random
-seeds, and aggregate records, tables, and figures. The Synthetic input is
-generated by repository code with a fixed seed.
-
-The checked-in Groth16 proving and verification material is treated as a
-development reproducibility artifact. Any change to the public-signal order,
-\(K\), grid parameters, hash domains, or payload-binder formula requires
-regenerating or revalidating it. This material is not evidence
-of a production multi-party ceremony. A production deployment would require an
-approved setup process, hashes, and ceremony metadata. A compromised setup
-mainly threatens admission soundness.
+The artifact index binds source, R1CS/verification-key hashes, public-signal
+order, C21, grid/hash parameters, frame construction, share expansion, static
+checks, protocol smoke, fixed utility, and all 15 scale records. Real datasets
+must be obtained from their providers under \texttt{DATA\_NOTICE.md}; raw and
+row-level prepared traces are not redistributed. Preparation code, seeds,
+aggregate receipts, and the fixed-seed Synthetic generator are included. The
+checked-in Groth16 material is for development reproducibility, not evidence of
+a production ceremony; any relation or parameter change requires regeneration
+and validation.
 
 \subsection{Ethics, Governance, and Misuse}
 \label{sec:ethics}
 
-SHTPC hides raw coordinates and primary cells from the allowed single-server
-views, but it deliberately keeps persistent pseudonymous admission state. This
-state can reveal participation frequency, activity periods, mode or tier
-changes, resets, and accept or reject patterns. These metadata can support
-operational accountability, but they can also enable behavioral profiling if
-retained or queried without governance.
-
-The evaluation is a secondary analysis of provider-released T-Drive, GeoLife,
-Porto, and Rome trajectories plus repository-generated Synthetic records. It
-does not recruit participants or collect new location traces. Reproducers must
-obtain the real datasets from their official sources and comply with their
-license, citation, non-de-anonymization, and redistribution terms. The artifact
-does not release raw or row-level prepared real trajectories.
-
-Deployments should therefore define consent, retention, revocation, access
-control, and audit policies before using SHTPC. Shuffler logs and enrollment
-records should be minimized, time-limited, and auditable. Operators should
-document that the system does not provide trajectory anonymity or physical
-presence proof. High-risk deployments, including law-enforcement-adjacent uses,
-should require stronger external oversight because the admission state can
-become a surveillance choke point even when raw coordinates remain hidden.
+The evaluation reuses provider-released traces and collects no new participant
+data. Reproducers must follow provider license, citation, redistribution, and
+non-de-anonymization terms. Because persistent admission state can reveal
+participation and behavioral patterns, deployments need explicit consent,
+retention, revocation, access-control, and audit policies. Logs should be
+minimized and time-limited, and high-risk uses require external oversight.
+Operators must state that SHTPC provides neither physical-presence proof nor
+trajectory anonymity.
 
 \section{Conclusion}
 \label{sec:conclusion}

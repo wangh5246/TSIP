@@ -59,24 +59,22 @@ pdflatex -interaction=nonstopmode -halt-on-error main.tex
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-Build and inspection results from the reviewer-version audit checkpoint:
+Build and inspection results from the 16-page writing-review checkpoint:
 
 - Abstract: 148 words; manuscript checker issues: 0.
 - Biber: 90 citekeys; warnings/errors: 0.
-- PDF: 18 pages, US letter, PDF 1.7.
+- PDF: 16 pages, US letter, PDF 1.7.
 - Undefined citations/references, fatal errors, rerun requests: 0.
 - Overfull boxes, LaTeX warnings, package warnings: 0.
-- Underfull boxes: 40. All 18 pages were freshly rendered and inspected. There
+- Underfull boxes: 43. All 16 pages were freshly rendered and inspected. There
   is no clipping, overlap, missing figure, or unreadable table/text.
-- SHA-256: `main.tex` `32c5e384c121fac330f7f0bcf9f27ba1b08fbec4aa75ce2756e5232d86416b09`;
+- SHA-256: `main.tex` `bd6d385296740b1cd6cbd2e617c9b0269e4e18b26ba834686550cbdf384273c9`;
   `reference.bib` `c1c4d078c2e2acf21a204312d2f62bb2a0e71b96e17b50926d35d11ededfb6cf`;
-  `main.pdf` `907e198430ea3a304725e0a4549f1611f891db327ec08cf87f17a1169afb6699`;
+  `main.pdf` `b5264a1c417d8766e76b1eda1a76c30df18c2341783b2fca7fe6a48046978d37`;
   `fig_eval_boundary_leakage_column.pdf`
   `34d618e07a4ffc05c9d91987d7279f9ae7f64a032245202f9000c40a362ebf86`;
   `v4_fixed_utility_heatmap.pdf`
-  `97f40b9ecc6836afba59723fc9ef2d687c8c5f4702032e452adf267eceaf5386`;
-  `tab_v4_fixed_utility.tex`
-  `a65630598c9520f215d39dfdcbfe89c945642dcaf9e50d255a0dac6bcf123118`.
+  `97f40b9ecc6836afba59723fc9ef2d687c8c5f4702032e452adf267eceaf5386`.
 - Canonical and Heatmap paper-mirror `main.tex`/`reference.bib` files are
   byte-identical.
 
@@ -118,7 +116,7 @@ or assumption into a guarantee.
 | Dimension | Skeptical reviewer question | Status | Evidence and disposition |
 |---|---|---|---|
 | Contribution | What new knowledge is delivered? | pass | The paper isolates the hidden trajectory/payload same-primary composition gap and defines one stateful admission relation that closes it. |
-| Contribution | Is the failure case meaningful rather than syntactic? | pass | A valid trajectory proof can otherwise be paired with routed payload material for another primary; the separation lemmas and A6 ablation identify the missing equality. |
+| Contribution | Is the failure case meaningful rather than syntactic? | pass | A valid trajectory proof can otherwise be paired with routed payload material for another primary; the composition-gap proposition and A6 ablation identify the missing equality. |
 | Contribution | Is novelty scoped honestly? | pass | The paper claims a new admission property and system composition, not a new SNARK, DP mechanism, physical-location proof, or general poisoning defense. |
 | Contribution | Are empirical gains exaggerated? | pass | All five fixed-protocol deltas are reported; +0.007 on Porto and Synthetic is explicitly called small, and the three-seed observations are not presented as statistical significance. |
 | Writing clarity | Can the relation and protocol be reproduced? | pass | Method fields, C1-C21, integer semantics, state transition, timing, warmup, the 12 RQ1 mutations, RQ3 classifier and split, hardware and software versions, artifact paths, commands, and pass criteria are explicit. |
@@ -131,7 +129,7 @@ or assumption into a guarantee.
 | Evaluation completeness | Are key mechanisms ablated? | pass | No-ADWC, No-Payload-Bind, Stateful-ContextCommit, and No-Admission-Check expose the predicates responsible for A3 and A6. |
 | Evaluation completeness | Is the main comparison fair? | pass | One epsilon/tau pair, N=1000, ten windows, 10% A1, and seeds 101/202/303 are fixed across all five datasets; tuned settings are excluded from the headline. |
 | Evaluation completeness | Are datasets and evidence layers broad enough? | pass | Four real trajectory-derived inputs and one generated stress input are used; utility, smoke, and scale answer separate questions. |
-| Evaluation completeness | Are baseline claims bounded? | pass | The external ESA comparison is explicitly a mechanism-level Nebula-style adapter. Its exact filter and debiasing rules are disclosed. VDAF, TEE, and proof-of-location systems remain analytical design points rather than falsely comparable implementations. |
+| Evaluation completeness | Are baseline claims bounded? | pass | Setup distinguishes four measured ablations, Stateful-ContextCommit, the generic external ESA adapter, the EIFFeL-style range/norm adapter, and analytical VDAF/TEE/proof-of-location design points. Exact ESA filtering is disclosed, and the EIFFeL-style Jaccard/MRR result is reported without presenting either adapter as a native deployment. |
 | Method soundness | Are assumptions explicit and falsifiable? | pass | SRV-TS, SCS, CA3, setup, hash, channel, and non-collusion assumptions are stated with adjacent failure consequences. |
 | Method soundness | Does one relation actually bind routed payload to trajectory state? | pass | C17-C21, route/binder negative fixtures, Aggregator validation, and the evaluated 22-check gate cover the stated interface. |
 | Method soundness | Does the design overclaim source authenticity or robustness? | pass | The claim begins post-enrollment and excludes physical presence, metadata elimination, fully in-envelope false reports, and malicious-Shuffler state forks. |
@@ -170,7 +168,9 @@ declarations.
   a mechanism-level external ESA adapter in the shared harness. It uses raw-count
   threshold 3 after sampling and shuffling. All 15 observed paired
   differences favor SHTPC, but the paper makes no statistical-significance
-  claim for the small Porto and Synthetic gains.
+  claim for the small Porto and Synthetic gains. The single-round EIFFeL-style
+  adapter is also reported and is lower than the external ESA adapter on all
+  five inputs while rejecting no valid-range A1 report.
 - RQ3 session linking uses 700 training users and 300 unseen test users. Each
   seed has 1,400 balanced training pairs and 600 balanced test pairs. Mean AUC
   is 0.7434, 0.7491, 0.7268, and 0.7316 on T-Drive, GeoLife, Porto, and Rome.
