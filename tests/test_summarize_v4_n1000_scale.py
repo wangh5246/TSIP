@@ -272,6 +272,10 @@ def test_write_outputs_is_deterministic_and_paper_ready(tmp_path: Path) -> None:
     assert "T-Drive" in table
     assert "45{,}000" in table
     assert "do not edit" in table
+    assert "Groth16 protocol execution" in table
+    assert "timing-eligible units" in table
+    assert "Manifest-bound" not in table
+    assert "receipts" not in table
 
 
 def test_host_suspension_keeps_functional_receipt_but_excludes_timing(

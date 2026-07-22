@@ -245,7 +245,7 @@
   primary cell. We introduce Stateful Hidden Trajectory-Payload Consistency
   (SHTPC), a stateful Groth16 admission relation. It binds accepted-predecessor
   continuity, window reachability, the coordinate-derived primary, and A/R
-  payload commitments within one report context. The manifest-bound circuit
+  payload commitments within one report context. The evaluated circuit
   has \VFourConstraints{} constraints, \VFourPublicInputs{} public inputs, and
   \VFourPrivateInputs{} private inputs, and it passes all
   \VFourStaticChecks{} static checks. Across \VFourScaleUnits{}
@@ -347,10 +347,10 @@ This paper makes three contributions.
   \item Evaluates \textsc{SHTPC} as admission-boundary enforcement, with
     design-space baselines, measured proof-to-payload substitutions,
     state/window-boundary checks, metadata leakage analysis, utility cost, and
-    manifest-bound artifact evidence under the stated deployment boundary. The
+    reproducible artifact evidence under the stated deployment boundary. The
     fixed comparison has a positive observed Jaccard difference for every one
     of the 15 dataset-seed pairs, although two dataset means differ only
-    slightly. The current full-path matrix verifies \VFourScaleProofs{} proofs
+    slightly. The full-path matrix verifies \VFourScaleProofs{} proofs
     with \VFourScaleProofFailures{} failures.
 \end{itemize}
 
@@ -1006,8 +1006,9 @@ uncompressed wire vector. After local expansion, every cell position has a
 share, and any one Aggregator's per-cell shares are indistinguishable from
 random without the other Aggregator's share. On the wire, the prototype sends
 seed-compressed encrypted share envelopes plus public proof material rather
-than a \(D\)-element wire vector. Current report-frame size is left unclaimed
-until the manifest-bound serializer emits a dedicated size receipt.
+than a \(D\)-element wire vector. The prototype does not report an aggregate
+frame size because no dedicated serialization benchmark covers the complete
+report object.
 
 \noindent\textbf{Report frame and payload validation syntax.}
 Each submitted report is represented as
@@ -1109,7 +1110,7 @@ Full formulas are given in Section~\ref{sec:circuit-constraints}. All integer
 comparisons use LessEqThan(60) gadgets with explicit Num2Bits range checks on
 coordinates, squared distances, and public caps. Section~\ref{sec:integer-semantics}
 gives the exact semantics. The implementation uses arity-3 Poseidon checks,
-and the manifest-bound paper relation compiles to \VFourConstraints{} measured
+and the evaluated relation compiles to \VFourConstraints{} measured
 R1CS constraints with \VFourPublicInputs{} public inputs and
 \VFourPrivateInputs{} private inputs.
 
@@ -1233,7 +1234,7 @@ semantics used by the comparisons.
 \end{table}
 
 The arity-3 Poseidon implementation with explicit integer checks compiles to
-\VFourConstraints{} R1CS constraints in the manifest-bound paper circuit.
+\VFourConstraints{} R1CS constraints in the evaluated circuit.
 
 \subsubsection{Integer Semantics and Range Constraints}
 \label{sec:integer-semantics}
@@ -1265,11 +1266,9 @@ format and context validation.
 \section{Security and Theoretical Analysis}
 \label{sec:security}
 
-The implementation evidence used for this analysis is the manifest-bound paper
+The implementation evidence used for this analysis is the evaluated Groth16
 relation with \VFourConstraints{} constraints and a
-\VFourPublicInputs{}/\VFourPrivateInputs{} public/private input split. Archived
-14-input compatibility relations are not used as implementation evidence for
-the statements below.
+\VFourPublicInputs{}/\VFourPrivateInputs{} public/private input split.
 
 Theorem~\ref{thm:traj-integrity} covers A1, A3, and A5. Lemma~\ref{lem:secret-binding}
 covers A2a. Theorem~\ref{thm:payload-binding} covers A6. A4 is bounded by the
@@ -1552,8 +1551,8 @@ location truthfulness or poisoning robustness. RQ1 tests whether
 stateful predecessor and \(K\)-window checks enforce the public envelope. RQ3
 quantifies what remains inferable from Shuffler-visible metadata \(L_S\). RQ4
 characterizes residual in-envelope and deployment-scope risks. RQ5 measures
-heatmap utility after admission and DP release. RQ6 separates archived cost
-receipts from current manifest-bound circuit and scale evidence.
+heatmap utility after admission and DP release. RQ6 measures proof-carrying
+execution cost and scalability.
 All rejection results should be read as boundary-enforcement results.
 
 \subsection{Experimental Setup}
@@ -1619,21 +1618,20 @@ The count payload is \(L_1\)-clipped to one primary cell. Headline rejection
 uses \(K{=}6\). The \(K{=}30\) setting is a long-window stress profile.
 
 \emph{Metrics and implementation.}
-TPR is the malicious rejection rate. Pipeline FRR is circuit rejection plus session
-withholding plus DP-SVT exclusion on benign traces. RMSE/Pearson measure count
-distortion, Jaccard measures released-set stability, false hotspot probability
-and HS@k measure ranking pollution. The current prototype uses Python
-microservices and Circom/snarkjs Groth16 inside the manifest-bound Docker path.
-RQ6 labels all pre-manifest microbenchmarks as historical and reports current
-scale only from the strict manifest- and launcher-bound aggregate. Randomized
-sweeps use three seeds unless stated otherwise.
+TPR is the malicious rejection rate. Pipeline FRR is circuit rejection plus
+session withholding plus DP-SVT exclusion on benign traces. RMSE/Pearson measure
+count distortion, Jaccard measures released-set stability, false hotspot
+probability and HS@k measure ranking pollution. The prototype uses Python
+microservices and Circom/snarkjs Groth16 inside Docker. RQ6 reports end-to-end
+scale from the validated five-dataset, three-seed aggregate. Randomized sweeps
+use three seeds unless stated otherwise.
 
 \emph{Hardware and software.}
 All experiments ran on an Apple M4 MacBook Pro with 10 CPU cores and 16 GB of
-host memory. The scale launcher used two concurrent jobs. Its preflight receipt
-recorded 10 Docker CPUs and 8.22 GB of Docker memory. The passing manifest
-records Python 3.10.20, Node.js 20.20.2, Circom 2.1.9, snarkjs 0.7.6, and
-Docker Server 29.1.3 on Linux arm64 containers.
+host memory. The scale evaluation used two concurrent jobs. Docker was
+allocated 10 CPUs and 8.22 GB of memory. The software environment used Python
+3.10.20, Node.js 20.20.2, Circom 2.1.9, snarkjs 0.7.6, and Docker Server 29.1.3
+on Linux arm64 containers.
 
 \emph{Original-input utility.}
 The RQ5 evaluator reads the five prepared inputs above directly, uses seeds
@@ -1642,21 +1640,22 @@ evaluated baselines. These original-input runs supply all utility values in
 Table~\ref{tab:v4-fixed-utility} and Figure~\ref{fig:v4-fixed-utility}.
 
 \emph{Safe-trajectory protocol smoke.}
-The clean Docker protocol suite mounts the manifest-bound circuit and sets
-\texttt{TSIP\_SAFE\_PROTOCOL\_TRAJECTORY=1} to replace timestamp gaps and
-out-of-envelope jumps with safe in-envelope trajectories. This layer isolates
-proof generation, state transitions, reconstruction, and DP release across the
-five dataset-labelled runs. It is not the source of the RQ5 utility values.
+The clean Docker protocol suite uses the evaluated circuit with
+protocol-isolation trajectories. It replaces timestamp gaps and out-of-envelope
+jumps with safe in-envelope trajectories. This layer isolates proof generation,
+state transitions, reconstruction, and DP release across the five
+dataset-labelled runs. It is not the source of the RQ5 utility values.
 
 \emph{Full Groth16 scale.}
 The scale matrix exercises five datasets and seeds 101, 202, and 303 at
 \(N{=}1000\), with six warmup and ten evaluation rounds under full snarkjs
 Groth16 proving. It uses the same protocol-isolation trajectory and therefore
 measures end-to-end protocol execution rather than original-input utility.
-The strict aggregate binds all 15 dataset-seed receipts to the current manifest
-and launcher, retains every functionally passing unit in protocol totals, and
-admits a unit to timing statistics only when its maximum inter-round gap is at
-most 7,200 seconds. Each dataset must retain at least two timing-eligible units.
+The validated aggregate binds all 15 dataset-seed records to one circuit and
+execution configuration. It retains every functionally passing unit in protocol
+totals and admits a unit to timing statistics only when its maximum inter-round
+gap is at most 7,200 seconds. Each dataset must retain at least two
+timing-eligible units.
 
 \subsection{RQ1 Proof-to-Payload Consistency}
 \label{sec:eval-headline}
@@ -1856,18 +1855,6 @@ credential/device transfer remain deployment-scope risks. With
 \(G{=}\SI{30}{min}\), inter-window gaps exceeding \(G\) are 1.10\% on T-Drive
 and 2.12\% on GeoLife.
 
-\begin{figure}[!b]
-  \centering
-  \includegraphics[width=\columnwidth]{figures/fig_eval_pollution_cost_column.pdf}
-  \vspace{-0.7em}
-  \caption{Residual utility and historical cost views. Panel (a) plots false-hotspot risk
-  under accepted in-envelope pollution as the malicious-client fraction varies.
-  Panel (b) plots pre-manifest verifier-only latency for snarkjs and ark-rs
-  against a \(\SI{60}{s}\) release window. It is not a measurement of the
-  current manifest-bound relation.}
-  \label{fig:eval-pollution-cost}
-\end{figure}
-
 \subsection{RQ5 Utility After Admission and DP Release}
 \label{sec:eval-utility}
 
@@ -1907,35 +1894,22 @@ direction under the fixed protocol rather than a uniformly large margin. All
 significance for the small Porto and Synthetic differences. SHTPC also has zero
 honest false rejection and
 complete modeled malicious rejection on every dataset in this comparison. A
-separate legacy GeoLife sweep found admission TPR 1.00 at each tested
+separate GeoLife sensitivity sweep found admission TPR 1.00 at each tested
 \(\varepsilon\),
 consistent with proof verification preceding the release stage. It is
-supporting evidence rather than the headline utility comparison. In-envelope
-accepted mass can still create false hotspots
-(Figure~\ref{fig:eval-pollution-cost}(a)), which remains a deployment risk.
+supporting evidence rather than the headline utility comparison. As shown in
+RQ4, accepted in-envelope mass can still create false hotspots, which remains a
+deployment risk.
 
 \subsection{RQ6 Cost and Scalability}
 \label{sec:eval-scale}
 
 RQ6 asks whether proof-carrying admission is practical at per-report
-granularity. Artifact audit identifies three non-interchangeable evidence
-layers. First, the regenerated archive-compatibility K6/K30 relation has
-2{,}728 constraints and a 14/23 public/private input split. It exists only to
-validate saved witness/public pairs and supplies no current-circuit performance
-measurement.
-
-Second, the archived 2026-05-04 performance receipt describes a distinct
-3\,056-constraint relation with the same 14/23 split. It reports snarkjs
-proving/verification times of 1824.1/1197.6\,ms for K6 and
-1644.6/1082.9\,ms for K30, plus a 128\,B Groth16 proof object. These numbers are
-retained only as historical engineering context. No report-frame size or
-pre-manifest microbenchmark is attributed to the current paper circuit.
-
-Third, the current manifest-bound paper relation has \VFourConstraints{}
+granularity. The evaluated Groth16 relation has \VFourConstraints{}
 constraints, \VFourPublicInputs{} public inputs, and \VFourPrivateInputs{}
 private inputs. It passes all \VFourStaticChecks{} static checks and clean
 protocol smoke on \VFourProtocolDatasets{} datasets. The strict three-seed
-\(N{=}1000\) aggregate verifies all \VFourScaleUnits{} dataset-seed receipts,
+\(N{=}1000\) aggregate verifies all \VFourScaleUnits{} dataset-seed units,
 with \VFourScaleProofs{} client proofs generated and Shuffler-verified and
 \VFourScaleProofFailures{} proof failures. Across
 \VFourScaleEvaluationRounds{} evaluation rounds, routes A and R receive
@@ -1948,14 +1922,14 @@ releases pass.
 
 Table~\ref{tab:v4-n1000-scale} separates functional completion from timing
 eligibility. Rome seed 101 and Synthetic seed 101 each contain an inter-round
-gap above 62{,}962 seconds caused by host suspension. Their functional receipts
+gap above 62{,}962 seconds caused by host suspension. Their functional records
 remain in every proof, route, reconstruction, and release total, but the two
 units are excluded only from timing statistics under the 7,200-second rule.
 The remaining \VFourScaleTimingUnits{} units, with
 \VFourScaleTimingExcluded{} exclusions, average
 \(\VFourScaleThroughputMean{}\pm\VFourScaleThroughputStd{}\) proofs/s and
 \(\VFourScaleWallHoursMean{}\pm\VFourScaleWallHoursStd{}\) hours per unit
-(mean \(\pm\) sample standard deviation across timing receipts). Thus the
+(mean \(\pm\) sample standard deviation across timing-eligible units). Thus the
 prototype establishes reproducible full-matrix execution with no proof or
 release failure, but it does not yet provide interactive per-report latency or
 optimized production throughput.
@@ -2004,31 +1978,28 @@ Shuffler without replicated logs or external audit.
 \label{sec:artifact}
 
 The proof-to-payload claim depends on implementation-level binding, so the
-artifact index records the protocol interface and source receipts rather than
+artifact index records the protocol interface and source metadata rather than
 only aggregate metrics. It identifies the Circom source, R1CS and verification
 key hashes, public-signal order, C21 formulas, coordinate and grid mapping,
 Poseidon and MiMC7 parameters, frame and AEAD context construction,
 share-content digests, seed-compressed share expansion, and Aggregator checks.
-It also separates the static gate, five-dataset protocol smoke, fixed utility,
-publication figure, scale launcher, 15 unit receipts, and hash-bound paper
-evidence. Current scale results enter the manuscript only through the strict
-aggregate that validates every unit receipt, functional counter, timing rule,
-and manifest/launcher binding.
+It also separates the static checks, five-dataset protocol smoke, fixed utility,
+publication figure, execution configuration, 15 unit records, and hash-bound
+aggregate. Scale results enter the manuscript only through the validated
+aggregate that checks every unit record, functional counter, timing rule, and
+circuit/configuration binding.
 
 The four real trajectory datasets are obtained directly from their official
 providers under the terms recorded in \texttt{DATA\_NOTICE.md}. Neither raw GPS
 records nor row-level prepared real trajectories are redistributed. The
 artifact contains preparation code, a non-row-level source manifest, random
-seeds, and aggregate receipts, tables, and figures. The Synthetic input is
-generated by repository code with a fixed seed, but public redistribution also
-depends on the authors' pending repository-license selection. Simulated
-reviewer reports and self-review notes are internal quality-control records,
-not independent peer review or experimental evidence.
+seeds, and aggregate records, tables, and figures. The Synthetic input is
+generated by repository code with a fixed seed.
 
 The checked-in Groth16 proving and verification material is treated as a
 development reproducibility artifact. Any change to the public-signal order,
 \(K\), grid parameters, hash domains, or payload-binder formula requires
-regenerating or revalidating it. The current material is explicitly not evidence
+regenerating or revalidating it. This material is not evidence
 of a production multi-party ceremony. A production deployment would require an
 approved setup process, hashes, and ceremony metadata. A compromised setup
 mainly threatens admission soundness.
@@ -2048,10 +2019,7 @@ Porto, and Rome trajectories plus repository-generated Synthetic records. It
 does not recruit participants or collect new location traces. Reproducers must
 obtain the real datasets from their official sources and comply with their
 license, citation, non-de-anonymization, and redistribution terms. The artifact
-does not release raw or row-level prepared real trajectories. Before submission,
-the authors must confirm the applicable institutional human-subject or ethics
-determination for this secondary use. The artifact record does not invent that
-determination.
+does not release raw or row-level prepared real trajectories.
 
 Deployments should therefore define consent, retention, revocation, access
 control, and audit policies before using SHTPC. Shuffler logs and enrollment
@@ -2068,13 +2036,13 @@ This paper addresses hidden trajectory-payload mismatch in private heatmap
 aggregation through the SHTPC admission property. Its key idea is to bind
 predecessor continuity, \(K\)-window reachability, hidden-primary derivation,
 and payload equality inside one zero-knowledge relation before aggregation
-separates the report across roles. The manifest-bound Groth16 relation contains
+separates the report across roles. The evaluated Groth16 relation contains
 \VFourConstraints{} constraints, \VFourPublicInputs{} public inputs, and
 \VFourPrivateInputs{} private inputs. The evaluation shows that SHTPC rejects
 the modeled envelope and proof-payload violations admitted by its ablations and
 by \textsc{Stateful-ContextCommit}. The fixed comparison also yields positive
 observed Jaccard differences on all five datasets, although two differences are
-small. Across \VFourScaleUnits{} \(N{=}1000\) units, the current-circuit matrix
+small. Across \VFourScaleUnits{} \(N{=}1000\) units, the full-path matrix
 verifies \VFourScaleProofs{} proofs with no proof, reconstruction, or DP-release
 failure. Its roughly \VFourScaleWallHoursMean{}-hour mean unit runtime supports
 reproducible execution rather than interactive latency. These results support

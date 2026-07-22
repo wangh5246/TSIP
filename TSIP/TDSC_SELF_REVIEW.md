@@ -1,9 +1,9 @@
 # TDSC Final-Scale Adversarial Self-Review
 
-Review date: 2026-07-14. Canonical manuscript: `TSIP/main.tex`. This review is
+Review date: 2026-07-22. Canonical manuscript: `TSIP/main.tex`. This review is
 an internal quality-control record, not independent peer review. Its scientific
 status is **final-polish verified**: the fixed five-dataset utility, strict
-15-unit current-circuit aggregate, mechanism-adapter boundary, small-sample
+15-unit evaluated-circuit aggregate, mechanism-adapter boundary, small-sample
 statistical boundary, hardware disclosure, manuscript claim contract, final
 clean build, all-page visual QA, and canonical/mirror consistency all pass.
 Only author-owned release and submission declarations remain open.
@@ -20,8 +20,8 @@ Only author-owned release and submission declarations remain open.
 - Hardware and software setup: **pass**. The manuscript records the Apple M4
   host, 16 GB host memory, 10-CPU/8.22-GB Docker allocation, two concurrent
   jobs, and the passing Python, Node.js, Circom, snarkjs, and Docker versions.
-- Current N=1000 Docker scale evidence: **pass with an explicit performance
-  boundary**. All 15 functional receipts verify; 13 timing-eligible receipts
+- Evaluated N=1000 Docker scale evidence: **pass with an explicit performance
+  boundary**. All 15 functional units verify; 13 timing-eligible units
   average 1.000 $\pm$ 0.069 proofs/s and 4.183 $\pm$ 0.248 hours per unit. Rome
   seed 101 and Synthetic seed 101 remain in functional totals but are excluded
   only from timing after documented host suspension.
@@ -53,31 +53,44 @@ pdflatex -interaction=nonstopmode -halt-on-error main.tex
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-Build and inspection results from the final-polish checkpoint:
+Build and inspection results from the reviewer-version audit checkpoint:
 
 - Abstract: 147 words; manuscript checker issues: 0.
 - Biber: 90 citekeys; warnings/errors: 0.
 - PDF: 18 pages, US letter, PDF 1.7.
 - Undefined citations/references, fatal errors, rerun requests: 0.
 - Overfull boxes, LaTeX warnings, package warnings: 0.
-- Underfull boxes: 43. All 18 pages were freshly rendered and inspected. Pages
-  1, 11, 12, 14, 15, and 16 were additionally inspected at original detail;
-  there is no clipping, overlap, missing figure, or unreadable table/text.
-- SHA-256: `main.tex` `dae72d7031a44111af2c023ff6f00f6ef6206a09dec00f502002eb2eb6dd3200`;
+- Underfull boxes: 41. All 18 pages were freshly rendered and inspected. There
+  is no clipping, overlap, missing figure, or unreadable table/text.
+- SHA-256: `main.tex` `4af1e1f531ac15be0d0af471c667dc55e906055fe378249668c4dfbe5bcecf7e`;
   `reference.bib` `c1c4d078c2e2acf21a204312d2f62bb2a0e71b96e17b50926d35d11ededfb6cf`;
-  `main.pdf` `443b6f41ce35cae8bb2604d5e0999b74adc556111e5d21b23142dfcc33e43b7f`;
+  `main.pdf` `aab629d00fa0cb9975050976f442799518003db7a20a87c958e61b51c2ceabae`;
   `v4_fixed_utility_heatmap.pdf`
   `53978940a836e8904c651f9d7fdc2373beb57be13e1d647ff6350ff698c4c8e6`;
   `tab_v4_fixed_utility.tex`
   `cd1a94bafdf923dbef19b4f602e6ba071ed27bc505718d52e191bd4a8472ba81`.
 - Canonical and Heatmap paper-mirror `main.tex`/`reference.bib` files are
   byte-identical.
-- Final-scale evidence propagation commit: `3591866c`; final verified-paper
-  build commit: `71b7e418`.
+
+## Reviewer-Facing Version Audit
+
+The extracted final PDF text contains no `V1`, `V2`, `V3`, or `V4` iteration
+labels. It also contains no old/new-version comparison, correction history,
+legacy or archived benchmark narrative, internal review record, release TODO,
+or submission TODO. RQ6 now reports only the evaluated Groth16 relation and the
+validated five-dataset scale matrix.
+
+Source-only identifiers such as `VFour*` evidence macros, `tab_v4_*` labels,
+figure filenames, and IEEE template-version comments remain because they do not
+render. The manuscript checker masks non-rendered LaTeX arguments before
+applying the reviewer-facing version gate, and its regression tests cover both
+visible failures and source-only safe cases. Bibliographic phrases such as
+`Internet-Draft` and `Cryptology ePrint Archive` are publication metadata, not
+internal manuscript versions.
 
 ## Claim-Evidence Closure
 
-`TSIP/CLAIM_EVIDENCE_MAP.md` contains 27 major claims: 18 `supported`, seven
+`TSIP/CLAIM_EVIDENCE_MAP.md` contains 25 active major claims: 16 `supported`, seven
 `analytical`, two `assumption`, zero `partial`, and zero `unsupported`. CE01 is
 closed by the source-level citation audit. CE26 is closed by the Heatmap
 artifact index and executable rerun contract. The earlier MDS/EETS analogy was
@@ -99,24 +112,24 @@ or assumption into a guarantee.
 | Contribution | Is novelty scoped honestly? | pass | The paper claims a new admission property and system composition, not a new SNARK, DP mechanism, physical-location proof, or general poisoning defense. |
 | Contribution | Are empirical gains exaggerated? | pass | All five fixed-protocol deltas are reported; +0.007 on Porto and Synthetic is explicitly called small, and the three-seed observations are not presented as statistical significance. |
 | Writing clarity | Can the relation and protocol be reproduced? | pass | Method fields, C1-C21, integer semantics, state transition, timing, warmup, hardware and software versions, artifact paths, commands, and pass criteria are explicit. |
-| Writing clarity | Are terminology and evidence layers stable? | pass | SHTPC is the visible term; archive, historical-performance, current static/smoke, fixed utility, and current scale are kept non-interchangeable. |
-| Writing clarity | Does paragraph flow support the paper story? | pass | The reverse outline maps each core prose paragraph to one topic sentence, role, and claim set, including separate functional and timing messages for current scale. |
+| Writing clarity | Are terminology and evidence layers stable? | pass | SHTPC is the visible term; the evaluated relation, fixed utility, protocol smoke, and scale execution are kept non-interchangeable. The reviewer-facing paper has no internal iteration labels or drafting notes. |
+| Writing clarity | Does paragraph flow support the paper story? | pass | The reverse outline maps each core prose paragraph to one topic sentence, role, and claim set, including separate functional and timing messages for scale execution. |
 | Experimental strength | Are results consistent across inputs and seeds? | pass | The fixed configuration has a positive SHTPC-minus-adapter Jaccard delta for every dataset mean and for each of the 15 observed dataset-seed pairs; means and standard deviations are reported, while three seeds are treated as insufficient for a significance claim on the small gains. |
 | Experimental strength | Is absolute utility hidden when it is low? | pass | Absolute Jaccard spans 0.135 to 0.878; the manuscript reports each value and does not claim uniformly high utility. |
 | Experimental strength | Are failure cases visible? | pass | Metadata inference, in-envelope pollution, false genesis, transfer, collusion, and development-setup limits appear in the Abstract, RQ3/RQ4, Discussion, or Artifact section. |
-| Experimental strength | Is current-circuit cost established? | pass | Fifteen functional units and 225,000 generated/verified proofs pass with zero failures; 13 timing receipts report all-unit and per-dataset mean/sample-standard-deviation statistics, with both exclusions disclosed. |
+| Experimental strength | Is evaluated-circuit cost established? | pass | Fifteen functional units and 225,000 generated/verified proofs pass with zero failures; 13 timing-eligible units report all-unit and per-dataset mean/sample-standard-deviation statistics, with both exclusions disclosed. |
 | Evaluation completeness | Are key mechanisms ablated? | pass | No-ADWC, No-Payload-Bind, Stateful-ContextCommit, and No-Admission-Check expose the predicates responsible for A3 and A6. |
 | Evaluation completeness | Is the main comparison fair? | pass | One epsilon/tau pair, N=1000, ten windows, 10% A1, and seeds 101/202/303 are fixed across all five datasets; tuned settings are excluded from the headline. |
 | Evaluation completeness | Are datasets and evidence layers broad enough? | pass | Four real trajectory-derived inputs and one generated stress input are used; utility, smoke, and scale answer separate questions. |
 | Evaluation completeness | Are baseline claims bounded? | pass | The Nebula-style mechanism adapter is called the strongest evaluated fixed-configuration adapter, while VDAF/TEE/proof-of-location systems remain analytical design points rather than falsely comparable implementations. |
 | Method soundness | Are assumptions explicit and falsifiable? | pass | SRV-TS, SCS, CA3, setup, hash, channel, and non-collusion assumptions are stated with adjacent failure consequences. |
-| Method soundness | Does one relation actually bind routed payload to trajectory state? | pass | C17-C21, route/binder negative fixtures, Aggregator validation, and the manifest-bound 22-check gate cover the stated interface. |
+| Method soundness | Does one relation actually bind routed payload to trajectory state? | pass | C17-C21, route/binder negative fixtures, Aggregator validation, and the evaluated 22-check gate cover the stated interface. |
 | Method soundness | Does the design overclaim source authenticity or robustness? | pass | The claim begins post-enrollment and excludes physical presence, metadata elimination, fully in-envelope false reports, and malicious-Shuffler state forks. |
-| Method soundness | Is net benefit supported at paper scale? | pass | CE23 verifies proof/route totals, all 150 reconstructions and DP releases, and current-relation timing. The paper characterizes the 4.183-hour mean unit runtime as reproducible execution rather than interactive performance. |
+| Method soundness | Is net benefit supported at paper scale? | pass | CE23 verifies proof/route totals, all 150 reconstructions and DP releases, and evaluated-relation timing. The paper characterizes the 4.183-hour mean unit runtime as reproducible execution rather than interactive performance. |
 
 No additional utility or scale rerun is required by this review. The strict
-validator found all 15 functional receipts valid and retained at least two
-timing receipts per dataset. All machine-verifiable manuscript gates are now
+validator found all 15 functional units valid and retained at least two
+timing-eligible units per dataset. All machine-verifiable manuscript gates are now
 closed; the remaining work is limited to author-owned release and submission
 declarations.
 
@@ -129,7 +142,7 @@ declarations.
    proof-generation and proof-verification accounting, A/R totals of 1000/1000
    in every evaluation round, successful reconstruction, and successful DP
    release.
-3. Hash-bound every validated unit receipt and emitted deterministic aggregate
+3. Hash-bound every validated unit record and emitted deterministic aggregate
    JSON, CSV, and LaTeX artifacts with all-unit and per-dataset mean, standard
    deviation, min/max, and throughput statistics; the manuscript does not report
    only the best seed.
@@ -147,10 +160,9 @@ declarations.
   mechanism-level adapters in the shared harness. All 15 observed paired
   differences favor SHTPC, but the paper makes no statistical-significance
   claim for the small Porto and Synthetic gains.
-- The strict aggregate verifies 15/15 functional receipts, 225,000 generated
+- The strict aggregate verifies 15/15 functional units, 225,000 generated
   and verified proofs, zero proof failures, A/R totals of 150,000/150,000, and
-  150/150 reconstruction and DP-release passes. Timing uses 13 receipts after
+  150/150 reconstruction and DP-release passes. Timing uses 13 units after
   two host-suspension exclusions and remains a prototype performance result.
-- Simulated reviewer reports are internal quality control only.
 - The checked-in Groth16 setup is a development reproducibility artifact, not a
   production ceremony.

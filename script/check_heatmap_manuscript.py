@@ -21,6 +21,37 @@ STALE_PATTERNS = {
     r"\\(?:label|ref|eqref|autoref|pageref|cref)\*?\s*"
     r"\{\s*eq:r-tsip\s*\}": "stale internal TSIP label",
 }
+REVIEWER_VISIBLE_INTERNAL_PATTERNS = {
+    r"(?<![A-Za-z0-9_])V[1-9]\d*(?![A-Za-z0-9_])": (
+        "reviewer-visible internal version label"
+    ),
+    r"\b(?:old|new|previous|earlier|revised|corrected)\s+version\b": (
+        "reviewer-visible version-history wording"
+    ),
+    r"\b(?:before|after)\s+(?:the\s+)?(?:fix|correction|revision)\b": (
+        "reviewer-visible correction-history wording"
+    ),
+    r"\b(?:legacy|pre[- ]manifest|archive[- ]compatibility)\b": (
+        "reviewer-visible implementation-history wording"
+    ),
+    r"\bhistorical\s+(?:performance|cost|benchmark|receipt|relation|engineering)\b": (
+        "reviewer-visible historical-result wording"
+    ),
+    r"\barchived\s+\d{4}-\d{2}-\d{2}\b": (
+        "reviewer-visible dated archive wording"
+    ),
+    r"\bcurrent[- ]circuit\b|\bcurrent\s+paper\s+(?:circuit|relation)\b": (
+        "reviewer-visible internal circuit-version wording"
+    ),
+    r"\bleft\s+unclaimed\b": "reviewer-visible drafting note",
+    r"\bpending\s+repository[- ]license\b": "reviewer-visible release TODO",
+    r"\bsimulated\s+reviewer\s+reports\b|\bself[- ]review\s+notes\b": (
+        "reviewer-visible internal review-process wording"
+    ),
+    r"\bbefore\s+submission\b[^.]{0,160}\bauthors?\s+must\b": (
+        "reviewer-visible submission TODO"
+    ),
+}
 REQUIRED_MACROS = (
     r"\VFourConstraints",
     r"\VFourPublicInputs",
@@ -73,7 +104,10 @@ POLISH_DISCLOSURES = (
         "experiment host-memory disclosure missing: 16 GB",
     ),
     (
-        re.compile(r"\b10\s+Docker\s+CPUs\b", re.I),
+        re.compile(
+            r"\b(?:10\s+Docker\s+CPUs|Docker[^.]{0,40}\b10\s+CPUs)\b",
+            re.I | re.S,
+        ),
         "Docker CPU allocation disclosure missing",
     ),
     (
@@ -104,6 +138,13 @@ _COMMAND_RE = re.compile(r"\\[A-Za-z@]+\*?(?:\s*\[[^]]*\])?")
 _DEFINITION_RE = re.compile(
     r"\\(?P<command>newcommand|renewcommand|providecommand|def)"
     r"(?![A-Za-z@])\*?"
+)
+_NON_RENDERED_COMMAND_RE = re.compile(
+    r"\\(?:"
+    r"label|ref|eqref|autoref|pageref|cref|Cref|"
+    r"input|include|includegraphics|bibliography|bibliographystyle|"
+    r"addbibresource|cite|citep|citet|parencite|textcite|nocite"
+    r")\*?"
 )
 _CONTROL_SEQUENCE_RE = re.compile(r"\\(?:[A-Za-z@]+|.)")
 _NON_COMPLETION_RE = re.compile(
@@ -223,6 +264,39 @@ def _without_macro_definitions(text: str) -> str:
     return "".join(parts)
 
 
+def _without_nonrendered_commands(text: str) -> str:
+    spans: list[tuple[int, int]] = []
+    covered_until = 0
+    for match in _NON_RENDERED_COMMAND_RE.finditer(text):
+        if match.start() < covered_until:
+            continue
+        index = _skip_whitespace(text, match.end())
+        while index < len(text) and text[index] == "[":
+            option_end = _group_end(text, index, "[", "]")
+            if option_end is None:
+                index = len(text)
+                break
+            index = _skip_whitespace(text, option_end)
+        if index < len(text) and text[index] == "{":
+            index = _group_end(text, index, "{", "}") or len(text)
+        else:
+            index = match.end()
+        covered_until = index
+        spans.append((match.start(), index))
+
+    if not spans:
+        return text
+
+    parts: list[str] = []
+    cursor = 0
+    for start, end in spans:
+        parts.append(text[cursor:start])
+        parts.append(re.sub(r"[^\r\n]", " ", text[start:end]))
+        cursor = end
+    parts.append(text[cursor:])
+    return "".join(parts)
+
+
 def _contains_lexical_token(text: str, token: str) -> bool:
     pattern = rf"(?<![A-Za-z0-9_]){re.escape(token)}(?![A-Za-z0-9_])"
     return re.search(pattern, text) is not None
@@ -272,6 +346,13 @@ def check_text(text: str, evidence: dict[str, Any]) -> list[str]:
 
     for pattern, message in STALE_PATTERNS.items():
         if re.search(pattern, contract_text, re.I):
+            issues.append(message)
+
+    reviewer_visible_text = _without_nonrendered_commands(
+        _without_macro_definitions(contract_text)
+    )
+    for pattern, message in REVIEWER_VISIBLE_INTERNAL_PATTERNS.items():
+        if re.search(pattern, reviewer_visible_text, re.I | re.S):
             issues.append(message)
 
     for dataset in _DATASETS:

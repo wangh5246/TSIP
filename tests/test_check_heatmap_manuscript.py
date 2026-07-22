@@ -132,6 +132,49 @@ def test_stale_patterns_do_not_overmatch(fresh: str) -> None:
     assert not any(issue.startswith("stale") for issue in issues)
 
 
+@pytest.mark.parametrize(
+    ("wording", "expected"),
+    [
+        ("We report the V4 method.", "reviewer-visible internal version label"),
+        ("The old version used fewer checks.", "reviewer-visible version-history wording"),
+        ("After the correction, all runs pass.", "reviewer-visible correction-history wording"),
+        ("A legacy benchmark is retained.", "reviewer-visible implementation-history wording"),
+        ("The pre-manifest run is included.", "reviewer-visible implementation-history wording"),
+        ("Historical performance was 3 ms.", "reviewer-visible historical-result wording"),
+        ("The archived 2026-05-04 run is shown.", "reviewer-visible dated archive wording"),
+        ("The current-circuit result passes.", "reviewer-visible internal circuit-version wording"),
+        ("Frame size is left unclaimed.", "reviewer-visible drafting note"),
+        ("Release depends on pending repository-license selection.", "reviewer-visible release TODO"),
+        ("Simulated reviewer reports are retained.", "reviewer-visible internal review-process wording"),
+        ("Before submission, the authors must confirm ethics approval.", "reviewer-visible submission TODO"),
+    ],
+)
+def test_reviewer_visible_internal_process_wording_fails(
+    wording: str, expected: str
+) -> None:
+    assert expected in MODULE.check_text(paper() + wording, PARTIAL)
+
+
+@pytest.mark.parametrize(
+    "source_only",
+    [
+        "% IEEEtran V1.6 template comment\n",
+        r"\newcommand{\VFourConstraints}{3547}",
+        r"\input{tables/tab_v4_n1000_scale}",
+        r"\label{tab:v4-fixed-utility}",
+        r"\ref{tab:v4-fixed-utility}",
+        r"\includegraphics{figures/v4_fixed_utility_heatmap.pdf}",
+        r"\cite{ProtocolV2Evaluation}",
+    ],
+)
+def test_source_only_version_identifiers_do_not_trigger_review_gate(
+    source_only: str,
+) -> None:
+    issues = MODULE.check_text(paper() + "\n" + source_only, PARTIAL)
+
+    assert not any(issue.startswith("reviewer-visible") for issue in issues)
+
+
 @pytest.mark.parametrize("dataset", ["Porto", "Rome", "Synthetic"])
 def test_missing_required_dataset_fails(dataset: str) -> None:
     issues = MODULE.check_text(paper().replace(dataset, ""), PARTIAL)
