@@ -175,7 +175,7 @@ declarations.
   seed has 1,400 balanced training pairs and 600 balanced test pairs. Mean AUC
   is 0.7434, 0.7491, 0.7268, and 0.7316 on T-Drive, GeoLife, Porto, and Rome.
   The deterministic summary SHA-256 is
-  `2cd2fbb87575a5540d341fa6525a561c85541d584ef0f160987a76298df9621f`.
+  `a5b5ef59c23d09077eb19bbaf50fa04829df971a75670b43ad74fb12f71d3a65`.
 - The strict aggregate verifies 15/15 functional units, 225,000 generated
   and verified proofs, zero proof failures, A/R totals of 150,000/150,000, and
   150/150 reconstruction and DP-release passes. Timing uses 13 units after

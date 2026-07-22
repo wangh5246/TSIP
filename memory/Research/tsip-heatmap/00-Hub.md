@@ -88,6 +88,7 @@ tags: [tsip-heatmap, hub, v4]
 - [[Daily/2026-07-22]]
 
 ## Recent Changes
+- 2026-07-22T08:22:50Z: sync refreshed scaffold, registry, index, and daily note (rq-reproducibility-hash-normalization).
 - 2026-07-22T08:18:52Z: sync refreshed scaffold, registry, index, and daily note (rq-reproducibility-details-commit).
 - 2026-07-22T08:08:08Z: sync refreshed scaffold, registry, index, and daily note (rq-reproducibility-details-receipt).
 - 2026-07-22T08:06:25Z: sync refreshed scaffold, registry, index, and daily note (rq-reproducibility-details-final).
@@ -95,4 +96,3 @@ tags: [tsip-heatmap, hub, v4]
 - 2026-07-22T07:21:12Z: sync refreshed scaffold, registry, index, and daily note (reviewer-version-hygiene).
 - 2026-07-13T18:53:02Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-polish).
 - 2026-07-13T18:25:44Z: sync refreshed scaffold, registry, index, and daily note (experiment-completeness-reaudit).
-- 2026-07-13T17:15:48Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task4-final-build).
