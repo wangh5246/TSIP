@@ -81,3 +81,13 @@ Pre-scale 阶段不提前写入 15/15 scale 结论；final-scale 严格聚合通
 - [x] 在 manuscript checker 中加入 reviewer-visible version/process gate，并确认 `VFour*` 宏、`tab_v4_*` 标签、图文件名和 IEEE 注释不会误报。
 - [x] 256 项 focused tests、Abstract 147 words / checker 0 issues、18 页 clean build、0 warning/undefined/overfull、18/18 页视觉 QA 和 canonical/mirror 字节比较通过。
 - [x] 形成 [[Results/Reports/论文内部版本与投稿痕迹审计-2026-07-22]]。
+
+## P0 实验复现细节补强
+
+- [x] 核对并披露 RQ1 payload mutation harness 的 12 次尝试和 2/5/5 类别拆分。
+- [x] 将 RQ3 session linking 从 sample-level split 改为 700/300 user-disjoint split。
+- [x] 重跑 T-Drive、GeoLife、Porto 和 Rome 的三种子 N=1000 session-linking task，并固定精确 AUC。
+- [x] 明确 RQ3 StandardScaler、32/16 MLP、1,400/600 pair counts 和 no-user-overlap contract。
+- [x] 明确 Figure 5 external ESA adapter 的 sampling、shuffle、raw-count threshold 3 和 debiasing rules，并与 SHTPC threshold 2 分离。
+- [x] 完成 265 tests、checker 0 issues、18 页 clean build、18/18 页 visual QA 和 Obsidian 回填。
+- [x] 形成 [[Results/Reports/论文实验复现细节补强-2026-07-22]]。

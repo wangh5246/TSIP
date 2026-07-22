@@ -21,12 +21,13 @@ tags: [tsip-heatmap, hub, v4]
 - Strict aggregate 已验证全部 unit hashes、16-round contract、功能总账与 manifest/launch binding；15 个功能单元全部通过，13 个计时单元为 1.000 +/- 0.069 proofs/s、4.183 +/- 0.248 h/单元。
 - 论文 evidence 已升级为 `scale.status=verified`，CE23 已关闭；最终 clean build、18/18 页视觉 QA 与 paper mirror 字节同步均已通过。
 - 2026-07-22 已完成 reviewer-facing 内部版本审计。最终 PDF 不含 `V1/V2/V3/V4`、修正前后、旧版/新版、历史关系、归档性能、内部评审记录或投稿前 TODO。RQ6 只保留 evaluated Groth16 relation 与五数据集 scale matrix。
+- 2026-07-22 已完成实验复现细节补强。RQ1 明确 12 次 payload mutations。RQ3 使用 700/300 user-disjoint split，四真实数据集 session AUC 为 0.7434、0.7491、0.7268、0.7316。图 5 已明确 External ESA 的 sampling、raw-count threshold 3 与 debiasing rules。
 - 源码中的 `VFour*` 宏、`tab_v4_*` 标签、图文件名和 IEEE 模板版本注释不会渲染，继续作为 evidence traceability 标识保留。
 
 ## 当前焦点
 
 - 实验完整性再审确认不存在阻塞性补实验需求；claim-safe 全文润色、最终重编译与视觉复核现已完成。
-- Reviewer-version gate 已加入 `script/check_heatmap_manuscript.py`，可区分可见正文与不渲染的 LaTeX 标识；当前 256 项 evidence/figure/manuscript tests 通过。
+- Reviewer-version gate 已加入 `script/check_heatmap_manuscript.py`，可区分可见正文与不渲染的 LaTeX 标识；当前 265 项 evidence/figure/RQ3 split/manuscript tests 通过。
 - 按 `docs/superpowers/specs/2026-07-13-tsip-heatmap-tdsc-revision-design.md` 执行 TDSC 分阶段证据驱动修订。
 - Pre-scale 已完成 Git 保全、artifact 一致性、摘要、五数据集固定效用、合规门、18 页 clean build 与 adversarial self-review；final-polish 回归已通过 237 项证据、图形与稿件合同测试。
 - 不再启动 scale launcher；保留 15 个 pass receipts。实验与机器可验证论文门禁均已闭合，当前只剩作者拥有的 release/submission 声明。
@@ -48,6 +49,7 @@ tags: [tsip-heatmap, hub, v4]
 - [[Results/Reports/V4实验结果-2026-07]]
 - [[Results/Reports/V4实验完整性再审-2026-07-14]]
 - [[Results/Reports/论文内部版本与投稿痕迹审计-2026-07-22]]
+- [[Results/Reports/论文实验复现细节补强-2026-07-22]]
 - [[Writing/论文修订与投稿决策]]
 - [[Sources/Notes/Codex对话同步审计-2026-07-13]]
 - [[Daily/2026-07-13]]
@@ -55,6 +57,8 @@ tags: [tsip-heatmap, hub, v4]
 
 ## 最近重要变化
 
+- 2026-07-22 实验复现细节补强已提交为 `1e30bce4`：RQ1 为 12 次 payload mutations，RQ3 为 700/300 user-disjoint split，图 5 披露 External ESA 完整过滤/去偏规则；265 tests、稿件 0 issues、18/18 页视觉 QA 通过。
+- 2026-07-22 闭合 RQ1 尝试数量、RQ3 classifier/user-disjoint split/精确 AUC 和图 5 external ESA filtering rules。轻量 RQ3 三种子重跑稳定，265 tests、18 页 clean build 与 18/18 页视觉 QA 通过。
 - 2026-07-22 完成 reviewer-facing 内部版本与投稿痕迹审计：删除 RQ6 的旧关系/旧计时叙事、历史成本图、release TODO、内部评审说明和投稿前作者待办；最终 PDF 文本扫描为 0 命中，256 tests、18 页 clean build 和 18/18 页视觉 QA 通过。
 - 2026-07-14 final-polish 论文提交为 `43f84752`：补充 Apple M4/Docker/软件环境，明确 Nebula-style 与 EIFFeL-style 为机制级适配器，收紧三种子小增益表述，重写核心章节并同步 canonical/mirror；237 tests、Abstract 147 words、稿件 issues 0、18 页 clean build 与 18/18 页视觉 QA 全部通过。
 - 2026-07-14 实验完整性再审确认执行合同全部完成且无需补跑；发现并修复 Obsidian 事实源的 13/15 过期快照，同时把适配器基线、三种子小增益、clean-scale、timing exclusion 和硬件环境列为润色必须主动披露的非阻塞风险。
@@ -84,11 +88,11 @@ tags: [tsip-heatmap, hub, v4]
 - [[Daily/2026-07-22]]
 
 ## Recent Changes
+- 2026-07-22T08:18:52Z: sync refreshed scaffold, registry, index, and daily note (rq-reproducibility-details-commit).
+- 2026-07-22T08:08:08Z: sync refreshed scaffold, registry, index, and daily note (rq-reproducibility-details-receipt).
+- 2026-07-22T08:06:25Z: sync refreshed scaffold, registry, index, and daily note (rq-reproducibility-details-final).
+- 2026-07-22T08:04:48Z: sync refreshed scaffold, registry, index, and daily note (rq-reproducibility-details).
 - 2026-07-22T07:21:12Z: sync refreshed scaffold, registry, index, and daily note (reviewer-version-hygiene).
 - 2026-07-13T18:53:02Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-polish).
 - 2026-07-13T18:25:44Z: sync refreshed scaffold, registry, index, and daily note (experiment-completeness-reaudit).
 - 2026-07-13T17:15:48Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task4-final-build).
-- 2026-07-13T17:02:16Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task3-commit).
-- 2026-07-13T17:00:04Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task3-hardening).
-- 2026-07-13T16:56:38Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task3-propagation).
-- 2026-07-13T16:40:48Z: sync refreshed scaffold, registry, index, and daily note (tdsc-final-scale-task2-commit).

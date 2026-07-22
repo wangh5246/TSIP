@@ -1,7 +1,7 @@
 ---
 type: project-index
 project: tsip-heatmap
-updated: 2026-07-22T07:21:12Z
+updated: 2026-07-22T08:18:52Z
 status: active
 tags: [tsip-heatmap, index]
 ---
@@ -31,6 +31,7 @@ tags: [tsip-heatmap, index]
 - [[Results/Reports/V4实验结果-2026-07]]
 - [[Results/Reports/V4实验完整性再审-2026-07-14]]
 - [[Results/Reports/论文内部版本与投稿痕迹审计-2026-07-22]]
+- [[Results/Reports/论文实验复现细节补强-2026-07-22]]
 
 ## Writing
 
@@ -65,6 +66,7 @@ Managed block. Refresh with `/kb-sync` or `/kb-index`. Put hand-written navigati
 - [[Results/Reports/V4实验结果-2026-07]]
 - [[Results/Reports/V4实验完整性再审-2026-07-14]]
 - [[Results/Reports/论文内部版本与投稿痕迹审计-2026-07-22]]
+- [[Results/Reports/论文实验复现细节补强-2026-07-22]]
 
 ### Writing
 - [[Writing/论文修订与投稿决策]]
