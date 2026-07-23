@@ -100,3 +100,11 @@ Pre-scale 阶段不提前写入 15/15 scale 结论；final-scale 严格聚合通
 - [x] 在 Experimental Setup 前置 measured baselines、公平协议、adapter/native 边界，并在 RQ5 报告 EIFFeL-style 结果。
 - [x] 完成 265 tests、checker 0 issues、16 页 clean build、16/16 页 visual QA 和 canonical/mirror 比较。
 - [x] 形成 [[Results/Reports/论文16页压缩与Baseline重构-2026-07-22]]。
+
+## P0 实验图补强与 Setup 再平衡
+
+- [x] 审计已生成但未使用的实验图，拒绝恢复与当前 evaluated relation 不一致的旧 verifier panel。
+- [x] 从现有 receipts 生成 GeoLife ADWC 参数敏感性图和五-seed false-hotspot stress 图。
+- [x] 将 Experimental Setup 从四段压缩为两段，同时保留 baseline、公平协议、硬件和 scale timing rule。
+- [x] 保持 16 页，并完成 265 tests、checker 0 issues、修改页 10--14 visual QA 和 mirror 比较。
+- [x] 形成 [[Results/Reports/论文实验图补强与Setup压缩-2026-07-23]]。

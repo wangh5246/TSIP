@@ -23,6 +23,7 @@ tags: [tsip-heatmap, hub, v4]
 - 2026-07-22 已完成 reviewer-facing 内部版本审计。最终 PDF 不含 `V1/V2/V3/V4`、修正前后、旧版/新版、历史关系、归档性能、内部评审记录或投稿前 TODO。RQ6 只保留 evaluated Groth16 relation 与五数据集 scale matrix。
 - 2026-07-22 已完成实验复现细节补强。RQ1 明确 12 次 payload mutations。RQ3 使用 700/300 user-disjoint split，四真实数据集 session AUC 为 0.7434、0.7491、0.7268、0.7316。图 5 已明确 External ESA 的 sampling、raw-count threshold 3 与 debiasing rules。
 - 2026-07-22 已完成全文 16 页压缩与 baseline 重构。当前 clean PDF 为 16 页；Setup 前置四类 measured ablation、Stateful-ContextCommit、External ESA 与 EIFFeL-style，RQ1/RQ5 重复表已删表留图。
+- 2026-07-23 已完成实验图补强与 Setup 再平衡。实验图从 4 张恢复到 6 张，新增 ADWC 参数敏感性与 in-envelope false-hotspot stress，Setup 压成两段，权威 PDF 仍为 16 页。
 - 源码中的 `VFour*` 宏、`tab_v4_*` 标签、图文件名和 IEEE 模板版本注释不会渲染，继续作为 evidence traceability 标识保留。
 
 ## 当前焦点
@@ -52,13 +53,16 @@ tags: [tsip-heatmap, hub, v4]
 - [[Results/Reports/论文内部版本与投稿痕迹审计-2026-07-22]]
 - [[Results/Reports/论文实验复现细节补强-2026-07-22]]
 - [[Results/Reports/论文16页压缩与Baseline重构-2026-07-22]]
+- [[Results/Reports/论文实验图补强与Setup压缩-2026-07-23]]
 - [[Writing/论文修订与投稿决策]]
 - [[Sources/Notes/Codex对话同步审计-2026-07-13]]
 - [[Daily/2026-07-13]]
 - [[Daily/2026-07-22]]
+- [[Daily/2026-07-23]]
 
 ## 最近重要变化
 
+- 2026-07-23 实验图由 4 张增至 6 张：恢复 GeoLife ADWC `K x drift-bias` sensitivity 和五-seed malicious-fraction false-hotspot stress；Setup 从四段压为两段，16 页、265 tests、checker 0 issues 与修改页视觉 QA 均通过。
 - 2026-07-22 全文按 `research-paper-writing` 完成逐节审阅：12,904 -> 11,139 source words，18 -> 16 页；删除三张重复表、重构 Experiment Setup baseline、公平协议与 RQ5 EIFFeL-style 对比，265 tests、稿件 0 issues、16/16 页视觉 QA 通过。
 - 2026-07-22 实验复现细节补强已提交为 `1e30bce4`：RQ1 为 12 次 payload mutations，RQ3 为 700/300 user-disjoint split，图 5 披露 External ESA 完整过滤/去偏规则；265 tests、稿件 0 issues、18/18 页视觉 QA 通过。
 - 2026-07-22 闭合 RQ1 尝试数量、RQ3 classifier/user-disjoint split/精确 AUC 和图 5 external ESA filtering rules。轻量 RQ3 三种子重跑稳定，265 tests、18 页 clean build 与 18/18 页视觉 QA 通过。
@@ -88,14 +92,14 @@ tags: [tsip-heatmap, hub, v4]
 - [[01-Plan]]
 - [[02-Index]]
 - [[_system/registry]]
-- [[Daily/2026-07-22]]
+- [[Daily/2026-07-23]]
 
 ## Recent Changes
+- 2026-07-23T08:34:56Z: sync refreshed scaffold, registry, index, and daily note (paper-experiment-figures-setup-rebalance-committed).
+- 2026-07-23T08:33:07Z: sync refreshed scaffold, registry, index, and daily note (paper-experiment-figures-setup-rebalance).
 - 2026-07-22T08:50:19Z: sync refreshed scaffold, registry, index, and daily note (paper-16page-baseline-restructure-committed).
 - 2026-07-22T08:46:21Z: sync refreshed scaffold, registry, index, and daily note (paper-16page-baseline-restructure-final).
 - 2026-07-22T08:45:28Z: sync refreshed scaffold, registry, index, and daily note (paper-16page-baseline-restructure).
 - 2026-07-22T08:22:50Z: sync refreshed scaffold, registry, index, and daily note (rq-reproducibility-hash-normalization).
 - 2026-07-22T08:18:52Z: sync refreshed scaffold, registry, index, and daily note (rq-reproducibility-details-commit).
 - 2026-07-22T08:08:08Z: sync refreshed scaffold, registry, index, and daily note (rq-reproducibility-details-receipt).
-- 2026-07-22T08:06:25Z: sync refreshed scaffold, registry, index, and daily note (rq-reproducibility-details-final).
-- 2026-07-22T08:04:48Z: sync refreshed scaffold, registry, index, and daily note (rq-reproducibility-details).
