@@ -1415,62 +1415,29 @@ All rejection results should be read as boundary-enforcement results.
 \subsection{Experimental Setup}
 \label{sec:setup}
 
-\noindent\textbf{Datasets and evaluation tracks.}
-The four real inputs are T-Drive (10,357 taxis, about 15M points), GeoLife
-(182 users, over 17K trajectories), Porto, and Rome; the fifth is a clustered
-random-walk Synthetic input (seed 20260709)
-~\cite{Yuan2010Tdrive,Yuan2011Driving,Zheng2008Understanding,Zheng2009Mining,
+\noindent\textbf{Data and protocol.}
+We use T-Drive, GeoLife, Porto, Rome, and a clustered random-walk Synthetic
+input~\cite{Yuan2010Tdrive,Yuan2011Driving,Zheng2008Understanding,Zheng2009Mining,
 Zheng2010GeoLife,MoreiraMatias2015Porto,Bracciale2014Rome}. Each prepared input
-contains 1,000 records and ten windows without bootstrap resampling. The
-evaluation is organized by claim rather than by dataset alone: RQ1--RQ2 test
-mechanism removal and state/window boundaries, RQ3 measures metadata leakage,
-RQ4 stresses residual attacks, RQ5 compares released-heatmap utility, and RQ6
-measures full proving scale. Dense T-Drive and GeoLife subsets additionally
-stress rush-hour mobility and session gaps.
-
-\noindent\textbf{Baselines and fairness.}
-Admission experiments compare \textsc{SHTPC-Full} with four measured variants:
-\textsc{No-Admission-Check}, \textsc{No-ADWC},
-\textsc{No-Payload-Bind}, and \textsc{Stateful-ContextCommit}. The last is the
-strongest coordinate-hiding composition baseline: it binds identity, epoch,
-round, predecessor, frame, and share context, but proves no same-primary
-equality. Table~\ref{tab:composition-failure-matrix} maps these variants to
-their missing predicates. A trusted plaintext filter is only an analytical
-upper bound because it reveals coordinates. For RQ5, a generic external ESA
-(Nebula-style) adapter and an EIFFeL-style range/norm adapter run on the same
-reports. The ESA adapter is the strongest external utility comparator and is
-shown in Figure~\ref{fig:v4-fixed-utility}; the EIFFeL-style adapter has no
-cross-round rule and rejects none of the valid-range A1 reports, so it is not
-presented as a privacy-equivalent release mechanism. These are mechanism-level
-adapters, not reproductions of complete upstream deployments. No baseline is
-tuned per dataset, and all fixed-utility methods use the same inputs, attacker
-assignment, seeds, and top-50 Jaccard metric.
-
-\noindent\textbf{Attacks, parameters, and metrics.}
-The controlled suite covers A1 teleportation, A2a secret substitution, A3
-drift, A5 replay/state reuse, and A6 proof-payload substitution; A4 and A2b are
-deployment-scope cases. Controlled runs use \(N=50,T=10\); utility uses
-\(N=1000,T=10\). Unless stated otherwise,
+contains 1,000 records and ten windows. Controlled attack and ablation runs use
+\(N=50,T=10\); the hotspot stress test uses \(N=100\); utility and full-scale
+execution use \(N=1000,T=10\). Unless stated otherwise,
 \(\varepsilon_{\mathrm{total}}=1\), \(\Delta t=\SI{60}{s}\),
-\(K\in\{6,30\}\), 100-m cells over a 10-km domain, and walk/bike/vehicle/transit
-caps of 3/10/33/40 m/s. The policy caps are 3.3 km (\(K=6\)) and 16.5 km
-(\(K=30\)); the latter is a stress profile. Reports are \(L_1\)-clipped to one
-cell. TPR/FRR measure malicious/benign rejection; Jaccard measures released-set
-stability; RMSE, Pearson, false-hotspot probability, and HS@k measure count and
-ranking distortion. Randomized experiments use three seeds unless noted.
+\(K\in\{6,30\}\), 100-m cells, one-cell \(L_1\) clipping, and policy caps of
+3.3/16.5 km. We report rejection TPR/FRR, top-\(k\) Jaccard, RMSE, false-hotspot
+probability, and execution throughput.
 
-\noindent\textbf{Implementation and execution protocols.}
-The Python/Circom/snarkjs prototype ran in Docker on an Apple M4 MacBook Pro
-(10 CPU cores, 16 GB RAM; Docker: 10 CPUs, 8.22 GB) using Python 3.10.20,
-Node.js 20.20.2, Circom 2.1.9, snarkjs 0.7.6, and Docker Server 29.1.3 on
-Linux arm64. RQ5 reads the original inputs with seeds 101/202/303 and one fixed
-release configuration. Separately, five clean protocol-smoke runs replace gaps
-and out-of-envelope jumps with safe trajectories to isolate proving, state,
-reconstruction, and release; they are not utility evidence. RQ6 uses the same
-protocol-isolation trajectories for a 15-unit matrix (five datasets, three
-seeds, six warmup plus ten evaluation rounds). Functional totals retain every
-passing unit; timing excludes only units whose maximum inter-round gap exceeds
-7,200 s, with at least two eligible units required per dataset.
+\noindent\textbf{Comparisons and execution.}
+Admission experiments compare \textsc{SHTPC-Full} with
+\textsc{No-Admission-Check}, \textsc{No-ADWC}, \textsc{No-Payload-Bind}, and
+\textsc{Stateful-ContextCommit}; utility additionally compares a generic
+Nebula-style external ESA and an EIFFeL-style adapter. All methods share inputs, attacker assignments,
+seeds, and metrics, with no per-dataset tuning. The Dockerized
+Python/Circom/snarkjs prototype ran on an Apple M4 host with 16 GB RAM
+(10 Docker CPUs, 8.22 GB). RQ5 uses original inputs and seeds 101/202/303. RQ6 uses safe
+protocol-isolation trajectories for 15 dataset-seed units, each with six warmup
+and ten evaluation rounds; all passing units count toward functional totals,
+while timing excludes only units with an inter-round gap above 7,200 s.
 
 \subsection{RQ1 Proof-to-Payload Consistency}
 \label{sec:eval-headline}
@@ -1550,16 +1517,23 @@ rather than a single-step speed cap.
 \end{figure}
 
 \label{sec:eval-a3}
-A3 is evaluated as a \emph{parameterized ADWC admission check}. Two deployment
-profiles are used, $K{=}6$
-($\mathrm{cap}_{\mathrm{policy}}{=}\SI{3.3}{km}$) and $K{=}30$
-($\mathrm{cap}_{\mathrm{policy}}{=}\SI{16.5}{km}$). For $K{=}6$, TPR$=1.00$
-across all five drift biases (0.20--1.00). For $K{=}30$, TPR ranges from 0.80
-(bias$=0.20$) to 0.94 (bias$=0.40$), reflecting the larger window's softer
-resolution for each step. $K{=}30$ is a stress test rather than the recommended
-deployment. Tightening $\mathrm{cap}_{\mathrm{policy}}$ from $1.67\!\times$
-to $0.67\!\times$ default raises $K{=}30$ TPR from 0.89 to 0.99
-in the policy-cap sensitivity sweep.
+A3 is evaluated as a \emph{parameterized ADWC admission check}. Figure
+\ref{fig:eval-adwc-sensitivity} compares the recommended \(K=6\),
+\(\mathrm{cap}_{\mathrm{policy}}=\SI{3.3}{km}\) profile with the \(K=30\),
+\(\SI{16.5}{km}\) stress profile on GeoLife. The short window rejects every
+tested drift bias; the long window reaches TPR 0.80--0.94 because its larger
+envelope has softer per-step resolution. Tightening the long-window policy cap
+from \(1.67\times\) to \(0.67\times\) default raises TPR from 0.89 to 0.99.
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/fig_eval_adwc_sensitivity_column.pdf}
+  \vspace{-0.7em}
+  \caption{ADWC gradual-drift sensitivity on GeoLife (\(N=50,T=10\), 10\%
+  malicious clients). Cells report attack-rejection TPR for five drift-bias
+  ratios. \(K=30\) is a stress profile, not the recommended deployment.}
+  \label{fig:eval-adwc-sensitivity}
+\end{figure}
 
 \noindent\emph{$(\tau,\tau_2)$ sensitivity and session-gap baseline.}
 \label{sec:eval-a3-session}
@@ -1667,6 +1641,25 @@ is rejected in all 500 malicious cell-rounds. False genesis and A2b
 credential/device transfer remain deployment-scope risks. With
 \(G{=}\SI{30}{min}\), inter-window gaps exceeding \(G\) are 1.10\% on T-Drive
 and 2.12\% on GeoLife.
+
+A complementary GeoLife sweep varies the malicious fraction from 1\% to 30\%
+over five seeds (Figure~\ref{fig:eval-hotspot-pollution}). Without integrity, a
+false Top-20 hotspot appears from 5\% onward. SHTPC-only delays but cannot
+eliminate payload-consistent in-envelope pollution; combining the reach check
+with the fixed external detector keeps the false-hotspot rate at zero through
+10\% and at 0.2 for 20--30\%. Thus the two controls address different failure
+modes rather than substituting for each other.
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/fig_eval_hotspot_pollution_column.pdf}
+  \vspace{-0.7em}
+  \caption{False-hotspot stress test on GeoLife (\(N=100\), one release, five
+  seeds). The external detector fixes malicious pass probability at 0.25 and
+  benign FRR at 0.01; error bars show standard deviation. It is a controlled
+  detector layer, not a reproduction of a complete upstream system.}
+  \label{fig:eval-hotspot-pollution}
+\end{figure}
 
 \subsection{RQ5 Utility After Admission and DP Release}
 \label{sec:eval-utility}

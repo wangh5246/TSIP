@@ -1,6 +1,6 @@
 # TDSC Final-Scale Adversarial Self-Review
 
-Review date: 2026-07-22. Canonical manuscript: `TSIP/main.tex`. This review is
+Review date: 2026-07-23. Canonical manuscript: `TSIP/main.tex`. This review is
 an internal quality-control record, not independent peer review. Its scientific
 status is **final-polish verified**: the fixed five-dataset utility, strict
 15-unit evaluated-circuit aggregate, mechanism-adapter boundary, small-sample
@@ -24,8 +24,9 @@ Only author-owned release and submission declarations remain open.
   MLP and reports a 700/300 user-disjoint session split with exact four-dataset
   AUC values.
 - Hardware and software setup: **pass**. The manuscript records the Apple M4
-  host, 16 GB host memory, 10-CPU/8.22-GB Docker allocation, two concurrent
-  jobs, and the passing Python, Node.js, Circom, snarkjs, and Docker versions.
+  host, 16 GB host memory, and 10-CPU/8.22-GB Docker allocation; the artifact
+  manifest and launcher records retain the passing software versions and
+  two-job execution setting.
 - Evaluated N=1000 Docker scale evidence: **pass with an explicit performance
   boundary**. All 15 functional units verify; 13 timing-eligible units
   average 1.000 $\pm$ 0.069 proofs/s and 4.183 $\pm$ 0.248 hours per unit. Rome
@@ -59,18 +60,24 @@ pdflatex -interaction=nonstopmode -halt-on-error main.tex
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-Build and inspection results from the 16-page writing-review checkpoint:
+Build and inspection results from the 16-page, six-evaluation-figure checkpoint:
 
 - Abstract: 148 words; manuscript checker issues: 0.
 - Biber: 90 citekeys; warnings/errors: 0.
 - PDF: 16 pages, US letter, PDF 1.7.
 - Undefined citations/references, fatal errors, rerun requests: 0.
 - Overfull boxes, LaTeX warnings, package warnings: 0.
-- Underfull boxes: 43. All 16 pages were freshly rendered and inspected. There
-  is no clipping, overlap, missing figure, or unreadable table/text.
-- SHA-256: `main.tex` `bd6d385296740b1cd6cbd2e617c9b0269e4e18b26ba834686550cbdf384273c9`;
+- Underfull boxes: 43. All previously approved pages remain unchanged or were
+  rechecked; the modified evaluation pages 10--14 were freshly rendered and
+  inspected. There is no clipping, overlap, missing figure, or unreadable
+  table/text.
+- SHA-256: `main.tex` `1a2b75733b8cb61cf469136971deb53fb4f864b295dea8ef9ab8f107ca74da47`;
   `reference.bib` `c1c4d078c2e2acf21a204312d2f62bb2a0e71b96e17b50926d35d11ededfb6cf`;
-  `main.pdf` `b5264a1c417d8766e76b1eda1a76c30df18c2341783b2fca7fe6a48046978d37`;
+  `main.pdf` `e33a0680788bcb4411e963220c55471bb885dd61445129faaa28940dcf8b9d5c`;
+  `fig_eval_adwc_sensitivity_column.pdf`
+  `e5f515907979245ea03d0afd808aa70c381791a2135cec9c082d38e78e371a0c`;
+  `fig_eval_hotspot_pollution_column.pdf`
+  `0a38c093f71029efa0332e044bda9ec1e8f086751631d4edee1ed555fe730e8b`;
   `fig_eval_boundary_leakage_column.pdf`
   `34d618e07a4ffc05c9d91987d7279f9ae7f64a032245202f9000c40a362ebf86`;
   `v4_fixed_utility_heatmap.pdf`
@@ -119,14 +126,14 @@ or assumption into a guarantee.
 | Contribution | Is the failure case meaningful rather than syntactic? | pass | A valid trajectory proof can otherwise be paired with routed payload material for another primary; the composition-gap proposition and A6 ablation identify the missing equality. |
 | Contribution | Is novelty scoped honestly? | pass | The paper claims a new admission property and system composition, not a new SNARK, DP mechanism, physical-location proof, or general poisoning defense. |
 | Contribution | Are empirical gains exaggerated? | pass | All five fixed-protocol deltas are reported; +0.007 on Porto and Synthetic is explicitly called small, and the three-seed observations are not presented as statistical significance. |
-| Writing clarity | Can the relation and protocol be reproduced? | pass | Method fields, C1-C21, integer semantics, state transition, timing, warmup, the 12 RQ1 mutations, RQ3 classifier and split, hardware and software versions, artifact paths, commands, and pass criteria are explicit. |
+| Writing clarity | Can the relation and protocol be reproduced? | pass | Method fields, C1-C21, integer semantics, state transition, timing, warmup, the 12 RQ1 mutations, RQ3 classifier and split, hardware allocation, artifact paths, commands, manifest-recorded software versions, and pass criteria are explicit. |
 | Writing clarity | Are terminology and evidence layers stable? | pass | SHTPC is the visible term; the evaluated relation, fixed utility, protocol smoke, and scale execution are kept non-interchangeable. The reviewer-facing paper has no internal iteration labels or drafting notes. |
 | Writing clarity | Does paragraph flow support the paper story? | pass | The reverse outline maps each core prose paragraph to one topic sentence, role, and claim set, including separate functional and timing messages for scale execution. |
 | Experimental strength | Are results consistent across inputs and seeds? | pass | The fixed configuration has a positive SHTPC-minus-adapter Jaccard delta for every dataset mean and for each of the 15 observed dataset-seed pairs; means and standard deviations are reported, while three seeds are treated as insufficient for a significance claim on the small gains. |
 | Experimental strength | Is absolute utility hidden when it is low? | pass | Absolute Jaccard spans 0.135 to 0.878; the manuscript reports each value and does not claim uniformly high utility. |
-| Experimental strength | Are failure cases visible? | pass | User-disjoint session-linking AUC remains 0.7268 to 0.7491 across the four real inputs. In-envelope pollution, false genesis, transfer, collusion, and development-setup limits also remain visible. |
+| Experimental strength | Are failure cases visible? | pass | User-disjoint session-linking AUC remains 0.7268 to 0.7491 across the four real inputs. The five-seed malicious-fraction sweep visualizes in-envelope false-hotspot emergence; false genesis, transfer, collusion, and development-setup limits also remain visible. |
 | Experimental strength | Is evaluated-circuit cost established? | pass | Fifteen functional units and 225,000 generated/verified proofs pass with zero failures; 13 timing-eligible units report all-unit and per-dataset mean/sample-standard-deviation statistics, with both exclusions disclosed. |
-| Evaluation completeness | Are key mechanisms ablated? | pass | No-ADWC, No-Payload-Bind, Stateful-ContextCommit, and No-Admission-Check expose the predicates responsible for A3 and A6. |
+| Evaluation completeness | Are key mechanisms and parameters evaluated? | pass | No-ADWC, No-Payload-Bind, Stateful-ContextCommit, and No-Admission-Check expose the predicates responsible for A3 and A6; the GeoLife heatmap adds K6/K30 drift-bias sensitivity. |
 | Evaluation completeness | Is the main comparison fair? | pass | One epsilon/tau pair, N=1000, ten windows, 10% A1, and seeds 101/202/303 are fixed across all five datasets; tuned settings are excluded from the headline. |
 | Evaluation completeness | Are datasets and evidence layers broad enough? | pass | Four real trajectory-derived inputs and one generated stress input are used; utility, smoke, and scale answer separate questions. |
 | Evaluation completeness | Are baseline claims bounded? | pass | Setup distinguishes four measured ablations, Stateful-ContextCommit, the generic external ESA adapter, the EIFFeL-style range/norm adapter, and analytical VDAF/TEE/proof-of-location design points. Exact ESA filtering is disclosed, and the EIFFeL-style Jaccard/MRR result is reported without presenting either adapter as a native deployment. |
