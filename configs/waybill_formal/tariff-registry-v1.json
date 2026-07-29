@@ -22,10 +22,10 @@
       ]
     },
     {
-      "tariff_id": "ruc-demo-v7-d8",
+      "tariff_id": "ruc-demo-v9-d8",
       "semantic_class": "experimental_economic",
-      "artifact_path": "configs/settlement_policy_profiles/ruc-demo-tariff-v7-d8.json",
-      "artifact_sha256": "63013aafb6dbb6916a2d10183f2aa95b97a795ef3015a7ac7e61f755693e20cd",
+      "artifact_path": "configs/settlement_policy_profiles/ruc-demo-tariff-v9-d8.json",
+      "artifact_sha256": "385d274e3a122e1356b0f8928c08045d046c9e29fb435c4f76ee32020da4b6ab",
       "root_source": "computed from the checked-in artifact by common.settlement.TariffTable.root",
       "unit": "experimental_cents_per_m",
       "maximum_value": 5,
@@ -43,10 +43,10 @@
     }
   ],
   "binding": {
-    "S1": "ruc-demo-v7-d8",
+    "S1": "ruc-demo-v9-d8",
     "S2": "rome-capacity-d14-v1",
     "S3": "dataset-specific experimental tariff emitted by frozen preprocessing",
     "S4": "observation schema only; tariff values are features under the S1 claim boundary",
-    "S5": "ruc-demo-v7-d8"
+    "S5": "ruc-demo-v9-d8"
   }
 }

@@ -7,8 +7,9 @@ import itertools
 import json
 import os
 import platform
+import re
+import shutil
 import subprocess
-import sys
 import time
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -16,6 +17,27 @@ from pathlib import Path
 from typing import Any, Iterable, Iterator, Mapping, Sequence
 
 from common.resource_probe import collect_host_evidence, measured_command, parse_time_evidence
+
+
+EMBEDDED_RELEASE_BINDING_PATH = Path("/opt/waybill/release-bindings.json")
+FORMAL_PTAU_BYTES = 4_831_921_304
+FORMAL_PTAU_BLAKE2B = (
+    "0d64f63dba1a6f11139df765cb690da69d9b2f469a1ddd0de5e4aa628abb28f7"
+    "87f04c6a5fb84a235ec5ea7f41d0548746653ecab0559add658a83502d1cb21b"
+)
+_RUN_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
+_SEALED_RUN_INPUTS = (
+    "protocol.json",
+    "plan.json",
+    "jobs/expected.jsonl",
+    "code_manifest.json",
+    "data_manifest.json",
+    "environment.json",
+    "container_manifest.json",
+    "prepared_manifest.json",
+    "gate_receipts.json",
+    "execution-container.json",
+)
 
 
 class FormalError(RuntimeError):
@@ -32,6 +54,11 @@ def canonical_json(payload: Any) -> str:
 
 def canonical_sha256(payload: Any) -> str:
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+
+
+def _is_lower_hex(value: Any, length: int) -> bool:
+    text = str(value)
+    return len(text) == length and all(character in "0123456789abcdef" for character in text)
 
 
 def sha256_file(path: Path) -> str:
@@ -85,6 +112,88 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+_STAGE_RESERVED_FILES = {"job.json", "receipt.json", "stage-result.json"}
+
+
+def build_stage_artifact_manifest(attempt_dir: Path) -> list[dict[str, Any]]:
+    """Hash all stage-produced files without following symbolic links."""
+
+    rows: list[dict[str, Any]] = []
+    for path in sorted(attempt_dir.rglob("*")):
+        if path.is_symlink():
+            raise FormalError(f"stage artifact must not be a symbolic link: {path}")
+        if not path.is_file():
+            continue
+        relative = path.relative_to(attempt_dir).as_posix()
+        if relative in _STAGE_RESERVED_FILES:
+            continue
+        rows.append(
+            {
+                "path": relative,
+                "bytes": path.stat().st_size,
+                "sha256": sha256_file(path),
+            }
+        )
+    return rows
+
+
+def validate_stage_result(
+    result: Mapping[str, Any], *, job: Mapping[str, Any], attempt_dir: Path
+) -> dict[str, Any]:
+    _require(
+        result.get("schema") == "waybill.formal.stage-result/v2",
+        "unsupported stage-result schema",
+    )
+    _require(result.get("job_id") == job.get("job_id"), "stage-result job id mismatch")
+    _require(result.get("stage") == job.get("stage"), "stage-result stage mismatch")
+    _require(result.get("kind") == job.get("kind"), "stage-result kind mismatch")
+    _require(
+        result.get("job_sha256") == canonical_sha256(job),
+        "stage-result job hash mismatch",
+    )
+    _require(result.get("status") in {"passed", "failed"}, "invalid stage-result status")
+    declared_result_sha256 = str(result.get("result_sha256", ""))
+    unsigned = dict(result)
+    unsigned.pop("result_sha256", None)
+    _require(
+        declared_result_sha256 == canonical_sha256(unsigned),
+        "stage-result canonical hash mismatch",
+    )
+    artifacts = result.get("artifacts")
+    if not isinstance(artifacts, list):
+        raise FormalError("stage-result artifact manifest is missing")
+    _require(
+        result.get("artifact_manifest_sha256") == canonical_sha256(artifacts),
+        "stage-result artifact manifest hash mismatch",
+    )
+    seen: set[str] = set()
+    for record in artifacts:
+        _require(isinstance(record, dict), "stage artifact record is not an object")
+        relative = str(record.get("path", ""))
+        relative_path = Path(relative)
+        _require(
+            bool(relative)
+            and not relative_path.is_absolute()
+            and ".." not in relative_path.parts
+            and relative not in _STAGE_RESERVED_FILES,
+            f"unsafe stage artifact path: {relative}",
+        )
+        _require(relative not in seen, f"duplicate stage artifact path: {relative}")
+        seen.add(relative)
+        path = attempt_dir / relative_path
+        _require(path.is_file() and not path.is_symlink(), f"stage artifact missing: {relative}")
+        _require(path.stat().st_size == int(record.get("bytes", -1)), f"stage artifact size mismatch: {relative}")
+        _require(sha256_file(path) == record.get("sha256"), f"stage artifact hash mismatch: {relative}")
+    actual_artifacts = build_stage_artifact_manifest(attempt_dir)
+    _require(actual_artifacts == artifacts, "stage artifact manifest is incomplete or stale")
+    return {
+        "stage_result_sha256": declared_result_sha256,
+        "artifact_manifest_sha256": str(result["artifact_manifest_sha256"]),
+        "artifact_count": len(artifacts),
+        "status": str(result["status"]),
+    }
+
+
 def _require(condition: bool, message: str) -> None:
     if not condition:
         raise FormalError(message)
@@ -110,7 +219,8 @@ def validate_protocol(protocol: Mapping[str, Any]) -> dict[str, Any]:
     toolchain = protocol.get("toolchain", {})
     expected_toolchain = {
         "python": "3.12",
-        "node": "26.0.0",
+        "node": "26.5.0",
+        "npm": "11.17.0",
         "circom": "2.1.9",
         "snarkjs": "0.7.6",
         "circomlib": "2.0.5",
@@ -120,6 +230,77 @@ def validate_protocol(protocol: Mapping[str, Any]) -> dict[str, Any]:
         _require(str(toolchain.get(key)) == expected, f"toolchain {key} must be {expected}")
     stages = protocol.get("stages", {})
     _require(set(stages) == {"S1", "S2", "S3", "S4", "S5"}, "protocol must define S1-S5")
+    statistics_spec = protocol.get("statistics", {})
+    _require(
+        statistics_spec.get("cluster_unit") == "original vehicle or user"
+        and statistics_spec.get("confidence_interval") == "cluster bootstrap 95%"
+        and int(statistics_spec.get("bootstrap_replicates", 0)) == 5000
+        and statistics_spec.get("percentiles") == [50, 95, 99],
+        "S1 cluster-bootstrap statistics differ from the frozen protocol",
+    )
+    _require(
+        stages["S1"].get("methods")
+        == [
+            "oracle-position",
+            "v5-dt-vmax-rmax",
+            "v6-dodo-rmax",
+            "v6-without-month-close",
+        ]
+        and stages["S1"].get("month_close_ablation")
+        == "whole-period-withholding-with-versus-without-rmax-reconciliation"
+        and stages["S1"].get("rejected_period_policy") == "fail-closed",
+        "S1 methods or fail-closed policy differ from the frozen protocol",
+    )
+    expected_view_schemas = {
+        "O0": [
+            "interval_count",
+            "period_duration_sec",
+            "total_distance_m",
+            "total_fee_cents",
+        ],
+        "O1": [
+            "fallback_indicator",
+            "fallback_intervals",
+            "interval_count",
+            "period_duration_sec",
+            "total_distance_m",
+            "total_fee_cents",
+        ],
+        "O2": [
+            "amount_bucket_500c",
+            "distance_bucket_100m",
+            "fallback_indicator",
+            "fallback_intervals",
+            "interval_count",
+            "period_duration_sec",
+        ],
+        "O3": [
+            "amount_bucket_500c",
+            "distance_bucket_100m",
+            "fallback_indicator",
+            "fallback_intervals",
+            "interval_count",
+            "opened_cells",
+            "period_duration_sec",
+        ],
+    }
+    _require(
+        stages["S4"].get("view_schemas") == expected_view_schemas
+        and int(stages["S4"].get("temporal_gap_periods", 0)) == 1
+        and stages["S4"].get("gallery_query_overlap_policy")
+        == "forbid-any-shared-period",
+        "S4 observation schemas or temporal split differ from the frozen protocol",
+    )
+    _require(
+        stages["S4"].get("statistics")
+        == {
+            "cluster_unit": "original-vehicle-or-user",
+            "bootstrap_replicates": 5000,
+            "confidence_interval": 0.95,
+            "aggregation": "macro-by-identity",
+        },
+        "S4 identity-cluster statistics differ from the frozen protocol",
+    )
     _require(int(stages["S2"].get("measured_trials", 0)) == 10, "S2 requires 10 measured trials")
     _require(int(stages["S3"].get("timeout_sec", 0)) == 7200, "S3 timeout must be 7200 seconds")
     _require(
@@ -377,14 +558,17 @@ def _job(stage: str, kind: str, parameters: Mapping[str, Any], stage_spec: Mappi
         if "timeout_sec" in stage_spec
         else int(stage_spec.get("timeout_sec_per_stage", 7200)),
         "resource": dict(stage_spec.get("resource", {})),
-        "command": [sys.executable, f"script/run_waybill_{stage.lower()}_formal_unit.py"],
+        # A host interpreter path is not portable into the frozen runtime.
+        "command": ["python", f"script/run_waybill_{stage.lower()}_formal_unit.py"],
     }
 
 
 def _expand_s1(protocol: Mapping[str, Any]) -> list[dict[str, Any]]:
     spec = protocol["stages"]["S1"]
     jobs: list[dict[str, Any]] = []
-    scenarios: list[dict[str, Any]] = [{"scenario": "natural"}]
+    scenarios: list[dict[str, Any]] = [
+        {"scenario": "natural", "seed": int(protocol["seeds"][0])}
+    ]
     scenarios.extend(
         {"scenario": "independent", "alpha": alpha, "seed": seed}
         for alpha, seed in itertools.product(spec["independent_mask_alpha"], protocol["seeds"])
@@ -407,7 +591,7 @@ def _expand_s1(protocol: Mapping[str, Any]) -> list[dict[str, Any]]:
                 spec,
             )
         )
-    contexts = [{"context": "natural"}]
+    contexts = [{"context": "natural", "seed": int(protocol["seeds"][0])}]
     contexts.extend(
         {"context": "independent-alpha-0.10", "seed": seed} for seed in protocol["seeds"]
     )
@@ -522,6 +706,8 @@ def _expand_s4(protocol: Mapping[str, Any]) -> list[dict[str, Any]]:
                 "attacker": attacker,
                 "seed": seed,
                 "split": spec["split"],
+                "temporal_gap_periods": spec["temporal_gap_periods"],
+                "bootstrap_replicates": spec["statistics"]["bootstrap_replicates"],
             },
             spec,
         )
@@ -734,9 +920,13 @@ def build_code_manifest(root: Path, paths: Sequence[Path]) -> dict[str, Any]:
         ["git", "ls-files", "-z"],
         cwd=root,
         stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
         check=False,
     )
+    if tracked_output.returncode != 0 and (root / ".git").exists():
+        diagnostic = tracked_output.stderr.decode("utf-8", errors="replace").strip()
+        suffix = f": {diagnostic}" if diagnostic else ""
+        raise FormalError(f"git repository metadata is present but inaccessible{suffix}")
     tracked_files = (
         {
             item.decode("utf-8")
@@ -812,18 +1002,478 @@ def build_code_manifest(root: Path, paths: Sequence[Path]) -> dict[str, Any]:
     }
 
 
+def seal_gate_receipt(
+    *, gate: str, status: str, evidence: Mapping[str, Any]
+) -> dict[str, Any]:
+    payload = {
+        "schema": "waybill.formal.gate-receipt/v2",
+        "gate": str(gate),
+        "status": str(status),
+        "evidence": dict(evidence),
+    }
+    payload["payload_sha256"] = canonical_sha256(payload)
+    return payload
+
+
 def validate_gate_receipts(receipts: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     by_gate = {str(receipt.get("gate")): receipt for receipt in receipts}
     expected = {f"RG{index}" for index in range(9)}
     _require(set(by_gate) == expected, f"gate receipt set mismatch: {sorted(by_gate)}")
+    for gate, receipt in by_gate.items():
+        _require(
+            receipt.get("schema") == "waybill.formal.gate-receipt/v2",
+            f"{gate}: unsupported gate receipt schema",
+        )
+        _require(isinstance(receipt.get("evidence"), dict), f"{gate}: gate evidence is missing")
+        declared = str(receipt.get("payload_sha256", ""))
+        unsigned = dict(receipt)
+        unsigned.pop("payload_sha256", None)
+        _require(declared == canonical_sha256(unsigned), f"{gate}: gate receipt hash mismatch")
     failed = [gate for gate, receipt in by_gate.items() if receipt.get("status") != "passed"]
     _require(not failed, f"formal run blocked by gates: {sorted(failed)}")
+    rg6 = by_gate["RG6"].get("evidence")
+    _require(
+        isinstance(rg6, dict)
+        and rg6.get("schema") == "waybill.formal.target-host-preflight/v2"
+        and rg6.get("status") == "passed",
+        "RG6 must embed a passed target-host preflight V2 receipt",
+    )
+    assert isinstance(rg6, dict)
+    rg6_checks = rg6.get("checks")
+    _require(
+        isinstance(rg6_checks, dict)
+        and bool(rg6_checks)
+        and all(value is True for value in rg6_checks.values()),
+        "RG6 target-host checks are not all true",
+    )
+    runtime = rg6.get("container_runtime")
+    _require(
+        isinstance(runtime, dict)
+        and isinstance(runtime.get("sha256"), str)
+        and len(runtime["sha256"]) == 64
+        and runtime.get("sha256") == runtime.get("expected_sha256"),
+        "RG6 container runtime hash is not exact",
+    )
+    assert isinstance(runtime, dict)
+    _require(
+        isinstance(rg6.get("container_digest"), str)
+        and rg6.get("container_digest") == rg6.get("expected_container_digest"),
+        "RG6 OCI image digest is not exact",
+    )
+    ptau = rg6.get("ptau")
+    _require(
+        isinstance(ptau, dict)
+        and ptau.get("exists") is True
+        and ptau.get("bytes") == FORMAL_PTAU_BYTES
+        and ptau.get("blake2b") == FORMAL_PTAU_BLAKE2B,
+        "RG6 PTAU binding is not exact",
+    )
+    embedded = rg6.get("embedded_release_binding")
+    _require(
+        isinstance(embedded, dict)
+        and embedded.get("schema") == "waybill.formal.embedded-release-binding/v1"
+        and _is_lower_hex(embedded.get("git_commit"), 40)
+        and _is_lower_hex(embedded.get("git_tree"), 40)
+        and _is_lower_hex(embedded.get("code_manifest_sha256"), 64)
+        and _is_lower_hex(embedded.get("protocol_sha256"), 64),
+        "RG6 embedded release binding is invalid",
+    )
     return {
         "gate": "formal-launch",
         "status": "passed",
         "gate_receipts_sha256": canonical_sha256(receipts),
         "checked_at": utc_now(),
     }
+
+
+def _is_sha256_digest(value: Any) -> bool:
+    text = str(value)
+    return text.startswith("sha256:") and _is_lower_hex(text[7:], 64)
+
+
+def _digest_component(value: Any) -> str | None:
+    text = str(value)
+    candidate = text.rsplit("@", 1)[-1]
+    return candidate if _is_sha256_digest(candidate) else None
+
+
+def _embedded_release_binding(bindings: Mapping[str, Any]) -> dict[str, Any]:
+    payload = {
+        "schema": "waybill.formal.embedded-release-binding/v1",
+        "git_commit": str(bindings.get("git_commit", "")),
+        "git_tree": str(bindings.get("git_tree", "")),
+        "code_manifest_sha256": str(bindings.get("code_manifest_sha256", "")),
+        "protocol_sha256": str(bindings.get("protocol_sha256", "")),
+    }
+    _require(_is_lower_hex(payload["git_commit"], 40), "release Git commit binding is invalid")
+    _require(_is_lower_hex(payload["git_tree"], 40), "release Git tree binding is invalid")
+    _require(
+        _is_lower_hex(payload["code_manifest_sha256"], 64),
+        "release code manifest binding is invalid",
+    )
+    _require(
+        _is_lower_hex(payload["protocol_sha256"], 64),
+        "release protocol binding is invalid",
+    )
+    return payload
+
+
+def _formal_runner_image_metadata(
+    container_manifest: Mapping[str, Any],
+) -> dict[str, Any]:
+    _require(
+        container_manifest.get("schema") == "waybill-container-manifest/v1",
+        "unsupported container manifest schema",
+    )
+    bindings = container_manifest.get("bindings")
+    images = container_manifest.get("images")
+    _require(isinstance(bindings, dict), "container manifest bindings are missing")
+    _require(isinstance(images, dict), "container manifest images are missing")
+    assert isinstance(bindings, dict)
+    assert isinstance(images, dict)
+    formal = images.get("formal-runner")
+    _require(isinstance(formal, dict), "formal-runner image metadata is missing")
+    assert isinstance(formal, dict)
+    _require(formal.get("bindings") == bindings, "formal-runner source bindings mismatch")
+    _require(
+        _is_sha256_digest(formal.get("image_digest")),
+        "formal-runner image digest is invalid",
+    )
+    _require(
+        formal.get("platform") == "linux/amd64",
+        "formal-runner image platform must be linux/amd64",
+    )
+    _require(
+        formal.get("user") == "10003:10003",
+        "formal-runner image user must be 10003:10003",
+    )
+    return dict(formal)
+
+
+def _validate_materialized_plan(
+    *,
+    protocol: Mapping[str, Any],
+    prepared_manifest: Mapping[str, Any],
+    plan: Mapping[str, Any],
+    expected_jobs: Sequence[Mapping[str, Any]],
+    expected_jsonl_sha256: str,
+) -> None:
+    generated_jobs, generated_plan = expand_protocol_jobs(protocol, prepared_manifest)
+    _require(generated_plan.get("materialized") is True, "formal jobs are not fully materialized")
+    _require(list(expected_jobs) == generated_jobs, "expected job ledger differs from frozen protocol")
+    _require(
+        plan.get("expected_jsonl_sha256") == expected_jsonl_sha256,
+        "plan/expected job ledger hash mismatch",
+    )
+    actual_summary = dict(plan)
+    actual_summary.pop("generated_at", None)
+    actual_summary.pop("expected_jsonl_sha256", None)
+    frozen_summary = dict(generated_plan)
+    frozen_summary.pop("generated_at", None)
+    _require(actual_summary == frozen_summary, "plan summary differs from frozen protocol")
+
+
+def _bound_regular_file(root: Path, relative: Any, *, label: str) -> Path:
+    raw = Path(str(relative))
+    _require(
+        str(raw) not in {"", "."} and not raw.is_absolute() and ".." not in raw.parts,
+        f"{label} must be a safe relative path",
+    )
+    current = root
+    for part in raw.parts:
+        current = current / part
+        _require(not current.is_symlink(), f"{label} must not traverse a symlink: {raw}")
+    path = (root / raw).resolve()
+    _require(path.is_relative_to(root), f"{label} escapes its frozen root: {raw}")
+    _require(path.is_file(), f"{label} is missing: {path}")
+    return path
+
+
+def _validate_prepared_artifacts(
+    manifest: Mapping[str, Any], *, prepared_root: Path, corpus_root: Path
+) -> None:
+    _require(
+        manifest.get("schema") == "waybill.formal.prepared-manifest/v1",
+        "unsupported prepared manifest schema",
+    )
+    _require(
+        manifest.get("prepared_root_label") == "WAYBILL_PREPARED_ROOT"
+        and manifest.get("corpus_root_label") == "WAYBILL_CORPUS_ROOT",
+        "prepared manifest root labels are not frozen",
+    )
+    declared_manifest_sha256 = str(manifest.get("manifest_sha256", ""))
+    unsigned = dict(manifest)
+    unsigned.pop("manifest_sha256", None)
+    _require(
+        declared_manifest_sha256 == canonical_sha256(unsigned),
+        "prepared manifest canonical hash mismatch",
+    )
+    datasets = manifest.get("datasets")
+    instances = manifest.get("canonical_instances")
+    _require(isinstance(datasets, list), "prepared dataset ledger is missing")
+    _require(isinstance(instances, list), "canonical instance ledger is missing")
+    assert isinstance(datasets, list)
+    assert isinstance(instances, list)
+    _require(
+        [row.get("dataset") for row in datasets if isinstance(row, dict)]
+        == ["tdrive", "geolife", "porto", "rome"],
+        "prepared dataset order or membership mismatch",
+    )
+    period_count = 0
+    for row in datasets:
+        _require(isinstance(row, dict), "prepared dataset record is not an object")
+        period_count += int(row.get("period_count", 0))
+        for path_key, hash_key in (
+            ("periods_path", "periods_sha256"),
+            ("tariff_path", "tariff_sha256"),
+        ):
+            path = _bound_regular_file(
+                prepared_root,
+                row.get(path_key),
+                label=f"prepared dataset {path_key}",
+            )
+            _require(sha256_file(path) == row.get(hash_key), f"prepared {path_key} hash mismatch")
+    coverage: dict[tuple[str, str], set[tuple[int, int]]] = {}
+    for row in instances:
+        _require(isinstance(row, dict), "canonical instance record is not an object")
+        path = _bound_regular_file(
+            corpus_root,
+            row.get("path"),
+            label="canonical instance",
+        )
+        _require(sha256_file(path) == row.get("sha256"), "canonical instance hash mismatch")
+        dataset = str(row.get("dataset", ""))
+        period_id = str(row.get("period_id", ""))
+        bucket_m = int(row.get("bucket_m", 0))
+        radius_m = int(row.get("radius_m", 0))
+        _require(dataset in {"tdrive", "geolife", "porto", "rome"}, "invalid instance dataset")
+        _require(bool(period_id), "canonical instance period id is missing")
+        coverage.setdefault((dataset, period_id), set()).add((bucket_m, radius_m))
+    expected_grid = {
+        (bucket_m, radius_m)
+        for bucket_m in (100, 50, 25, 10)
+        for radius_m in (50, 100, 200)
+    }
+    _require(
+        bool(coverage)
+        and all(combinations == expected_grid for combinations in coverage.values()),
+        "canonical instance coverage is not exactly 12 per period",
+    )
+    _require(
+        manifest.get("canonical_period_count") == period_count == len(coverage),
+        "canonical period count mismatch",
+    )
+    _require(
+        manifest.get("canonical_instance_count") == len(instances) == 12 * period_count,
+        "canonical instance count mismatch",
+    )
+
+
+def _build_execution_container_binding(
+    *,
+    run_root: Path,
+    container_manifest: Mapping[str, Any],
+    gate_receipts: Sequence[Mapping[str, Any]],
+    container_image: Path,
+    prepared_root: Path,
+    corpus_root: Path,
+    ptau: Path,
+    workspace_root: Path,
+) -> dict[str, Any]:
+    run_root = run_root.resolve()
+    _require(not container_image.is_symlink(), "Apptainer image must not be a symlink")
+    container_image = container_image.resolve()
+    _require(not prepared_root.is_symlink(), "prepared root must not be a symlink")
+    _require(not corpus_root.is_symlink(), "formal corpus root must not be a symlink")
+    _require(not ptau.is_symlink(), "PTAU must not be a symlink")
+    prepared_root = prepared_root.resolve()
+    corpus_root = corpus_root.resolve()
+    ptau = ptau.resolve()
+    workspace_root = workspace_root.resolve()
+    _require(container_image.is_file(), f"Apptainer image is missing: {container_image}")
+    _require(workspace_root.is_dir(), f"formal workspace root is missing: {workspace_root}")
+    _require(prepared_root.is_dir(), f"prepared dataset root is missing: {prepared_root}")
+    _require(corpus_root.is_dir(), f"formal corpus root is missing: {corpus_root}")
+    _require(ptau.is_file(), f"PTAU is missing: {ptau}")
+    _require(
+        run_root.is_relative_to(workspace_root),
+        "run root must be contained by the formal workspace root",
+    )
+    _require(
+        not container_image.is_relative_to(workspace_root),
+        "Apptainer image must be outside the writable formal workspace",
+    )
+    for read_only_root, label in (
+        (prepared_root, "prepared dataset root"),
+        (corpus_root, "formal corpus root"),
+    ):
+        _require(
+            not run_root.is_relative_to(read_only_root)
+            and not read_only_root.is_relative_to(run_root),
+            f"{label} must be disjoint from the writable run root",
+        )
+    _require(
+        not prepared_root.is_relative_to(corpus_root)
+        and not corpus_root.is_relative_to(prepared_root),
+        "prepared dataset and formal corpus roots must be disjoint",
+    )
+    _require(
+        not ptau.is_relative_to(run_root),
+        "PTAU must be outside the writable run root",
+    )
+    formal_image = _formal_runner_image_metadata(container_manifest)
+    release_bindings = _embedded_release_binding(formal_image["bindings"])
+    rg6_receipts = [receipt for receipt in gate_receipts if receipt.get("gate") == "RG6"]
+    _require(len(rg6_receipts) == 1, "run must contain exactly one RG6 receipt")
+    rg6 = rg6_receipts[0].get("evidence")
+    _require(isinstance(rg6, dict), "RG6 target-host evidence is missing")
+    assert isinstance(rg6, dict)
+    rg6_runtime = rg6.get("container_runtime")
+    runtime_sha256 = sha256_file(container_image)
+    _require(
+        isinstance(rg6_runtime, dict)
+        and rg6_runtime.get("sha256") == runtime_sha256
+        and rg6_runtime.get("expected_sha256") == runtime_sha256,
+        "Apptainer SIF does not match the passed RG6 receipt",
+    )
+    rg6_ptau = rg6.get("ptau")
+    _require(
+        isinstance(rg6_ptau, dict)
+        and Path(str(rg6_ptau.get("path", ""))).resolve() == ptau
+        and rg6_ptau.get("exists") is True
+        and rg6_ptau.get("bytes") == ptau.stat().st_size == FORMAL_PTAU_BYTES
+        and rg6_ptau.get("blake2b") == FORMAL_PTAU_BLAKE2B,
+        "PTAU does not match the passed RG6 receipt",
+    )
+    assert isinstance(rg6_ptau, dict)
+    image_digest = str(formal_image["image_digest"])
+    _require(
+        _digest_component(rg6.get("container_digest")) == image_digest
+        and _digest_component(rg6.get("expected_container_digest")) == image_digest,
+        "formal-runner image digest does not match the passed RG6 receipt",
+    )
+    _require(
+        rg6.get("embedded_release_binding") == release_bindings,
+        "formal-runner embedded source binding does not match the release manifest",
+    )
+    return {
+        "schema": "waybill.formal.execution-container/v2",
+        "container_source_root": "/work",
+        "launcher": "apptainer",
+        "network_mode": "none",
+        "release_bindings": release_bindings,
+        "release_image_digest": image_digest,
+        "runtime_image_path": str(container_image),
+        "runtime_image_sha256": runtime_sha256,
+        "prepared_root": str(prepared_root),
+        "corpus_root": str(corpus_root),
+        "ptau_path": str(ptau),
+        "ptau_bytes": ptau.stat().st_size,
+        "ptau_blake2b": rg6_ptau["blake2b"],
+        "workspace_root": str(workspace_root),
+    }
+
+
+def _sealed_run_input_hashes(run_root: Path) -> dict[str, str]:
+    hashes: dict[str, str] = {}
+    for relative in _SEALED_RUN_INPUTS:
+        path = run_root / relative
+        _require(not path.is_symlink(), f"sealed run input must not be a symlink: {relative}")
+        _require(path.is_file(), f"sealed run input is missing: {relative}")
+        hashes[relative] = sha256_file(path)
+    return hashes
+
+
+def validate_run_seal(run_root: Path) -> dict[str, Any]:
+    run_root = run_root.resolve()
+    run_path = run_root / "run.json"
+    _require(not run_path.is_symlink(), "run seal must not be a symlink")
+    run = read_json(run_path)
+    _require(
+        isinstance(run, dict)
+        and run.get("schema") == "waybill.formal.run/v2"
+        and run.get("immutable") is True,
+        "unsupported or mutable formal run seal",
+    )
+    sealed = run.get("sealed_inputs")
+    _require(
+        isinstance(sealed, dict) and set(sealed) == set(_SEALED_RUN_INPUTS),
+        "formal run sealed input set mismatch",
+    )
+    actual = _sealed_run_input_hashes(run_root)
+    _require(actual == sealed, "formal run sealed input hash mismatch")
+    _require(
+        run.get("sealed_inputs_sha256") == canonical_sha256(actual),
+        "formal run aggregate input seal mismatch",
+    )
+    protocol = read_json(run_root / "protocol.json")
+    execution = read_json(run_root / "execution-container.json")
+    _require(
+        run.get("protocol_sha256") == canonical_sha256(protocol),
+        "run/protocol binding mismatch",
+    )
+    _require(
+        run.get("execution_container_sha256") == canonical_sha256(execution),
+        "run/execution container binding mismatch",
+    )
+    return dict(run)
+
+
+def _validate_run_semantics(run_root: Path) -> list[dict[str, Any]]:
+    validate_run_seal(run_root)
+    protocol = read_json(run_root / "protocol.json")
+    validate_protocol(protocol)
+    plan = read_json(run_root / "plan.json")
+    prepared = read_json(run_root / "prepared_manifest.json")
+    code_manifest = read_json(run_root / "code_manifest.json")
+    container_manifest = read_json(run_root / "container_manifest.json")
+    gate_receipts = read_json(run_root / "gate_receipts.json")
+    _require(isinstance(prepared, dict), "prepared manifest is not an object")
+    _require(isinstance(code_manifest, dict), "code manifest is not an object")
+    _require(isinstance(container_manifest, dict), "container manifest is not an object")
+    _require(isinstance(gate_receipts, list), "gate receipt ledger is not an array")
+    validate_gate_receipts(gate_receipts)
+    _require(
+        code_manifest.get("schema") == "waybill-code-manifest/v2",
+        "formal run requires a release code manifest V2",
+    )
+    files = code_manifest.get("files")
+    _require(
+        isinstance(files, list) and code_manifest.get("file_count") == len(files),
+        "release code manifest file count is invalid",
+    )
+    formal_image = _formal_runner_image_metadata(container_manifest)
+    bindings = formal_image["bindings"]
+    _require(
+        bindings.get("code_manifest_sha256") == canonical_sha256(code_manifest),
+        "container/code manifest binding mismatch",
+    )
+    _require(
+        bindings.get("protocol_sha256") == canonical_sha256(protocol),
+        "container/protocol binding mismatch",
+    )
+    _require(
+        bindings.get("git_commit") == code_manifest.get("git_commit")
+        and bindings.get("git_tree") == code_manifest.get("git_tree"),
+        "container/code Git identity binding mismatch",
+    )
+    execution = read_json(run_root / "execution-container.json")
+    _require(
+        execution.get("schema") == "waybill.formal.execution-container/v2"
+        and execution.get("release_image_digest") == formal_image.get("image_digest")
+        and execution.get("release_bindings") == _embedded_release_binding(bindings),
+        "execution/release container binding mismatch",
+    )
+    expected_path = run_root / "jobs" / "expected.jsonl"
+    expected_jobs = read_jsonl(expected_path)
+    _validate_materialized_plan(
+        protocol=protocol,
+        prepared_manifest=prepared,
+        plan=plan,
+        expected_jobs=expected_jobs,
+        expected_jsonl_sha256=sha256_file(expected_path),
+    )
+    return expected_jobs
 
 
 def initialize_run(
@@ -834,35 +1484,140 @@ def initialize_run(
     run_id: str,
     manifests: Mapping[str, Mapping[str, Any]],
     gate_receipts: Sequence[Mapping[str, Any]],
+    container_runtime_image: Path,
+    prepared_root: Path,
+    corpus_root: Path,
+    ptau: Path,
+    workspace_root: Path,
 ) -> Path:
     validate_protocol(protocol)
     validate_gate_receipts(gate_receipts)
+    _require(
+        _RUN_ID_PATTERN.fullmatch(run_id) is not None,
+        "run id must be a 1-128 character portable identifier",
+    )
+    required_manifests = {
+        "code_manifest",
+        "data_manifest",
+        "environment",
+        "container_manifest",
+        "prepared_manifest",
+    }
+    _require(
+        set(manifests) == required_manifests,
+        f"run manifest set mismatch: {sorted(manifests)}",
+    )
+    code_manifest = manifests["code_manifest"]
+    container_manifest = manifests["container_manifest"]
+    _require(
+        code_manifest.get("schema") == "waybill-code-manifest/v2",
+        "formal run requires a release code manifest V2",
+    )
+    formal_image = _formal_runner_image_metadata(container_manifest)
+    container_bindings = formal_image["bindings"]
+    _require(
+        container_bindings.get("code_manifest_sha256")
+        == canonical_sha256(manifests["code_manifest"]),
+        "container/code manifest binding mismatch",
+    )
+    _require(
+        container_bindings.get("protocol_sha256") == canonical_sha256(protocol),
+        "container/protocol binding mismatch",
+    )
+    _require(
+        formal_image.get("bindings") == container_bindings,
+        "formal-runner/container manifest binding mismatch",
+    )
+    _require(
+        container_bindings.get("git_commit") == code_manifest.get("git_commit")
+        and container_bindings.get("git_tree") == code_manifest.get("git_tree"),
+        "container/code Git identity binding mismatch",
+    )
     plan = read_json(plan_dir / "plan.json")
-    _require(plan.get("materialized") is True, "formal jobs are not fully materialized")
     expected_path = plan_dir / "expected.jsonl"
     _require(expected_path.is_file(), "expected job ledger missing")
+    prepared_manifest = manifests["prepared_manifest"]
+    _require(isinstance(prepared_manifest, dict), "prepared manifest is not an object")
+    _require(not prepared_root.is_symlink(), "prepared root must not be a symlink")
+    _require(not corpus_root.is_symlink(), "formal corpus root must not be a symlink")
+    prepared_root = prepared_root.resolve()
+    corpus_root = corpus_root.resolve()
+    _require(prepared_root.is_dir(), f"prepared dataset root is missing: {prepared_root}")
+    _require(corpus_root.is_dir(), f"formal corpus root is missing: {corpus_root}")
+    _validate_prepared_artifacts(
+        prepared_manifest,
+        prepared_root=prepared_root,
+        corpus_root=corpus_root,
+    )
+    _validate_materialized_plan(
+        protocol=protocol,
+        prepared_manifest=prepared_manifest,
+        plan=plan,
+        expected_jobs=read_jsonl(expected_path),
+        expected_jsonl_sha256=sha256_file(expected_path),
+    )
     protocol_id = f"wbfp-{canonical_sha256(protocol)[:16]}"
+    workspace_root = workspace_root.resolve()
+    output_root = output_root.resolve()
+    _require(workspace_root.is_dir(), f"formal workspace root is missing: {workspace_root}")
+    _require(
+        output_root.is_relative_to(workspace_root),
+        "formal output root must be inside the writable workspace",
+    )
     run_root = output_root / protocol_id / run_id
     _require(not run_root.exists(), f"run directory already exists: {run_root}")
-    run_root.mkdir(parents=True)
-    write_json(run_root / "protocol.json", protocol, exclusive=True)
-    write_json(run_root / "plan.json", plan, exclusive=True)
-    write_jsonl(run_root / "jobs" / "expected.jsonl", read_jsonl(expected_path), exclusive=True)
-    for name, payload in manifests.items():
-        write_json(run_root / f"{name}.json", payload, exclusive=True)
-    write_json(run_root / "gate_receipts.json", list(gate_receipts), exclusive=True)
-    write_json(
-        run_root / "run.json",
-        {
-            "schema": "waybill.formal.run/v1",
-            "protocol_id": protocol_id,
-            "protocol_sha256": canonical_sha256(protocol),
-            "run_id": run_id,
-            "created_at": utc_now(),
-            "immutable": True,
-        },
-        exclusive=True,
+    execution_container = _build_execution_container_binding(
+        run_root=run_root,
+        container_manifest=container_manifest,
+        gate_receipts=gate_receipts,
+        container_image=container_runtime_image,
+        prepared_root=prepared_root,
+        corpus_root=corpus_root,
+        ptau=ptau,
+        workspace_root=workspace_root,
     )
+    run_root.parent.mkdir(parents=True, exist_ok=True)
+    staging_root = run_root.parent / f".{run_id}.initializing-{os.getpid()}"
+    _require(not staging_root.exists(), f"stale run initializer exists: {staging_root}")
+    try:
+        staging_root.mkdir()
+        write_json(staging_root / "protocol.json", protocol, exclusive=True)
+        write_json(staging_root / "plan.json", plan, exclusive=True)
+        write_jsonl(
+            staging_root / "jobs" / "expected.jsonl",
+            read_jsonl(expected_path),
+            exclusive=True,
+        )
+        for name, payload in manifests.items():
+            write_json(staging_root / f"{name}.json", payload, exclusive=True)
+        write_json(staging_root / "gate_receipts.json", list(gate_receipts), exclusive=True)
+        write_json(
+            staging_root / "execution-container.json",
+            execution_container,
+            exclusive=True,
+        )
+        sealed_inputs = _sealed_run_input_hashes(staging_root)
+        write_json(
+            staging_root / "run.json",
+            {
+                "schema": "waybill.formal.run/v2",
+                "protocol_id": protocol_id,
+                "protocol_sha256": canonical_sha256(protocol),
+                "run_id": run_id,
+                "created_at": utc_now(),
+                "execution_container_sha256": canonical_sha256(execution_container),
+                "sealed_inputs": sealed_inputs,
+                "sealed_inputs_sha256": canonical_sha256(sealed_inputs),
+                "immutable": True,
+            },
+            exclusive=True,
+        )
+        validate_run_seal(staging_root)
+        staging_root.replace(run_root)
+    except Exception:
+        if staging_root.exists():
+            shutil.rmtree(staging_root)
+        raise
     return run_root
 
 
@@ -878,6 +1633,88 @@ def next_attempt(run_root: Path, job_id: str, *, max_attempts: int = 2) -> tuple
     path = run_root / "jobs" / "attempts" / job_id / f"attempt-{number:02d}"
     path.mkdir(parents=True, exist_ok=False)
     return number, path
+
+
+def configure_execution_container(
+    run_root: Path,
+    *,
+    container_image: Path,
+    prepared_root: Path,
+    corpus_root: Path,
+    ptau: Path,
+    workspace_root: Path,
+) -> dict[str, Any]:
+    run_root = run_root.resolve()
+    gate_receipts = read_json(run_root / "gate_receipts.json")
+    _require(isinstance(gate_receipts, list), "run gate receipts are invalid")
+    binding = _build_execution_container_binding(
+        run_root=run_root,
+        container_manifest=read_json(run_root / "container_manifest.json"),
+        gate_receipts=gate_receipts,
+        container_image=container_image,
+        prepared_root=prepared_root,
+        corpus_root=corpus_root,
+        ptau=ptau,
+        workspace_root=workspace_root,
+    )
+    path = run_root / "execution-container.json"
+    if path.exists():
+        _require(read_json(path) == binding, "execution container binding already differs")
+        run_path = run_root / "run.json"
+        if run_path.exists():
+            validate_run_seal(run_root)
+    else:
+        _require(not (run_root / "run.json").exists(), "sealed run lacks execution binding")
+        write_json(path, binding, exclusive=True)
+    return binding
+
+
+def validate_execution_container_environment(
+    run_root: Path, *, root: Path
+) -> dict[str, Any]:
+    validate_run_seal(run_root)
+    binding_path = run_root / "execution-container.json"
+    _require(binding_path.is_file(), "execution container binding is missing")
+    binding = read_json(binding_path)
+    _require(
+        isinstance(binding, dict)
+        and binding.get("schema") == "waybill.formal.execution-container/v2",
+        "execution container binding is invalid",
+    )
+    _require(os.getenv("WAYBILL_CONTAINER") == "1", "formal job is not running in its container")
+    _require(
+        os.getenv("WAYBILL_EXECUTION_LAUNCHER") == binding.get("launcher"),
+        "formal execution launcher binding mismatch",
+    )
+    _require(
+        os.getenv("WAYBILL_EXECUTION_IMAGE_DIGEST")
+        == binding.get("release_image_digest"),
+        "formal execution image digest binding mismatch",
+    )
+    _require(
+        os.getenv("WAYBILL_EXECUTION_RUNTIME_SHA256")
+        == binding.get("runtime_image_sha256"),
+        "formal execution runtime hash binding mismatch",
+    )
+    for variable, key in (
+        ("WAYBILL_PREPARED_ROOT", "prepared_root"),
+        ("WAYBILL_CORPUS_ROOT", "corpus_root"),
+        ("WAYBILL_PTAU", "ptau_path"),
+    ):
+        _require(
+            os.getenv(variable) == binding.get(key),
+            f"formal execution input binding mismatch: {variable}",
+        )
+    _require(
+        root.resolve() == Path(str(binding.get("container_source_root", ""))),
+        "formal source is not mounted at the frozen container path",
+    )
+    embedded = read_json(EMBEDDED_RELEASE_BINDING_PATH)
+    _require(
+        embedded == binding.get("release_bindings"),
+        "embedded release source binding differs from the sealed execution binding",
+    )
+    return dict(binding)
 
 
 @dataclass
@@ -898,10 +1735,16 @@ class ExecutionReceipt:
     stdout_tail: str
     stderr_tail: str
     error: str | None
+    execution_container: dict[str, Any]
+    job_sha256: str
+    stage_result_sha256: str | None
+    artifact_manifest_sha256: str | None
 
 
 def execute_job(run_root: Path, job_id: str, *, root: Path) -> dict[str, Any]:
-    jobs = {row["job_id"]: row for row in read_jsonl(run_root / "jobs" / "expected.jsonl")}
+    execution_container = validate_execution_container_environment(run_root, root=root)
+    expected_jobs = _validate_run_semantics(run_root)
+    jobs = {row["job_id"]: row for row in expected_jobs}
     _require(job_id in jobs, f"unknown job id: {job_id}")
     job = jobs[job_id]
     attempt_number, attempt_dir = next_attempt(run_root, job_id)
@@ -956,14 +1799,33 @@ def execute_job(run_root: Path, job_id: str, *, root: Path) -> dict[str, Any]:
     time_evidence = parse_time_evidence(stderr, backend)
     if returncode and error is None:
         error = f"command exited with status {returncode}"
+    stage_evidence: dict[str, Any] | None = None
+    if returncode == 0 and not timed_out:
+        stage_path = attempt_dir / "stage-result.json"
+        try:
+            _require(stage_path.is_file(), "stage-result.json is missing")
+            stage_result = read_json(stage_path)
+            _require(isinstance(stage_result, dict), "stage-result is not an object")
+            stage_evidence = validate_stage_result(
+                stage_result,
+                job=job,
+                attempt_dir=attempt_dir,
+            )
+            _require(stage_evidence["status"] == "passed", "stage semantic status is not passed")
+        except FormalError as exc:
+            error = str(exc)
     raw_rss = time_evidence["max_rss_bytes"]
     raw_user = time_evidence["user_cpu_sec"]
     raw_system = time_evidence["system_cpu_sec"]
     receipt = ExecutionReceipt(
-        schema="waybill.formal.attempt-receipt/v1",
+        schema="waybill.formal.attempt-receipt/v2",
         job_id=job_id,
         attempt=attempt_number,
-        status="passed" if returncode == 0 and not timed_out else "failed",
+        status=(
+            "passed"
+            if returncode == 0 and not timed_out and error is None and stage_evidence is not None
+            else "failed"
+        ),
         command=command,
         started_at=started_at,
         elapsed_ms=round((time.perf_counter() - started) * 1000, 3),
@@ -976,13 +1838,91 @@ def execute_job(run_root: Path, job_id: str, *, root: Path) -> dict[str, Any]:
         stdout_tail=stdout[-16000:],
         stderr_tail=stderr[-16000:],
         error=error,
+        execution_container=execution_container,
+        job_sha256=canonical_sha256(job),
+        stage_result_sha256=(
+            None if stage_evidence is None else str(stage_evidence["stage_result_sha256"])
+        ),
+        artifact_manifest_sha256=(
+            None if stage_evidence is None else str(stage_evidence["artifact_manifest_sha256"])
+        ),
     )
     payload = asdict(receipt)
+    payload["receipt_sha256"] = canonical_sha256(payload)
     write_json(attempt_dir / "receipt.json", payload, exclusive=True)
     return payload
 
 
+def validate_attempt_receipt(
+    receipt: Mapping[str, Any],
+    *,
+    job: Mapping[str, Any],
+    attempt_dir: Path,
+) -> dict[str, Any]:
+    _require(
+        receipt.get("schema") == "waybill.formal.attempt-receipt/v2",
+        "unsupported attempt receipt schema",
+    )
+    _require(receipt.get("job_id") == job.get("job_id"), "attempt receipt job id mismatch")
+    _require(receipt.get("job_sha256") == canonical_sha256(job), "attempt job hash mismatch")
+    attempt_run_root = attempt_dir.parents[3]
+    validate_run_seal(attempt_run_root)
+    expected_execution_container = read_json(
+        attempt_run_root / "execution-container.json"
+    )
+    _require(
+        receipt.get("execution_container") == expected_execution_container,
+        "attempt execution container binding mismatch",
+    )
+    try:
+        expected_attempt = int(attempt_dir.name.removeprefix("attempt-"))
+    except ValueError as exc:
+        raise FormalError("invalid attempt directory name") from exc
+    _require(int(receipt.get("attempt", 0)) == expected_attempt, "attempt number mismatch")
+    job_path = attempt_dir / "job.json"
+    _require(job_path.is_file(), "attempt job.json is missing")
+    stored_job = read_json(job_path)
+    _require(stored_job == dict(job), "attempt job.json differs from expected job")
+    expected_command = [
+        str(item)
+        .replace("{attempt_dir}", str(attempt_dir))
+        .replace("{job_json}", str(job_path))
+        for item in job["command"]
+    ]
+    _require(receipt.get("command") == expected_command, "attempt command mismatch")
+    declared_receipt_sha256 = str(receipt.get("receipt_sha256", ""))
+    unsigned = dict(receipt)
+    unsigned.pop("receipt_sha256", None)
+    _require(
+        declared_receipt_sha256 == canonical_sha256(unsigned),
+        "attempt receipt canonical hash mismatch",
+    )
+    status = str(receipt.get("status"))
+    _require(status in {"passed", "failed"}, "invalid attempt status")
+    if status == "passed":
+        _require(receipt.get("returncode") == 0, "passed attempt has nonzero return code")
+        _require(receipt.get("timed_out") is False, "passed attempt timed out")
+        _require(receipt.get("error") is None, "passed attempt declares an error")
+        stage_path = attempt_dir / "stage-result.json"
+        _require(stage_path.is_file(), "passed attempt lacks stage-result.json")
+        stage_result = read_json(stage_path)
+        _require(isinstance(stage_result, dict), "stage-result is not an object")
+        evidence = validate_stage_result(stage_result, job=job, attempt_dir=attempt_dir)
+        _require(evidence["status"] == "passed", "passed attempt has failed stage semantics")
+        _require(
+            receipt.get("stage_result_sha256") == evidence["stage_result_sha256"],
+            "attempt/stage result hash mismatch",
+        )
+        _require(
+            receipt.get("artifact_manifest_sha256")
+            == evidence["artifact_manifest_sha256"],
+            "attempt/stage artifact manifest mismatch",
+        )
+    return {"status": status, "receipt_sha256": declared_receipt_sha256}
+
+
 def merge_run(run_root: Path) -> dict[str, Any]:
+    validate_run_seal(run_root)
     expected = read_jsonl(run_root / "jobs" / "expected.jsonl")
     units: list[dict[str, Any]] = []
     missing: list[str] = []
@@ -993,7 +1933,21 @@ def merge_run(run_root: Path) -> dict[str, Any]:
         for attempt_dir in _attempt_paths(run_root, job_id):
             receipt_path = attempt_dir / "receipt.json"
             if receipt_path.is_file():
-                attempts.append(read_json(receipt_path))
+                receipt = read_json(receipt_path)
+                try:
+                    _require(isinstance(receipt, dict), "attempt receipt is not an object")
+                    validate_attempt_receipt(receipt, job=job, attempt_dir=attempt_dir)
+                    attempts.append(receipt)
+                except FormalError as exc:
+                    attempts.append(
+                        {
+                            "schema": "waybill.formal.invalid-attempt/v1",
+                            "job_id": job_id,
+                            "attempt_dir": str(attempt_dir),
+                            "status": "invalid",
+                            "validation_error": str(exc),
+                        }
+                    )
         if not attempts:
             missing.append(job_id)
             units.append({"job_id": job_id, "status": "missing", "attempts": []})
@@ -1039,16 +1993,25 @@ def merge_run(run_root: Path) -> dict[str, Any]:
 
 
 def resume_job_ids(run_root: Path, *, max_attempts: int = 2) -> list[str]:
+    validate_run_seal(run_root)
     expected = read_jsonl(run_root / "jobs" / "expected.jsonl")
     result: list[str] = []
     for job in expected:
         job_id = str(job["job_id"])
         receipts = [
-            read_json(path / "receipt.json")
+            (path, read_json(path / "receipt.json"))
             for path in _attempt_paths(run_root, job_id)
             if (path / "receipt.json").is_file()
         ]
-        if any(receipt.get("status") == "passed" for receipt in receipts):
+        valid_success = False
+        for attempt_dir, receipt in receipts:
+            try:
+                _require(isinstance(receipt, dict), "attempt receipt is not an object")
+                validate_attempt_receipt(receipt, job=job, attempt_dir=attempt_dir)
+                valid_success = valid_success or receipt.get("status") == "passed"
+            except FormalError:
+                continue
+        if valid_success:
             continue
         if len(receipts) < max_attempts:
             result.append(job_id)
@@ -1059,9 +2022,22 @@ def render_slurm_array(
     run_root: Path,
     output_path: Path,
     *,
+    container_image: Path,
+    prepared_root: Path,
+    corpus_root: Path,
+    ptau: Path,
+    workspace_root: Path,
     stage: str | None = None,
     kind: str | None = None,
 ) -> None:
+    binding = configure_execution_container(
+        run_root,
+        container_image=container_image,
+        prepared_root=prepared_root,
+        corpus_root=corpus_root,
+        ptau=ptau,
+        workspace_root=workspace_root,
+    )
     jobs = read_jsonl(run_root / "jobs" / "expected.jsonl")
     if stage is not None:
         jobs = [job for job in jobs if job.get("stage") == stage]
@@ -1088,16 +2064,40 @@ set -euo pipefail
 
 RUN_ROOT={json.dumps(str(run_root))}
 JOB_LEDGER={json.dumps(str(ledger_path))}
+CONTAINER_IMAGE={json.dumps(str(binding["runtime_image_path"]))}
+CONTAINER_RUNTIME_SHA256={json.dumps(str(binding["runtime_image_sha256"]))}
+CONTAINER_IMAGE_DIGEST={json.dumps(str(binding["release_image_digest"]))}
+PREPARED_ROOT={json.dumps(str(binding["prepared_root"]))}
+CORPUS_ROOT={json.dumps(str(binding["corpus_root"]))}
+PTAU_PATH={json.dumps(str(binding["ptau_path"]))}
 JOB_ID=$(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" "$JOB_LEDGER")
 test -n "$JOB_ID"
-python script/waybill_formal.py run-job --run-root "$RUN_ROOT" --job-id "$JOB_ID"
+test "$(sha256sum "$CONTAINER_IMAGE" | awk '{{print $1}}')" = "$CONTAINER_RUNTIME_SHA256"
+command -v apptainer >/dev/null
+exec apptainer exec \
+  --containall --cleanenv --no-home --no-mount hostfs \
+  --net --network none \
+  --bind "$RUN_ROOT:$RUN_ROOT:rw" \
+  --bind "$PREPARED_ROOT:$PREPARED_ROOT:ro" \
+  --bind "$CORPUS_ROOT:$CORPUS_ROOT:ro" \
+  --bind "$PTAU_PATH:$PTAU_PATH:ro" \
+  --pwd /work \
+  --env WAYBILL_CONTAINER=1 \
+  --env WAYBILL_EXECUTION_LAUNCHER=apptainer \
+  --env "WAYBILL_EXECUTION_IMAGE_DIGEST=$CONTAINER_IMAGE_DIGEST" \
+  --env "WAYBILL_EXECUTION_RUNTIME_SHA256=$CONTAINER_RUNTIME_SHA256" \
+  --env "WAYBILL_PREPARED_ROOT=$PREPARED_ROOT" \
+  --env "WAYBILL_CORPUS_ROOT=$CORPUS_ROOT" \
+  --env "WAYBILL_PTAU=$PTAU_PATH" \
+  "$CONTAINER_IMAGE" \
+  python script/waybill_formal.py run-job --run-root "$RUN_ROOT" --job-id "$JOB_ID"
 """
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(script, encoding="utf-8")
     output_path.chmod(0o755)
 
 
-def tool_version(command: Sequence[str]) -> str | None:
+def command_output(command: Sequence[str], *, timeout_sec: int = 60) -> tuple[bool, str]:
     try:
         proc = subprocess.run(
             list(command),
@@ -1105,10 +2105,16 @@ def tool_version(command: Sequence[str]) -> str | None:
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            timeout=timeout_sec,
         )
-    except OSError:
-        return None
-    return proc.stdout.splitlines()[0].strip() if proc.stdout else None
+    except (OSError, subprocess.TimeoutExpired):
+        return False, ""
+    return proc.returncode == 0, proc.stdout.strip()
+
+
+def tool_version(command: Sequence[str]) -> str | None:
+    succeeded, output = command_output(command)
+    return output.splitlines()[0].strip() if succeeded and output else None
 
 
 def host_preflight(
@@ -1119,18 +2125,85 @@ def host_preflight(
     ptau: Path | None = None,
     container_digest: str | None = None,
     expected_container_digest: str | None = None,
+    container_runtime_image: Path | None = None,
+    expected_container_runtime_sha256: str | None = None,
     required_workspace_gib: int = 500,
 ) -> dict[str, Any]:
     validate_protocol(protocol)
     _require(int(required_workspace_gib) > 0, "required workspace must be positive")
     host = collect_host_evidence(workspace)
-    versions = {
-        "python": tool_version([sys.executable, "--version"]),
-        "node": tool_version(["node", "--version"]),
-        "npm": tool_version(["npm", "--version"]),
-        "circom": tool_version(["circom", "--version"]),
-        "snarkjs": tool_version(["snarkjs", "--version"]),
+    apptainer_version = tool_version(["apptainer", "--version"])
+    runtime_path = container_runtime_image.resolve() if container_runtime_image else None
+    runtime_safe = bool(
+        runtime_path
+        and runtime_path.is_file()
+        and container_runtime_image is not None
+        and not container_runtime_image.is_symlink()
+    )
+    runtime_sha256 = sha256_file(runtime_path) if runtime_safe and runtime_path else None
+    runtime_secure = False
+    runtime_outside_workspace = False
+    if runtime_safe and runtime_path:
+        image_stat = runtime_path.stat()
+        parent_stat = runtime_path.parent.stat()
+        runtime_secure = (
+            image_stat.st_uid == 0
+            and parent_stat.st_uid == 0
+            and image_stat.st_mode & 0o022 == 0
+            and parent_stat.st_mode & 0o022 == 0
+        )
+        runtime_outside_workspace = not runtime_path.is_relative_to(workspace.resolve())
+    container_versions: dict[str, str | None] = {
+        "python": None,
+        "node": None,
+        "npm": None,
+        "circom": None,
+        "snarkjs": None,
     }
+    embedded_release_binding: dict[str, Any] | None = None
+    container_config_valid = False
+    if apptainer_version and runtime_safe and runtime_path:
+        prefix = [
+            "apptainer",
+            "exec",
+            "--containall",
+            "--cleanenv",
+            "--no-home",
+            "--no-mount",
+            "hostfs",
+            "--net",
+            "--network",
+            "none",
+            str(runtime_path),
+        ]
+        container_versions = {
+            "python": tool_version([*prefix, "python", "--version"]),
+            "node": tool_version([*prefix, "node", "--version"]),
+            "npm": tool_version(
+                [
+                    *prefix,
+                    "sh",
+                    "-c",
+                    "if command -v npm >/dev/null; then npm --version; else echo absent; fi",
+                ]
+            ),
+            "circom": tool_version([*prefix, "circom", "--version"]),
+            "snarkjs": tool_version([*prefix, "snarkjs", "--version"]),
+        }
+        binding_ok, binding_output = command_output(
+            [*prefix, "cat", str(EMBEDDED_RELEASE_BINDING_PATH)]
+        )
+        if binding_ok:
+            try:
+                parsed_binding = json.loads(binding_output)
+            except json.JSONDecodeError:
+                parsed_binding = None
+            if isinstance(parsed_binding, dict):
+                embedded_release_binding = parsed_binding
+        container_config_valid, _config_output = command_output(
+            [*prefix, "python", "/work/script/waybill_formal.py", "validate-config"],
+            timeout_sec=120,
+        )
     checks = {
         "linux": platform.system() == "Linux",
         "x86_64": platform.machine() in {"x86_64", "amd64"},
@@ -1138,10 +2211,34 @@ def host_preflight(
         "workspace_free_meets_frozen_requirement": (
             int(host["disk"]["free_bytes"]) >= int(required_workspace_gib) * 1024**3
         ),
-        "python_3_12": bool(versions["python"] and "3.12" in versions["python"]),
-        "node_26_0_0": versions["node"] == "v26.0.0",
-        "circom_2_1_9": versions["circom"] == "circom compiler 2.1.9",
-        "snarkjs_0_7_6": bool(versions["snarkjs"] and "snarkjs@0.7.6" in versions["snarkjs"]),
+        "apptainer_available": bool(apptainer_version),
+        "container_runtime_present_and_regular": runtime_safe,
+        "container_runtime_root_owned_and_not_group_world_writable": runtime_secure,
+        "container_runtime_outside_writable_workspace": runtime_outside_workspace,
+        "container_runtime_sha256_matches": bool(
+            runtime_sha256
+            and expected_container_runtime_sha256
+            and runtime_sha256 == expected_container_runtime_sha256
+        ),
+        "container_python_3_12": bool(
+            container_versions["python"] and "3.12" in container_versions["python"]
+        ),
+        "container_node_26_5_0": container_versions["node"] == "v26.5.0",
+        "container_npm_absent": container_versions["npm"] == "absent",
+        "container_circom_2_1_9": container_versions["circom"]
+        == "circom compiler 2.1.9",
+        "container_snarkjs_0_7_6": bool(
+            container_versions["snarkjs"]
+            and "snarkjs@0.7.6" in container_versions["snarkjs"]
+        ),
+        "container_embeds_frozen_waybill_source": container_config_valid,
+        "container_embedded_protocol_matches": bool(
+            embedded_release_binding
+            and embedded_release_binding.get("schema")
+            == "waybill.formal.embedded-release-binding/v1"
+            and embedded_release_binding.get("protocol_sha256")
+            == canonical_sha256(protocol)
+        ),
         "container_digest_matches": bool(
             container_digest
             and expected_container_digest
@@ -1163,21 +2260,28 @@ def host_preflight(
                     digest.update(chunk)
             ptau_record["blake2b"] = digest.hexdigest()
             checks["ptau_exact"] = (
-                ptau.stat().st_size == 4_831_921_304
-                and ptau_record["blake2b"]
-                == "0d64f63dba1a6f11139df765cb690da69d9b2f469a1ddd0de5e4aa628abb28f7"
-                "87f04c6a5fb84a235ec5ea7f41d0548746653ecab0559add658a83502d1cb21b"
+                ptau.stat().st_size == FORMAL_PTAU_BYTES
+                and ptau_record["blake2b"] == FORMAL_PTAU_BLAKE2B
             )
     else:
         checks["ptau_exact"] = False
     passed = all(checks.values())
     return {
         "gate": "RG6",
-        "schema": "waybill.formal.target-host-preflight/v1",
+        "schema": "waybill.formal.target-host-preflight/v2",
         "status": "passed" if passed else "blocked-on-target",
         "checks": checks,
         "host": host,
-        "versions": versions,
+        "versions": {
+            "apptainer": apptainer_version,
+            "container": container_versions,
+        },
+        "container_runtime": {
+            "path": str(runtime_path) if runtime_path else None,
+            "sha256": runtime_sha256,
+            "expected_sha256": expected_container_runtime_sha256,
+        },
+        "embedded_release_binding": embedded_release_binding,
         "ptau": ptau_record,
         "container_digest": container_digest,
         "expected_container_digest": expected_container_digest,

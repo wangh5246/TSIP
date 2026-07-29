@@ -1,31 +1,27 @@
 from __future__ import annotations
 
 import hashlib
-import sys
 from pathlib import Path
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi.testclient import TestClient
 
-
-ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-
 from common.policy_profile import load_policy_profiles
 from common.settlement import (
     ReceiverFix,
-    build_period_public_statement,
     make_device_attestation_commitment,
     sign_monthly_odometer_attestation,
     sign_receiver_fix,
 )
-from script.prove_settlement_period_v5 import build_tariff
+from common.settlement_v6 import build_period_public_statement_v6
+from script.prove_settlement_period_v6 import build_tariff
 from services.charger import app as charger_app
 
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
 _SEED = hashlib.sha256(b"waybill-v6-month-close-test").digest()
+_CHARGER_DOMAIN = "ruc-demo.charger-test"
 _PRIVATE_KEY = Ed25519PrivateKey.from_private_bytes(_SEED)
 _PUBLIC_KEY = _PRIVATE_KEY.public_key().public_bytes_raw()
 _DAC = make_device_attestation_commitment(_PUBLIC_KEY)
@@ -80,28 +76,38 @@ def _fixes(
 
 
 def _public(fixes: list[ReceiverFix], *, reveal_total_miles: bool = True) -> dict[str, object]:
-    profile = charger_app.policy_registry.profiles[0]
-    return build_period_public_statement(
+    profile = charger_app.policy_registry.resolve(
+        jurisdiction_id="ruc-demo",
+        period_start_time=fixes[0].auth_gnss_time,
+    )
+    public = build_period_public_statement_v6(
         fixes=fixes,
         tariff=build_tariff(),
+        position_valid=[True] * (len(fixes) - 1),
         period_id=fixes[0].period_id,
         month_id="2026-05",
         cadence_sec=profile.cadence_sec,
         tier_vmax_mps=profile.tier_vmax_mps,
         max_dt_sec=profile.max_dt_sec,
+        r_max_cents_per_m=profile.max_zone_rate_cents_per_m,
         device_attestation_commitment=_DAC,
-        reveal_total_miles=reveal_total_miles,
         tariff_tree_depth=profile.tariff_tree_depth,
+        mode_vmax_sq=profile.mode_vmax_sq,
+        cap_policy_sq=profile.cap_policy_sq,
         policy_profile=profile,
     )
+    if not reveal_total_miles:
+        public.pop("total_distance_m")
+    return public
 
 
 def _submit(client: TestClient, fixes: list[ReceiverFix], public: dict[str, object]) -> object:
     tariff = build_tariff()
     return client.post(
-        "/settlement/period",
+        "/settlement/v6/period",
         json={
             "fixes": [fix.to_dict() for fix in fixes],
+            "position_valid": [True] * (len(fixes) - 1),
             "tariff": {
                 "tariff_version": tariff.tariff_version,
                 "grid_w": tariff.grid_w,
@@ -113,10 +119,17 @@ def _submit(client: TestClient, fixes: list[ReceiverFix], public: dict[str, obje
     )
 
 
-def _attest(client: TestClient, *, start_m: int, end_m: int) -> object:
+def _attest(
+    client: TestClient,
+    *,
+    start_m: int,
+    end_m: int,
+    month_id: str = "2026-05",
+) -> object:
     attestation = sign_monthly_odometer_attestation(
+        charger_domain=_CHARGER_DOMAIN,
         device_id="dev-v6-close",
-        month_id="2026-05",
+        month_id=month_id,
         odometer_start_m=start_m,
         odometer_end_m=end_m,
         private_key_bytes=_SEED,
@@ -172,6 +185,23 @@ def test_missing_attestation_enters_durable_administrative_path() -> None:
     late = _fixes("2026-05-admin-late")
     response = _submit(client, late, _public(late))
     assert response.status_code == 409
+
+
+def test_month_close_rejects_a_month_that_has_not_ended() -> None:
+    client = _client()
+    response = client.post(
+        "/settlement/v6/month/close",
+        json={"device_id": "dev-v6-close", "month_id": "2099-01"},
+    )
+    assert response.status_code == 409
+    assert response.json()["detail"] == "billing month has not ended"
+
+
+def test_month_attestation_rejects_a_month_that_has_not_ended() -> None:
+    client = _client()
+    response = _attest(client, start_m=1_000, end_m=1_600, month_id="2099-01")
+    assert response.status_code == 409
+    assert response.json()["detail"] == "billing month has not ended"
 
 
 def test_hidden_covered_distance_and_cross_month_period_fail_closed() -> None:

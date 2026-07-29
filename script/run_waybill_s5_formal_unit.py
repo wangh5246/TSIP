@@ -148,6 +148,7 @@ def _build_corpus_input(
     start_time = 1_777_593_600 + corpus_index * 14_400
     odometer = 50_000 + corpus_index * 1_000_000
     fixes: list[ReceiverFix] = []
+    position_valid = [index % 11 != 5 for index in range(fixes_count - 1)]
     previous_xy: tuple[int, int] | None = None
     for seq in range(fixes_count):
         x, y = m2.snake_cell(seq)
@@ -161,12 +162,15 @@ def _build_corpus_input(
             auth_gnss_time=start_time + seq * m2.CADENCE_SEC,
             cell_x=x,
             cell_y=y,
-            osnma_status="authenticated",
+            osnma_status=(
+                "authenticated"
+                if seq == fixes_count - 1 or position_valid[seq]
+                else "unavailable"
+            ),
             odometer_reading_m=odometer,
             nonce=f"waybill-s5-n{fixes_count}-bundle-{corpus_index:03d}-fix-{seq}",
         )
         fixes.append(sign_receiver_fix(raw, v6_prover._DEVICE_SEED))
-    position_valid = [index % 11 != 5 for index in range(fixes_count - 1)]
     params = HarnessParams(
         cadence_sec=m2.CADENCE_SEC,
         max_dt_sec=m2.MAX_DT_SEC,
@@ -182,7 +186,7 @@ def _build_corpus_input(
         v6_prover.CAP_POLICY_SQ = m2.M2_CAP_POLICY_SQ
         circuit_input, submission = v6_prover.build_input_for_fixes(
             fixes,
-            tariff,  # type: ignore[arg-type]
+            tariff,
             position_valid=position_valid,
             params=params,
             policy_profile=profile,
@@ -455,6 +459,13 @@ def _charger_job(
         raise FormalError("S5 policy profile directory missing")
     os.environ["SETTLEMENT_POLICY_PROFILE_DIR"] = str(profile_dir)
     os.environ["SETTLEMENT_REQUIRE_ZK_PROOF"] = "1"
+    os.environ["WAYBILL_CHARGER_TEST_MODE"] = "1"
+    os.environ["WAYBILL_CHARGER_DATABASE_URL"] = (
+        f"sqlite+pysqlite:///{attempt_dir / 'charger.sqlite'}"
+    )
+    os.environ["WAYBILL_CHARGER_DOMAIN"] = "ruc-demo.charger-test"
+    os.environ["WAYBILL_CHARGER_ADMIN_TOKEN"] = "waybill-test-admin-token"
+    os.environ["WAYBILL_CHARGER_TOKEN_PEPPER"] = "waybill-test-token-pepper"
     from fastapi.testclient import TestClient
     from services.charger.app import app
 

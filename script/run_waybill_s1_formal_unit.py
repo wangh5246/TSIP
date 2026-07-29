@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import random
 import statistics
 import sys
 from pathlib import Path
@@ -61,8 +62,8 @@ def burst_outage_edges(
 def _natural_outage_edges(fixes: list[ReceiverFix]) -> list[int]:
     return [
         index
-        for index, (left, right) in enumerate(zip(fixes, fixes[1:]))
-        if left.osnma_status != "authenticated" or right.osnma_status != "authenticated"
+        for index, fix in enumerate(fixes[:-1])
+        if fix.osnma_status != "authenticated"
     ]
 
 
@@ -97,6 +98,56 @@ def _write_rows(path: Path, rows: Iterable[dict[str, Any]]) -> None:
             handle.write(canonical_json(row) + "\n")
 
 
+def cluster_bootstrap_summary(
+    rows: list[dict[str, Any]],
+    *,
+    metrics: tuple[str, ...],
+    percentiles: tuple[int, ...],
+    replicates: int,
+    seed: int,
+) -> dict[str, Any]:
+    """Return deterministic cluster-bootstrap percentile confidence intervals."""
+
+    if replicates <= 0:
+        raise ValueError("bootstrap replicates must be positive")
+    by_cluster: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        by_cluster.setdefault(str(row["cluster_id"]), []).append(row)
+    cluster_ids = sorted(by_cluster)
+    if not cluster_ids:
+        raise ValueError("cluster bootstrap requires at least one cluster")
+    samples: dict[str, dict[int, list[float]]] = {
+        metric: {percentile: [] for percentile in percentiles} for metric in metrics
+    }
+    rng = random.Random(int(seed))
+    for _ in range(replicates):
+        selected = [rng.choice(cluster_ids) for _ in cluster_ids]
+        replicate_rows = [row for cluster in selected for row in by_cluster[cluster]]
+        for metric in metrics:
+            values = [float(row[metric]) for row in replicate_rows]
+            for percentile in percentiles:
+                samples[metric][percentile].append(_percentile(values, percentile))
+    result: dict[str, Any] = {}
+    for metric in metrics:
+        values = [float(row[metric]) for row in rows]
+        result[metric] = {}
+        for percentile in percentiles:
+            distribution = samples[metric][percentile]
+            result[metric][f"p{percentile}"] = {
+                "estimate": _percentile(values, percentile),
+                "ci95_lower": _percentile(distribution, 2.5),
+                "ci95_upper": _percentile(distribution, 97.5),
+            }
+    return {
+        "cluster_unit": "original vehicle or user",
+        "clusters": len(cluster_ids),
+        "replicates": int(replicates),
+        "confidence_interval": "percentile cluster bootstrap 95%",
+        "seed": int(seed),
+        "metrics": result,
+    }
+
+
 def _fallback_job(
     *,
     parameters: dict[str, Any],
@@ -119,6 +170,8 @@ def _fallback_job(
                 outage_edges=outage,
                 r_max_cents_per_m=tariff.max_zone_rate_cents_per_m,
             )
+            whole_period_distance = int(values["total_distance_m"])
+            with_month_close = whole_period_distance * tariff.max_zone_rate_cents_per_m
             rows.append(
                 {
                     "dataset": dataset,
@@ -129,7 +182,11 @@ def _fallback_job(
                     "oracle_position_fee_cents": values["oracle_fee_cents"],
                     "v5_dt_vmax_rmax_fee_cents": values["v5_fee_cents"],
                     "v6_dodo_rmax_fee_cents": values["v6_fee_cents"],
-                    "v6_without_month_close_fee_cents": values["v6_fee_cents"],
+                    "v6_with_month_close_withholding_fee_cents": with_month_close,
+                    "v6_without_month_close_fee_cents": 0,
+                    "month_close_prevents_withholding_advantage": (
+                        with_month_close >= int(values["oracle_fee_cents"])
+                    ),
                     **values,
                 }
             )
@@ -143,11 +200,20 @@ def _fallback_job(
         _write_rows(attempt_dir / "rejected-periods.jsonl", rejected)
     v6_surcharge = [float(row["v6_surcharge_cents"]) for row in rows]
     v5_surcharge = [float(row["v5_surcharge_cents"]) for row in rows]
+    bootstrap = cluster_bootstrap_summary(
+        rows,
+        metrics=("v5_surcharge_cents", "v6_surcharge_cents"),
+        percentiles=(50, 95, 99),
+        replicates=5_000,
+        seed=int(parameters["seed"]),
+    )
     summary = {
         "status": "passed"
-        if max(int(row["v6_undercharge_cents"]) for row in rows) == 0
+        if not rejected
+        and max(int(row["v6_undercharge_cents"]) for row in rows) == 0
         and max(int(row["max_withholding_advantage_cents"]) for row in rows) == 0
         and sum(int(row["parking_v6_fee_cents"]) for row in rows) == 0
+        and all(bool(row["month_close_prevents_withholding_advantage"]) for row in rows)
         else "failed",
         "dataset": dataset,
         "accepted_periods": len(rows),
@@ -164,6 +230,12 @@ def _fallback_job(
             int(row["max_withholding_advantage_cents"]) for row in rows
         ),
         "parking_v6_fee_cents": sum(int(row["parking_v6_fee_cents"]) for row in rows),
+        "without_month_close_withheld_fee_cents": 0,
+        "with_month_close_withholding_fee_cents": sum(
+            int(row["v6_with_month_close_withholding_fee_cents"]) for row in rows
+        ),
+        "bootstrap": bootstrap,
+        "rejected_period_policy": "fail-closed",
         "tariff_path": str(tariff_path),
         "claim_boundary": "experimental integer currency; not an official taxpayer bill",
         "output": output_path.name,
@@ -241,6 +313,13 @@ def _sensitivity_job(
     output_path = attempt_dir / "sensitivity-results.jsonl"
     _write_rows(output_path, rows)
     passed = all(row["revenue_sound"] and row["honest_user_fair"] for row in rows)
+    bootstrap = cluster_bootstrap_summary(
+        rows,
+        metrics=("observed_fee_cents", "epsilon_odometer_m"),
+        percentiles=(50, 95, 99),
+        replicates=5_000,
+        seed=int(parameters["seed"]),
+    )
     return {
         "status": "passed" if passed else "failed",
         "dataset": dataset,
@@ -249,6 +328,7 @@ def _sensitivity_job(
         "odometer_error": error,
         "context": parameters["context"],
         "tariff_path": str(tariff_path),
+        "bootstrap": bootstrap,
         "output": output_path.name,
     }
 

@@ -2,21 +2,29 @@ from __future__ import annotations
 
 import json
 import hashlib
+import hmac
 import os
 import subprocess
 import tempfile
+import threading
+import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, Header, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
+from sqlalchemy.exc import SQLAlchemyError
 
 from common.settlement import (
     SETTLEMENT_CAP_POLICY_SQ,
     SETTLEMENT_MAX_DT_SEC,
     SETTLEMENT_PERIOD_MAX_SEC,
+    SETTLEMENT_ROOT_ATTESTATION_SCHEMA,
     ReceiverFix,
     TariffTable,
+    canonical_json,
     canonical_month_window,
     compute_public_statement_commitment,
     field_from_text,
@@ -27,6 +35,7 @@ from common.settlement import (
     verify_receiver_root_attestation,
     verify_period_submission,
 )
+from common.http_security import StrictJSONBodyMiddleware
 from common.policy_profile import (
     PolicyProfile,
     PolicyRegistry,
@@ -36,12 +45,74 @@ from common.policy_profile import (
 from common.settlement_v6 import (
     PUBLIC_SIGNAL_ORDER_V6,
     SETTLEMENT_PUBLIC_V6_DOMAIN,
-    reconcile_month_v6,
     verify_period_submission_v6,
+)
+from services.charger.store import (
+    ChargerConflict,
+    ChargerNotFound,
+    ChargerStore,
+    ChargerStoreError,
 )
 
 
-app = FastAPI(title="TSIP Settlement Charger")
+router = APIRouter()
+transparent_router = APIRouter()
+MAX_CHARGER_REQUEST_BYTES = 1024 * 1024
+PROOF_VERIFY_TIMEOUT_SEC = 30
+_PROOF_VERIFY_SLOTS = threading.BoundedSemaphore(value=2)
+
+
+@dataclass(frozen=True)
+class ChargerSettings:
+    database_url: str
+    charger_domain: str
+    admin_token: str
+    token_pepper: str
+    test_mode: bool = False
+    allow_transparent_endpoints: bool = False
+    enable_reset: bool = False
+    allow_sqlite_backend_for_tests: bool = False
+
+    def __post_init__(self) -> None:
+        if self.allow_transparent_endpoints and not self.test_mode:
+            raise ValueError(
+                "transparent settlement endpoints require explicit Charger test mode"
+            )
+        if self.enable_reset and not self.test_mode:
+            raise ValueError("the destructive reset endpoint requires explicit Charger test mode")
+        if hmac.compare_digest(self.admin_token, self.token_pepper):
+            raise ValueError("Charger administrator token and token pepper must be independent")
+        if (
+            not self.test_mode
+            and not self.allow_sqlite_backend_for_tests
+            and not self.database_url.startswith(("postgresql://", "postgresql+psycopg://"))
+        ):
+            raise ValueError("production Charger requires a PostgreSQL database URL")
+
+    @classmethod
+    def from_environment(cls) -> "ChargerSettings":
+        test_mode = os.getenv("WAYBILL_CHARGER_TEST_MODE", "") == "1"
+        database_url = os.getenv("WAYBILL_CHARGER_DATABASE_URL", "")
+        charger_domain = os.getenv("WAYBILL_CHARGER_DOMAIN", "")
+        admin_token = os.getenv("WAYBILL_CHARGER_ADMIN_TOKEN", "")
+        token_pepper = os.getenv("WAYBILL_CHARGER_TOKEN_PEPPER", "")
+        if not database_url or not charger_domain or not admin_token or not token_pepper:
+            raise RuntimeError(
+                "WAYBILL_CHARGER_DATABASE_URL, WAYBILL_CHARGER_DOMAIN, "
+                "WAYBILL_CHARGER_ADMIN_TOKEN, and WAYBILL_CHARGER_TOKEN_PEPPER are required"
+            )
+        if not test_mode and (len(admin_token) < 32 or len(token_pepper) < 32):
+            raise RuntimeError("production Charger credentials must contain at least 32 characters")
+        return cls(
+            database_url=database_url,
+            charger_domain=charger_domain,
+            admin_token=admin_token,
+            token_pepper=token_pepper,
+            test_mode=test_mode,
+            allow_transparent_endpoints=test_mode,
+            enable_reset=test_mode,
+        )
+
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 POLICY_PROFILE_DIR = Path(
@@ -59,44 +130,11 @@ TIER_VMAX_MPS = int(os.getenv("SETTLEMENT_TIER_VMAX_MPS", "33"))
 # Path to the snarkjs verification key for the settlement period circuit.
 # When set, every submission must include a valid Groth16 proof.
 SETTLEMENT_VKEY_PATH = os.getenv("SETTLEMENT_VKEY_PATH", "")
-
-# Device enrollment registry: device_id → raw 32-byte Ed25519 public key.
-# Pre-loaded from SETTLEMENT_DEVICE_REGISTRY_JSON (JSON: {"device_id": "hex_pubkey"}).
-# Devices can also be registered at runtime via POST /settlement/devices/register.
-device_registry: dict[str, bytes] = {}
-device_jurisdiction_registry: dict[str, str] = {}
-
-_registry_json = os.getenv("SETTLEMENT_DEVICE_REGISTRY_JSON", "")
-if _registry_json:
-    for _dev_id, _hex_key in json.loads(_registry_json).items():
-        device_registry[str(_dev_id)] = bytes.fromhex(str(_hex_key))
-        device_jurisdiction_registry[str(_dev_id)] = "ruc-demo"
-
 # Reconciliation rate for kilometres not covered by any accepted period.
 # Must satisfy rate >= alpha * max_zone_rate with alpha >= 1 so that whole-period
 # withholding is never cheaper than exact settlement (monthly extension of the
 # E2 monotone-degradation rule).
 RECONCILIATION_RATE_CENTS_PER_M = int(os.getenv("SETTLEMENT_RECONCILIATION_RATE_CENTS_PER_M", "5"))
-
-# Keyed by (device_id, period_id) / (device_id, month_id): a device must not be
-# able to block another device's submissions by colliding on a bare period_id,
-# and bills are per-device.
-accepted_periods: dict[tuple[str, str], dict[str, Any]] = {}
-monthly_ledger: dict[tuple[str, str], dict[str, int]] = {}
-# Accepted [period_start_time, period_end_time) windows per device. Overlapping
-# windows would double-count odometer distance and eat into the reconciliation
-# margin, so they are rejected at submission time.
-device_period_windows: dict[str, list[tuple[int, int]]] = {}
-# (device_id, month_id) -> verified month-boundary odometer attestation.
-monthly_odometer_attestations: dict[tuple[str, str], dict[str, Any]] = {}
-# Canonical month-close rate inherited from accepted period profiles.  If a
-# profile rolls over inside a month, the maximum canonical rate is retained so
-# completeness reconciliation cannot become cheaper through profile timing.
-monthly_reconciliation_rates: dict[tuple[str, str], int] = {}
-# Immutable month-close receipts and durable administrative exceptions.  Keys
-# normalize month spelling (YYYY-MM vs YYYYMM) to the same integer identity.
-closed_months: dict[tuple[str, int], dict[str, Any]] = {}
-administrative_months: dict[tuple[str, int], dict[str, Any]] = {}
 
 
 def _month_number(month_id: str) -> int:
@@ -117,71 +155,57 @@ def _next_month_number(month_number: int) -> int:
     return year * 100 + (month + 1)
 
 
-def _find_month_attestation(device_id: str, month_id: str) -> tuple[tuple[str, str], dict[str, Any]] | None:
-    target_month = _month_number(month_id)
-    for key, attestation in monthly_odometer_attestations.items():
-        dev_id, existing_month_id = key
-        if dev_id == device_id and _month_number(existing_month_id) == target_month:
-            return key, attestation
-    return None
+def _store(request: Request) -> ChargerStore:
+    result = getattr(request.app.state, "charger_store", None)
+    if not isinstance(result, ChargerStore):
+        raise HTTPException(status_code=503, detail="Charger persistence is unavailable")
+    return result
 
 
-def _month_ledger_for_device(device_id: str, month_id: str) -> dict[str, int]:
-    target_month = _month_number(month_id)
-    totals = {"periods": 0, "total_fee_cents": 0, "total_distance_m": 0, "fallback_intervals": 0}
-    for (dev_id, existing_month_id), month in monthly_ledger.items():
-        if dev_id == device_id and _month_number(existing_month_id) == target_month:
-            for key in totals:
-                totals[key] += int(month[key])
-    return totals
+def _settings(request: Request) -> ChargerSettings:
+    result = getattr(request.app.state, "charger_settings", None)
+    if not isinstance(result, ChargerSettings):
+        raise HTTPException(status_code=503, detail="Charger settings are unavailable")
+    return result
 
 
-def _month_reconciliation_rate(device_id: str, month_id: str) -> int:
-    target_month = _month_number(month_id)
-    rates = [
-        int(rate)
-        for (dev_id, existing_month_id), rate in monthly_reconciliation_rates.items()
-        if dev_id == device_id and _month_number(existing_month_id) == target_month
-    ]
-    if rates:
-        return max(rates)
-    jurisdiction_id = device_jurisdiction_registry.get(device_id)
-    if jurisdiction_id is None:
-        raise ValueError(f"device {device_id!r} has no canonical jurisdiction binding")
-    month_start = canonical_month_window(month_id)["month_start_time"]
-    profile = policy_registry.resolve(
-        jurisdiction_id=jurisdiction_id,
-        period_start_time=int(month_start),
-    )
-    return int(profile.monthly_reconciliation_rate_cents_per_m)
+def _bearer_token(authorization: str | None) -> str | None:
+    if authorization is None or not authorization.startswith("Bearer "):
+        return None
+    token = authorization[7:]
+    return token if token else None
 
 
-def _enforce_odometer_month_chain(
-    *,
-    device_id: str,
-    month_id: str,
-    odometer_start_m: int,
-    odometer_end_m: int,
-) -> None:
-    month_number = _month_number(month_id)
-    prev_month = _prev_month_number(month_number)
-    next_month = _next_month_number(month_number)
-    for (dev_id, existing_month_id), existing in monthly_odometer_attestations.items():
-        if dev_id != device_id:
-            continue
-        existing_month = _month_number(existing_month_id)
-        if existing_month == month_number:
-            continue
-        if existing_month == prev_month and int(existing["odometer_end_m"]) != int(odometer_start_m):
-            raise HTTPException(
-                status_code=409,
-                detail="odometer month chain mismatch with previous month",
-            )
-        if existing_month == next_month and int(existing["odometer_start_m"]) != int(odometer_end_m):
-            raise HTTPException(
-                status_code=409,
-                detail="odometer month chain mismatch with next month",
-            )
+def _device_token_digest(settings: ChargerSettings, token: str) -> str:
+    return hmac.new(
+        settings.token_pepper.encode("utf-8"),
+        b"waybill-device-token-v1\x00" + str(token).encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def _require_admin(request: Request, authorization: str | None) -> None:
+    settings = _settings(request)
+    if settings.test_mode:
+        return
+    token = _bearer_token(authorization)
+    if token is None or not hmac.compare_digest(token, settings.admin_token):
+        raise HTTPException(status_code=401, detail="invalid Charger administrator credential")
+
+
+def _require_device(request: Request, authorization: str | None, device_id: str) -> None:
+    settings = _settings(request)
+    if settings.test_mode:
+        return
+    token = _bearer_token(authorization)
+    if token is None:
+        raise HTTPException(status_code=401, detail="missing device credential")
+    device = _store(request).get_device(device_id)
+    if device is None:
+        raise HTTPException(status_code=401, detail="invalid device credential")
+    digest = _device_token_digest(settings, token)
+    if not hmac.compare_digest(digest, str(device["token_digest"])):
+        raise HTTPException(status_code=403, detail="device credential does not authorize this device")
 
 
 def _profile_vkey_path(profile: PolicyProfile) -> Path:
@@ -192,10 +216,13 @@ def _profile_vkey_path(profile: PolicyProfile) -> Path:
     return path if path.is_absolute() else POLICY_PROFILE_DIR / path
 
 
-def _resolve_expected_profile(device_id: str, public: dict[str, Any]) -> PolicyProfile:
-    jurisdiction_id = device_jurisdiction_registry.get(str(device_id))
-    if jurisdiction_id is None:
+def _resolve_expected_profile(
+    store: ChargerStore, device_id: str, public: dict[str, Any]
+) -> PolicyProfile:
+    device = store.get_device(str(device_id))
+    if device is None:
         raise ValueError(f"device {device_id!r} has no canonical jurisdiction binding")
+    jurisdiction_id = str(device["jurisdiction_id"])
     try:
         period_start = int(public["period_start_time"])
         period_end = int(public["period_end_time"])
@@ -219,13 +246,25 @@ def _verify_zk_proof(proof: dict[str, Any], public_signals: list[str], vkey_path
         tdp = Path(td)
         (tdp / "proof.json").write_text(json.dumps(proof), encoding="utf-8")
         (tdp / "public.json").write_text(json.dumps(public_signals), encoding="utf-8")
-        proc = subprocess.run(
-            ["snarkjs", "groth16", "verify", vkey_path, str(tdp / "public.json"), str(tdp / "proof.json")],
-            capture_output=True,
-            text=True,
-        )
+        try:
+            with _PROOF_VERIFY_SLOTS:
+                proc = subprocess.run(
+                    [
+                        "snarkjs",
+                        "groth16",
+                        "verify",
+                        vkey_path,
+                        str(tdp / "public.json"),
+                        str(tdp / "proof.json"),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=PROOF_VERIFY_TIMEOUT_SEC,
+                )
+        except subprocess.TimeoutExpired as exc:
+            raise ValueError("Groth16 verifier timed out") from exc
         if proc.returncode != 0 or "OK!" not in proc.stdout:
-            raise ValueError(f"Groth16 proof rejected: {proc.stdout.strip()}")
+            raise ValueError("Groth16 proof rejected")
 
 
 # Public-signal layout for the settlement period circuit (21 signals). Indices
@@ -399,18 +438,17 @@ def _validate_public_statement_shape(public: dict[str, Any]) -> None:
 
 
 def _accept_period(
+    store: ChargerStore,
     device_id: str,
     public: dict[str, Any],
     profile: PolicyProfile,
+    root_attestation: dict[str, Any] | None = None,
+    allow_unanchored: bool = False,
 ) -> tuple[str, str]:
     """Dedup, overlap-check, and accumulate an accepted period into the ledger."""
 
-    period_id = str(public["period_id"])
     month_id = str(public["month_id"])
     normalized_month = _month_number(month_id)
-    month_state_key = (device_id, normalized_month)
-    if month_state_key in closed_months or month_state_key in administrative_months:
-        raise HTTPException(status_code=409, detail="billing month no longer accepts period submissions")
     if "total_distance_m" not in public:
         raise HTTPException(status_code=400, detail="total_distance_m is required for monthly reconciliation")
     max_zone_rate = int(public.get("max_zone_rate_cents_per_m", 0))
@@ -419,72 +457,96 @@ def _accept_period(
         raise HTTPException(status_code=400, detail="accepted tariff max is not canonical")
     if reconciliation_rate != max_zone_rate:
         raise HTTPException(status_code=500, detail="canonical reconciliation arithmetic is inconsistent")
-    if (device_id, period_id) in accepted_periods:
-        raise HTTPException(status_code=409, detail="period already accepted")
+    try:
+        return store.accept_period(
+            device_id=device_id,
+            public=public,
+            month_number=normalized_month,
+            reconciliation_rate_cents_per_m=reconciliation_rate,
+            root_attestation=root_attestation,
+            allow_unanchored=allow_unanchored,
+        )
+    except ChargerConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ChargerStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
-    start = int(public["period_start_time"])
-    end = int(public["period_end_time"])
-    for prev_start, prev_end in device_period_windows.get(device_id, []):
-        if start < prev_end and prev_start < end:
-            raise HTTPException(
-                status_code=409,
-                detail="period time window overlaps an accepted period for this device",
-            )
 
-    accepted_periods[(device_id, period_id)] = public
-    device_period_windows.setdefault(device_id, []).append((start, end))
-    month = monthly_ledger.setdefault(
-        (device_id, month_id),
-        {"periods": 0, "total_fee_cents": 0, "total_distance_m": 0, "fallback_intervals": 0},
-    )
-    month["periods"] += 1
-    month["total_fee_cents"] += int(public["total_fee_cents"])
-    month["fallback_intervals"] += int(public.get("fallback_intervals", 0))
-    if "total_distance_m" in public:
-        month["total_distance_m"] += int(public["total_distance_m"])
-    rate_key = (device_id, month_id)
-    monthly_reconciliation_rates[rate_key] = max(
-        reconciliation_rate,
-        int(monthly_reconciliation_rates.get(rate_key, 0)),
-    )
-    return period_id, month_id
+def _require_receiver_anchor_preflight(
+    store: ChargerStore,
+    *,
+    device_id: str,
+    period_id: str,
+    root_attestation: dict[str, Any],
+) -> None:
+    """Reject missing, altered, or consumed anchors before Groth16 work."""
+
+    try:
+        store.require_unsettled_receiver_attestation(
+            device_id=device_id,
+            period_id=period_id,
+            attestation=root_attestation,
+        )
+    except ChargerConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ChargerStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 class TariffPayload(BaseModel):
-    tariff_version: int
-    grid_w: int
-    cell_zones: dict[int, int]
-    zone_rates_cents_per_m: dict[int, int]
+    model_config = ConfigDict(extra="forbid")
+
+    tariff_version: int = Field(ge=0, le=(1 << 32) - 1)
+    grid_w: int = Field(ge=1, le=(1 << 16) - 1)
+    cell_zones: dict[int, int] = Field(min_length=1, max_length=65_536)
+    zone_rates_cents_per_m: dict[int, int] = Field(min_length=1, max_length=65_536)
 
 
 class DeviceRegistration(BaseModel):
-    device_id: str
-    public_key_hex: str
-    jurisdiction_id: str = "ruc-demo"
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: str = Field(min_length=1, max_length=128)
+    public_key_hex: str = Field(pattern=r"^[0-9a-fA-F]{64}$")
+    jurisdiction_id: str = Field(default="ruc-demo", min_length=1, max_length=128)
+    device_token: str | None = Field(default=None, max_length=512)
 
 
 class PeriodSubmission(BaseModel):
-    fixes: list[dict[str, Any]] = Field(min_length=2)
+    fixes: list[dict[str, Any]] = Field(min_length=2, max_length=PERIOD_FIX_CAP)
     tariff: TariffPayload
     public_statement: dict[str, Any]
     proof: dict[str, Any] | None = None
-    public_signals: list[str] | None = None
+    public_signals: list[str] | None = Field(default=None, max_length=64)
 
 
 class V6PeriodSubmission(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    fixes: list[dict[str, Any]] = Field(min_length=2)
-    position_valid: list[StrictBool] = Field(min_length=1)
+    fixes: list[dict[str, Any]] = Field(min_length=2, max_length=PERIOD_FIX_CAP)
+    position_valid: list[StrictBool] = Field(min_length=1, max_length=PERIOD_FIX_CAP - 1)
     tariff: TariffPayload
     public_statement: dict[str, Any]
     proof: dict[str, Any] | None = None
-    public_signals: list[str] | None = None
+    public_signals: list[str] | None = Field(default=None, max_length=64)
 
 
 class RootAttestation(BaseModel):
-    device_id: str
-    signature: str
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    schema_: str = Field(alias="schema")
+    receiver_id: str = Field(min_length=1, max_length=128)
+    charger_domain: str = Field(min_length=1, max_length=255)
+    device_id: str = Field(min_length=1, max_length=128)
+    period_id: str = Field(min_length=1, max_length=128)
+    log_epoch: int = Field(ge=1, le=(1 << 63) - 1)
+    fix_count: int = Field(ge=2, le=PERIOD_FIX_CAP)
+    receiver_fix_root: str = Field(min_length=1, max_length=80)
+    device_attestation_commitment: str = Field(min_length=1, max_length=128)
+    commitment_semantics: str = Field(min_length=1, max_length=128)
+    position_validity_rule: str = Field(min_length=1, max_length=128)
+    previous_attestation_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    log_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    signature: str = Field(min_length=1, max_length=128)
 
 
 class ProofOnlyPeriodSubmission(BaseModel):
@@ -492,41 +554,146 @@ class ProofOnlyPeriodSubmission(BaseModel):
 
     public_statement: dict[str, Any]
     proof: dict[str, Any]
-    public_signals: list[str]
+    public_signals: list[str] = Field(max_length=64)
     root_attestation: RootAttestation
 
 
-@app.get("/health")
-def health() -> dict[str, Any]:
+class ReceiverAnchorRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    root_attestation: RootAttestation
+
+
+@router.get("/settlement/devices/{device_id}/receiver-head")
+def get_receiver_chain_head(
+    device_id: str,
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    _require_device(request, authorization, device_id)
+    try:
+        head = _store(request).receiver_head(device_id=device_id)
+    except ChargerNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     return {
-        "ok": True,
-        "service": "charger",
-        "accepted_periods": len(accepted_periods),
-        "months": len(monthly_ledger),
-        "core": "settlement",
-        "period_fix_cap": PERIOD_FIX_CAP,
-        "period_max_hours": PERIOD_MAX_HOURS,
-        "cadence_sec": CADENCE_SEC,
-        "registered_devices": len(device_registry),
-        "canonical_policy_profiles": len(policy_registry.profiles),
+        "schema": "waybill.charger.receiver-head/v1",
+        "charger_domain": _settings(request).charger_domain,
+        **head,
     }
 
 
-@app.post("/settlement/devices/register")
-def register_device(req: DeviceRegistration) -> dict[str, Any]:
-    """Register a device's Ed25519 public key. Not authenticated — intended for
-    operator provisioning and artifact-evaluation use only."""
+@router.post("/settlement/receiver-chain/anchor")
+def anchor_receiver_chain_attestation(
+    submission: ReceiverAnchorRequest,
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    root_attestation = submission.root_attestation
+    attestation = root_attestation.model_dump(by_alias=True)
+    device_id = str(root_attestation.device_id)
+    _require_device(request, authorization, device_id)
+    device = _store(request).get_device(device_id)
+    if device is None:
+        raise HTTPException(status_code=404, detail="registered device is unavailable")
+    public_key_bytes = bytes(device["public_key"])
+    expected_dac = make_device_attestation_commitment(public_key_bytes)
+    if str(root_attestation.device_attestation_commitment) != expected_dac:
+        raise HTTPException(
+            status_code=400,
+            detail="receiver attestation device commitment does not match enrollment",
+        )
+    if not verify_receiver_root_attestation(
+        public_statement={
+            "period_id": root_attestation.period_id,
+            "receiver_fix_root": root_attestation.receiver_fix_root,
+            "device_attestation_commitment": (
+                root_attestation.device_attestation_commitment
+            ),
+        },
+        attestation=attestation,
+        public_key_bytes=public_key_bytes,
+        expected_charger_domain=_settings(request).charger_domain,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "receiver attestation rejected; required schema is "
+                f"{SETTLEMENT_ROOT_ATTESTATION_SCHEMA}"
+            ),
+        )
+    try:
+        anchored = _store(request).anchor_receiver_attestation(
+            attestation=attestation
+        )
+    except ChargerConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ChargerStoreError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "schema": "waybill.charger.receiver-head/v1",
+        "charger_domain": _settings(request).charger_domain,
+        **anchored,
+    }
+
+
+@router.get("/health")
+def health(request: Request) -> dict[str, Any]:
+    store = _store(request)
+    try:
+        store.ping()
+    except ChargerStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {
+        "ok": True,
+        "service": "charger",
+        "storage": "available",
+    }
+
+
+@router.post("/settlement/devices/register")
+def register_device(
+    req: DeviceRegistration,
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    """Create one authenticated, immutable device enrollment."""
+
+    _require_admin(request, authorization)
+    settings = _settings(request)
     try:
         pubkey_bytes = bytes.fromhex(req.public_key_hex)
         if len(pubkey_bytes) != 32:
             raise ValueError("public key must be 32 bytes (raw Ed25519)")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    device_registry[req.device_id] = pubkey_bytes
-    device_jurisdiction_registry[req.device_id] = str(req.jurisdiction_id)
+    device_token = req.device_token
+    if device_token is None and settings.test_mode:
+        device_token = f"waybill-test-device-token:{req.device_id}"
+    if device_token is None or (not settings.test_mode and len(device_token) < 32):
+        raise HTTPException(status_code=400, detail="device_token must contain at least 32 characters")
+    if any(
+        hmac.compare_digest(device_token, secret)
+        for secret in (settings.admin_token, settings.token_pepper)
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="device_token must be independent from Charger administrator secrets",
+        )
+    try:
+        created = _store(request).register_device(
+            device_id=req.device_id,
+            public_key=pubkey_bytes,
+            jurisdiction_id=str(req.jurisdiction_id),
+            token_digest=_device_token_digest(settings, device_token),
+        )
+    except ChargerConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ChargerStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     expected_dac = make_device_attestation_commitment(pubkey_bytes)
     return {
         "ok": True,
+        "created": created,
         "device_id": req.device_id,
         "jurisdiction_id": req.jurisdiction_id,
         "device_attestation_commitment": expected_dac,
@@ -543,20 +710,27 @@ def _tariff_from_payload(payload: TariffPayload) -> TariffTable:
 
 
 def _is_v6_settlement_circuit(circuit_id: str) -> bool:
-    return str(circuit_id).startswith(
-        ("settlement-period-v6-", "settlement_period_v6_")
-    )
+    return str(circuit_id).startswith("settlement-period-v6-")
 
 
-@app.post("/settlement/period")
-def submit_period(req: PeriodSubmission) -> dict[str, Any]:
+@transparent_router.post("/settlement/period")
+def submit_period(
+    req: PeriodSubmission,
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    if not _settings(request).allow_transparent_endpoints:
+        raise HTTPException(status_code=404, detail="transparent settlement endpoint is disabled")
+    store = _store(request)
     fixes = [ReceiverFix.from_dict(x) for x in req.fixes]
 
     # Resolve the device's public key from the enrollment registry.
     device_id = str(fixes[0].device_id)
-    if device_id not in device_registry:
+    _require_device(request, authorization, device_id)
+    device = store.get_device(device_id)
+    if device is None:
         raise HTTPException(status_code=400, detail=f"device {device_id!r} not registered")
-    device_pubkey = device_registry[device_id]
+    device_pubkey = bytes(device["public_key"])
 
     # Cross-check: the device_attestation_commitment in the public statement must
     # equal the commitment derived from the registered public key.  An adversary
@@ -571,7 +745,7 @@ def submit_period(req: PeriodSubmission) -> dict[str, Any]:
         )
 
     try:
-        profile = _resolve_expected_profile(device_id, req.public_statement)
+        profile = _resolve_expected_profile(store, device_id, req.public_statement)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     if len(fixes) > min(PERIOD_FIX_CAP, int(profile.max_fixes)):
@@ -585,10 +759,10 @@ def submit_period(req: PeriodSubmission) -> dict[str, Any]:
     canon_month_id, canon_month_start, canon_month_end = month_window_from_period_start(period_start)
     ps = req.public_statement
     try:
-        ps_month_id = int(ps.get("month_id_field"))
-        ps_month_start = int(ps.get("month_start_time"))
-        ps_month_end = int(ps.get("month_end_time"))
-    except (TypeError, ValueError) as e:
+        ps_month_id = int(ps["month_id_field"])
+        ps_month_start = int(ps["month_start_time"])
+        ps_month_end = int(ps["month_end_time"])
+    except (KeyError, TypeError, ValueError) as e:
         raise HTTPException(status_code=400, detail="month window fields missing or malformed") from e
     if (
         ps_month_id != canon_month_id
@@ -630,7 +804,13 @@ def submit_period(req: PeriodSubmission) -> dict[str, Any]:
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
 
-    period_id, month_id = _accept_period(device_id, public, profile)
+    period_id, month_id = _accept_period(
+        store,
+        device_id,
+        public,
+        profile,
+        allow_unanchored=_settings(request).test_mode,
+    )
 
     return {
         "ok": True,
@@ -640,8 +820,12 @@ def submit_period(req: PeriodSubmission) -> dict[str, Any]:
     }
 
 
-@app.post("/settlement/v6/period")
-def submit_period_v6(req: V6PeriodSubmission) -> dict[str, Any]:
+@transparent_router.post("/settlement/v6/period")
+def submit_period_v6(
+    req: V6PeriodSubmission,
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
     """Recompute and accept the odometer-backed V6 relation.
 
     The availability bits are private witness material in proof-only mode.  The
@@ -649,13 +833,18 @@ def submit_period_v6(req: V6PeriodSubmission) -> dict[str, Any]:
     the same interval commitment root and bill as the circuit.
     """
 
+    if not _settings(request).allow_transparent_endpoints:
+        raise HTTPException(status_code=404, detail="transparent settlement endpoint is disabled")
+    store = _store(request)
     fixes = [ReceiverFix.from_dict(item) for item in req.fixes]
     device_id = str(fixes[0].device_id)
     if any(str(fix.device_id) != device_id for fix in fixes):
         raise HTTPException(status_code=400, detail="all fixes must belong to the enrolled device")
-    if device_id not in device_registry:
+    _require_device(request, authorization, device_id)
+    device = store.get_device(device_id)
+    if device is None:
         raise HTTPException(status_code=400, detail=f"device {device_id!r} not registered")
-    device_pubkey = device_registry[device_id]
+    device_pubkey = bytes(device["public_key"])
     expected_dac = make_device_attestation_commitment(device_pubkey)
     if str(req.public_statement.get("device_attestation_commitment", "")) != expected_dac:
         raise HTTPException(
@@ -664,7 +853,7 @@ def submit_period_v6(req: V6PeriodSubmission) -> dict[str, Any]:
         )
 
     try:
-        profile = _resolve_expected_profile(device_id, req.public_statement)
+        profile = _resolve_expected_profile(store, device_id, req.public_statement)
         if str(req.public_statement.get("domain_sep")) != SETTLEMENT_PUBLIC_V6_DOMAIN:
             raise ValueError("V6 endpoint requires a V6 public statement")
         if str(profile.fallback_semantics_version) != "odometer-max-rate-v6":
@@ -675,6 +864,9 @@ def submit_period_v6(req: V6PeriodSubmission) -> dict[str, Any]:
             raise ValueError("period exceeds canonical settlement fix cap")
         tariff = _tariff_from_payload(req.tariff)
         profile.assert_tariff_matches(tariff)
+        if "total_distance_m" not in req.public_statement:
+            raise ValueError("total_distance_m is required for monthly reconciliation")
+        _validate_public_statement_shape(req.public_statement)
         public = verify_period_submission_v6(
             fixes=fixes,
             tariff=tariff,
@@ -703,7 +895,13 @@ def submit_period_v6(req: V6PeriodSubmission) -> dict[str, Any]:
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    period_id, month_id = _accept_period(device_id, public, profile)
+    period_id, month_id = _accept_period(
+        store,
+        device_id,
+        public,
+        profile,
+        allow_unanchored=_settings(request).test_mode,
+    )
     return {
         "ok": True,
         "period_id": period_id,
@@ -712,14 +910,21 @@ def submit_period_v6(req: V6PeriodSubmission) -> dict[str, Any]:
     }
 
 
-@app.post("/settlement/period/proof-only")
-def submit_period_proof_only(req: ProofOnlyPeriodSubmission) -> dict[str, Any]:
+@router.post("/settlement/period/proof-only")
+def submit_period_proof_only(
+    req: ProofOnlyPeriodSubmission,
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    store = _store(request)
     public = dict(req.public_statement)
 
     device_id = str(req.root_attestation.device_id)
-    if device_id not in device_registry:
+    _require_device(request, authorization, device_id)
+    device = store.get_device(device_id)
+    if device is None:
         raise HTTPException(status_code=400, detail=f"device {device_id!r} not registered")
-    device_pubkey = device_registry[device_id]
+    device_pubkey = bytes(device["public_key"])
 
     expected_dac = make_device_attestation_commitment(device_pubkey)
     submitted_dac = str(public.get("device_attestation_commitment", ""))
@@ -729,22 +934,44 @@ def submit_period_proof_only(req: ProofOnlyPeriodSubmission) -> dict[str, Any]:
             detail="device_attestation_commitment does not match registered device public key",
         )
 
-    try:
-        profile = _resolve_expected_profile(device_id, public)
-        _validate_public_statement_shape(public)
-        _validate_zk_public_signals(public, req.public_signals)
-        _verify_zk_proof(req.proof, req.public_signals, str(_profile_vkey_path(profile)))
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-
+    root_attestation = req.root_attestation.model_dump(by_alias=True)
     if not verify_receiver_root_attestation(
         public_statement=public,
-        attestation=req.root_attestation.model_dump(),
+        attestation=root_attestation,
         public_key_bytes=device_pubkey,
+        expected_charger_domain=_settings(request).charger_domain,
     ):
         raise HTTPException(status_code=400, detail="root attestation rejected")
 
-    period_id, month_id = _accept_period(device_id, public, profile)
+    try:
+        profile = _resolve_expected_profile(store, device_id, public)
+        _validate_public_statement_shape(public)
+        _validate_zk_public_signals(public, req.public_signals)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    _require_receiver_anchor_preflight(
+        store,
+        device_id=device_id,
+        period_id=str(public["period_id"]),
+        root_attestation=root_attestation,
+    )
+    try:
+        _verify_zk_proof(
+            req.proof,
+            req.public_signals,
+            str(_profile_vkey_path(profile)),
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    period_id, month_id = _accept_period(
+        store,
+        device_id,
+        public,
+        profile,
+        root_attestation=root_attestation,
+    )
 
     return {
         "ok": True,
@@ -754,43 +981,77 @@ def submit_period_proof_only(req: ProofOnlyPeriodSubmission) -> dict[str, Any]:
     }
 
 
-@app.post("/settlement/v6/period/proof-only")
-def submit_period_proof_only_v6(req: ProofOnlyPeriodSubmission) -> dict[str, Any]:
+@router.post("/settlement/v6/period/proof-only")
+def submit_period_proof_only_v6(
+    req: ProofOnlyPeriodSubmission,
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
     """Accept only a profile-pinned V6 proof and receiver root attestation."""
 
+    store = _store(request)
     public = dict(req.public_statement)
     device_id = str(req.root_attestation.device_id)
-    if device_id not in device_registry:
+    _require_device(request, authorization, device_id)
+    device = store.get_device(device_id)
+    if device is None:
         raise HTTPException(status_code=400, detail=f"device {device_id!r} not registered")
-    device_pubkey = device_registry[device_id]
+    device_pubkey = bytes(device["public_key"])
     expected_dac = make_device_attestation_commitment(device_pubkey)
     if str(public.get("device_attestation_commitment", "")) != expected_dac:
         raise HTTPException(
             status_code=400,
             detail="device_attestation_commitment does not match registered device public key",
         )
+
+    root_attestation = req.root_attestation.model_dump(by_alias=True)
+    if not verify_receiver_root_attestation(
+        public_statement=public,
+        attestation=root_attestation,
+        public_key_bytes=device_pubkey,
+        expected_charger_domain=_settings(request).charger_domain,
+    ):
+        raise HTTPException(status_code=400, detail="root attestation rejected")
+
     try:
-        profile = _resolve_expected_profile(device_id, public)
+        profile = _resolve_expected_profile(store, device_id, public)
         if str(public.get("domain_sep")) != SETTLEMENT_PUBLIC_V6_DOMAIN:
             raise ValueError("V6 endpoint requires a V6 public statement")
         if str(profile.fallback_semantics_version) != "odometer-max-rate-v6":
             raise ValueError("canonical profile does not authorize V6 odometer fallback")
         if not _is_v6_settlement_circuit(profile.circuit_id):
             raise ValueError("canonical profile does not pin a V6 settlement circuit")
+        if int(req.root_attestation.fix_count) != int(profile.max_fixes):
+            raise ValueError("receiver attestation fix count does not match canonical circuit profile")
+        if "total_distance_m" not in public:
+            raise ValueError("total_distance_m is required for monthly reconciliation")
         _validate_public_statement_shape(public)
         _validate_zk_public_signals_v6(public, req.public_signals)
-        _verify_zk_proof(req.proof, req.public_signals, str(_profile_vkey_path(profile)))
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    if not verify_receiver_root_attestation(
-        public_statement=public,
-        attestation=req.root_attestation.model_dump(),
-        public_key_bytes=device_pubkey,
-    ):
-        raise HTTPException(status_code=400, detail="root attestation rejected")
+    _require_receiver_anchor_preflight(
+        store,
+        device_id=device_id,
+        period_id=str(public["period_id"]),
+        root_attestation=root_attestation,
+    )
+    try:
+        _verify_zk_proof(
+            req.proof,
+            req.public_signals,
+            str(_profile_vkey_path(profile)),
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    period_id, month_id = _accept_period(device_id, public, profile)
+    period_id, month_id = _accept_period(
+        store,
+        device_id,
+        public,
+        profile,
+        root_attestation=root_attestation,
+    )
     return {
         "ok": True,
         "period_id": period_id,
@@ -802,25 +1063,34 @@ def submit_period_proof_only_v6(req: ProofOnlyPeriodSubmission) -> dict[str, Any
 class MonthlyOdometerAttestation(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    device_id: str
-    month_id: str
-    odometer_start_m: int
-    odometer_end_m: int
-    signature: str
+    schema_: str = Field(alias="schema")
+    charger_domain: str = Field(min_length=1, max_length=255)
+    device_id: str = Field(min_length=1, max_length=128)
+    month_id: str = Field(pattern=r"^(?:[0-9]{6}|[0-9]{4}-[0-9]{2})$")
+    odometer_start_m: int = Field(ge=0, le=(1 << 64) - 1)
+    odometer_end_m: int = Field(ge=0, le=(1 << 64) - 1)
+    signature: str = Field(min_length=1, max_length=128)
 
 
 class MonthCloseRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    device_id: str
-    month_id: str
+    device_id: str = Field(min_length=1, max_length=128)
+    month_id: str = Field(pattern=r"^(?:[0-9]{6}|[0-9]{4}-[0-9]{2})$")
 
 
-@app.post("/settlement/month/attest")
-def attest_month_odometer(req: MonthlyOdometerAttestation) -> dict[str, Any]:
+@router.post("/settlement/month/attest")
+def attest_month_odometer(
+    req: MonthlyOdometerAttestation,
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
     """Record receiver-signed month-boundary odometer readings for reconciliation."""
 
-    if req.device_id not in device_registry:
+    _require_device(request, authorization, req.device_id)
+    store = _store(request)
+    device = store.get_device(req.device_id)
+    if device is None:
         raise HTTPException(status_code=400, detail=f"device {req.device_id!r} not registered")
     if int(req.odometer_end_m) < int(req.odometer_start_m):
         raise HTTPException(status_code=400, detail="monthly odometer readings must be monotonic")
@@ -828,122 +1098,98 @@ def attest_month_odometer(req: MonthlyOdometerAttestation) -> dict[str, Any]:
         _month_number(req.month_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    attestation = req.model_dump()
+    if time.time() < int(canonical_month_window(req.month_id)["month_end_time"]):
+        raise HTTPException(status_code=409, detail="billing month has not ended")
+    attestation = req.model_dump(by_alias=True)
     if not verify_monthly_odometer_attestation(
-        attestation=attestation, public_key_bytes=device_registry[req.device_id]
+        attestation=attestation,
+        public_key_bytes=bytes(device["public_key"]),
+        expected_charger_domain=_settings(request).charger_domain,
     ):
         raise HTTPException(status_code=400, detail="monthly odometer attestation rejected")
-    existing_match = _find_month_attestation(req.device_id, req.month_id)
-    existing = existing_match[1] if existing_match is not None else None
-    if existing is not None and (
-        int(existing["odometer_start_m"]) != int(req.odometer_start_m)
-        or int(existing["odometer_end_m"]) != int(req.odometer_end_m)
-    ):
-        raise HTTPException(status_code=409, detail="conflicting odometer attestation already recorded")
-    if existing is None:
-        _enforce_odometer_month_chain(
+    try:
+        created = store.put_attestation(
             device_id=req.device_id,
-            month_id=req.month_id,
-            odometer_start_m=req.odometer_start_m,
-            odometer_end_m=req.odometer_end_m,
+            month_number=_month_number(req.month_id),
+            attestation=attestation,
         )
-        monthly_odometer_attestations[(req.device_id, req.month_id)] = attestation
-    return {"ok": True, "device_id": req.device_id, "month_id": req.month_id}
+    except ChargerConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ChargerStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    attestation_sha256 = hashlib.sha256(
+        canonical_json(attestation).encode("utf-8")
+    ).hexdigest()
+    return {
+        "schema": "waybill.charger.month-attestation/v1",
+        "ok": True,
+        "device_id": req.device_id,
+        "month_id": req.month_id.replace("-", ""),
+        "attestation_sha256": attestation_sha256,
+        "created": created,
+        "idempotent": not created,
+    }
 
 
-@app.post("/settlement/v6/month/close")
-def close_month_v6(req: MonthCloseRequest) -> dict[str, Any]:
+def _month_reconciliation_rate(
+    store: ChargerStore, device_id: str, month_id: str
+) -> int:
+    month_number = _month_number(month_id)
+    rate = store.month_rate(device_id=device_id, month_number=month_number)
+    if rate is not None:
+        return rate
+    device = store.get_device(device_id)
+    if device is None:
+        raise ValueError(f"device {device_id!r} has no canonical jurisdiction binding")
+    month_start = canonical_month_window(month_id)["month_start_time"]
+    profile = policy_registry.resolve(
+        jurisdiction_id=str(device["jurisdiction_id"]),
+        period_start_time=int(month_start),
+    )
+    return int(profile.monthly_reconciliation_rate_cents_per_m)
+
+
+@router.post("/settlement/v6/month/close")
+def close_month_v6(
+    req: MonthCloseRequest,
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
     """Finalize a device-month exactly once or enter a durable admin path."""
 
-    if req.device_id not in device_registry:
+    _require_admin(request, authorization)
+    store = _store(request)
+    if store.get_device(req.device_id) is None:
         raise HTTPException(status_code=400, detail=f"device {req.device_id!r} not registered")
     try:
         month_number = _month_number(req.month_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    state_key = (req.device_id, month_number)
-    if state_key in closed_months:
-        return {**closed_months[state_key], "idempotent": True}
-
-    attestation_match = _find_month_attestation(req.device_id, req.month_id)
-    month = _month_ledger_for_device(req.device_id, req.month_id)
-    if attestation_match is None:
-        receipt = {
-            "ok": False,
-            "status": "administrative-exception",
-            "device_id": req.device_id,
-            "month_id": req.month_id,
-            "month_id_field": month_number,
-            "reason": "missing_monthly_odometer_attestation",
-            "periods": int(month["periods"]),
-            "accounted_distance_m": int(month["total_distance_m"]),
-            "accepted_period_fee_cents": int(month["total_fee_cents"]),
-            "immutable": True,
-        }
-        receipt["receipt_sha256"] = hashlib.sha256(
-            json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        ).hexdigest()
-        administrative_months.setdefault(state_key, receipt)
-        return administrative_months[state_key]
-
-    attestation = attestation_match[1]
+    if time.time() < int(canonical_month_window(req.month_id)["month_end_time"]):
+        raise HTTPException(status_code=409, detail="billing month has not ended")
     try:
-        reconciliation_rate = _month_reconciliation_rate(req.device_id, req.month_id)
-        result = reconcile_month_v6(
-            monthly_odometer_start_m=int(attestation["odometer_start_m"]),
-            monthly_odometer_end_m=int(attestation["odometer_end_m"]),
-            accounted_distance_m=int(month["total_distance_m"]),
-            accepted_period_fee_cents=int(month["total_fee_cents"]),
-            r_max_cents_per_m=reconciliation_rate,
-            tolerance_m=0,
+        reconciliation_rate = _month_reconciliation_rate(store, req.device_id, req.month_id)
+        return store.close_month(
+            device_id=req.device_id,
+            month_id=req.month_id,
+            month_number=month_number,
+            default_reconciliation_rate=reconciliation_rate,
         )
-    except (TypeError, ValueError, OverflowError) as e:
-        receipt = {
-            "ok": False,
-            "status": "administrative-exception",
-            "device_id": req.device_id,
-            "month_id": req.month_id,
-            "month_id_field": month_number,
-            "reason": "inconsistent_monthly_odometer_accounting",
-            "detail": str(e),
-            "immutable": True,
-        }
-        receipt["receipt_sha256"] = hashlib.sha256(
-            json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        ).hexdigest()
-        administrative_months[state_key] = receipt
-        return receipt
-
-    profile_commitments = sorted(
-        {
-            str(public.get("policy_profile_commitment", ""))
-            for (device_id, _period_id), public in accepted_periods.items()
-            if device_id == req.device_id and _month_number(str(public["month_id"])) == month_number
-        }
-    )
-    receipt = {
-        "ok": True,
-        "status": "closed",
-        "device_id": req.device_id,
-        "month_id": req.month_id,
-        "month_id_field": month_number,
-        "reconciliation_rate_cents_per_m": reconciliation_rate,
-        "profile_commitments": profile_commitments,
-        "periods": int(month["periods"]),
-        **result,
-        "immutable": True,
-        "idempotent": False,
-    }
-    receipt["receipt_sha256"] = hashlib.sha256(
-        json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
-    closed_months[state_key] = receipt
-    administrative_months.pop(state_key, None)
-    return receipt
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ChargerConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ChargerStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
-@app.get("/settlement/month/{month_id}/reconcile")
-def reconcile_month(month_id: str, device_id: str) -> dict[str, Any]:
+@router.get("/settlement/month/{month_id}/reconcile")
+def reconcile_month(
+    month_id: str,
+    device_id: str,
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
     """Monthly completeness reconciliation: bill unaccounted kilometres at the fallback rate.
 
     unaccounted_m = attested odometer delta - sum of accepted period distances.
@@ -952,21 +1198,26 @@ def reconcile_month(month_id: str, device_id: str) -> dict[str, Any]:
     devices; a negative value indicates inconsistent submissions and is flagged.
     """
 
+    _require_admin(request, authorization)
+    store = _store(request)
     try:
-        _month_number(month_id)
+        month_number = _month_number(month_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    attestation_match = _find_month_attestation(device_id, month_id)
-    if attestation_match is None:
-        raise HTTPException(status_code=400, detail="no odometer attestation for this device and month")
-    attestation = attestation_match[1]
-    month = _month_ledger_for_device(device_id, month_id)
+    try:
+        attestation, month, stored_rate = store.reconciliation_snapshot(
+            device_id=device_id, month_number=month_number
+        )
+    except ChargerNotFound as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     attested_delta_m = int(attestation["odometer_end_m"]) - int(attestation["odometer_start_m"])
     covered_m = int(month["total_distance_m"])
     unaccounted_m = attested_delta_m - covered_m
     consistent = unaccounted_m >= 0
     try:
-        reconciliation_rate = _month_reconciliation_rate(device_id, month_id)
+        reconciliation_rate = stored_rate or _month_reconciliation_rate(
+            store, device_id, month_id
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     unaccounted_fee = max(0, unaccounted_m) * reconciliation_rate
@@ -986,8 +1237,12 @@ def reconcile_month(month_id: str, device_id: str) -> dict[str, Any]:
     }
 
 
-@app.get("/settlement/month/{month_id}/missing-attestations")
-def missing_month_attestations(month_id: str) -> dict[str, Any]:
+@router.get("/settlement/month/{month_id}/missing-attestations")
+def missing_month_attestations(
+    month_id: str,
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
     """Operator view: enrolled devices that still need month-boundary attestation.
 
     This is the protocol-level handle for the base case of no-free-kilometre
@@ -996,62 +1251,85 @@ def missing_month_attestations(month_id: str) -> dict[str, Any]:
     penalty path.
     """
 
+    _require_admin(request, authorization)
     try:
-        _month_number(month_id)
+        month_number = _month_number(month_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-    missing: list[dict[str, Any]] = []
-    for device_id in sorted(device_registry):
-        if _find_month_attestation(device_id, month_id) is not None:
-            continue
-        month = _month_ledger_for_device(device_id, month_id)
-        missing.append(
-            {
-                "device_id": device_id,
-                "month_id": month_id,
-                "periods": int(month["periods"]),
-                "covered_distance_m": int(month["total_distance_m"]),
-                "period_fee_cents": int(month["total_fee_cents"]),
-                "reason": "missing_monthly_odometer_attestation",
-                "administrative_path": True,
-            }
-        )
+    missing = _store(request).missing_attestations(
+        month_id=month_id, month_number=month_number
+    )
     return {"ok": True, "month_id": month_id, "missing_count": len(missing), "missing": missing}
 
 
-@app.get("/settlement/month/{month_id}")
-def month_status(month_id: str, device_id: str | None = None) -> dict[str, Any]:
+@router.get("/settlement/month/{month_id}")
+def month_status(
+    month_id: str,
+    request: Request,
+    device_id: str | None = None,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    _require_admin(request, authorization)
     try:
-        _month_number(month_id)
+        month_number = _month_number(month_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     if device_id is not None:
-        month = _month_ledger_for_device(device_id, month_id)
+        month = _store(request).month_totals(
+            device_id=device_id, month_number=month_number
+        )
         if not any(int(month[key]) for key in month):
             return {"ok": False, "error": "unknown month", "month_id": month_id, "device_id": device_id}
         return {"ok": True, "month_id": month_id, "device_id": device_id, **month}
-    # Aggregate across devices (operator view / backwards compatibility).
-    totals = {"periods": 0, "total_fee_cents": 0, "total_distance_m": 0, "fallback_intervals": 0}
-    found = False
-    for (dev, mid), month in monthly_ledger.items():
-        if _month_number(mid) == _month_number(month_id):
-            found = True
-            for k in totals:
-                totals[k] += int(month[k])
-    if not found:
+    totals = _store(request).aggregate_month(month_number=month_number)
+    if totals is None:
         return {"ok": False, "error": "unknown month", "month_id": month_id}
     return {"ok": True, "month_id": month_id, **totals}
 
 
-@app.post("/settlement/reset")
-def reset() -> dict[str, Any]:
-    accepted_periods.clear()
-    monthly_ledger.clear()
-    device_registry.clear()
-    device_jurisdiction_registry.clear()
-    device_period_windows.clear()
-    monthly_odometer_attestations.clear()
-    monthly_reconciliation_rates.clear()
-    closed_months.clear()
-    administrative_months.clear()
+@router.post("/settlement/reset")
+def reset(
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    _require_admin(request, authorization)
+    if not _settings(request).enable_reset:
+        raise HTTPException(status_code=404, detail="reset endpoint is disabled")
+    _store(request).reset()
     return {"ok": True}
+
+
+def create_app(settings: ChargerSettings | None = None) -> FastAPI:
+    resolved = settings or ChargerSettings.from_environment()
+    application = FastAPI(title="WayBill Settlement Charger")
+    application.add_middleware(
+        StrictJSONBodyMiddleware,
+        max_body_bytes=MAX_CHARGER_REQUEST_BYTES,
+    )
+
+    @application.exception_handler(ChargerStoreError)
+    async def handle_store_error(_request: Request, _exc: ChargerStoreError) -> JSONResponse:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Charger persistence is unavailable"},
+        )
+
+    @application.exception_handler(SQLAlchemyError)
+    async def handle_database_error(_request: Request, _exc: SQLAlchemyError) -> JSONResponse:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Charger persistence is unavailable"},
+        )
+
+    application.state.charger_settings = resolved
+    application.state.charger_store = ChargerStore(
+        database_url=resolved.database_url,
+        charger_domain=resolved.charger_domain,
+    )
+    application.include_router(router)
+    if resolved.allow_transparent_endpoints:
+        application.include_router(transparent_router)
+    return application
+
+
+app = create_app()

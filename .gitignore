@@ -6,14 +6,49 @@
 # Python cache
 __pycache__/
 *.py[cod]
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
 
 # Build artifacts
 build/
 zk/hello/
+zk/settlement_period_v6_k6/*
+!zk/settlement_period_v6_k6/verification_key.json
+*.ptau
+*.zkey
+*.r1cs
+*.sym
+*.wasm
+*.wtns
 
 # Local experiment logs
 *.log
-.env
+
+# Local environment and secret-bearing runtime state
+.env*
+!.env.example
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.sqlite3-journal
+*.key
+*.pem
+*.p12
+*.pfx
 
 # Virtualenv
 .venv/
@@ -66,7 +101,11 @@ WayBill/main.pdf
 y.json
 
 # WayBill restricted/formal runtime state
-artifacts/waybill_formal/
+artifacts/
 experiments/waybill_server_formal/
 waybill_data/
 *.sif
+*.tar
+*.tar.*
+*.tgz
+*.bundle

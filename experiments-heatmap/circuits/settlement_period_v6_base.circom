@@ -95,6 +95,21 @@ template PoseidonChain9() {
     out <== h[8].out;
 }
 
+template PoseidonChain10() {
+    signal input in[10];
+    signal output out;
+    component h[10];
+    h[0] = PoseidonHash2();
+    h[0].a <== 0;
+    h[0].b <== in[0];
+    for (var i = 1; i < 10; i++) {
+        h[i] = PoseidonHash2();
+        h[i].a <== h[i - 1].out;
+        h[i].b <== in[i];
+    }
+    out <== h[9].out;
+}
+
 template SettlementPeriodV6(N_FIXES, TREE_DEPTH, K_WINDOW) {
     var CELL_SIZE = 100;
     var GRID_W = 100;
@@ -245,7 +260,7 @@ template SettlementPeriodV6(N_FIXES, TREE_DEPTH, K_WINDOW) {
         locHash[i].in[2] <== loc_salt[i];
         locHash[i].in[3] <== period_id_field;
 
-        fixCommit[i] = PoseidonChain9();
+        fixCommit[i] = PoseidonChain10();
         fixCommit[i].in[0] <== device_attestation_commitment;
         fixCommit[i].in[1] <== policy_profile_commitment;
         fixCommit[i].in[2] <== period_id_field;
@@ -255,6 +270,12 @@ template SettlementPeriodV6(N_FIXES, TREE_DEPTH, K_WINDOW) {
         fixCommit[i].in[6] <== fix_cell_y[i];
         fixCommit[i].in[7] <== odometer_m[i];
         fixCommit[i].in[8] <== fix_nonce_field[i];
+        if (i < N_FIXES - 1) {
+            position_valid[i] * (position_valid[i] - 1) === 0;
+            fixCommit[i].in[9] <== position_valid[i];
+        } else {
+            fixCommit[i].in[9] <== 0;
+        }
 
         rangeX[i] = RangeSigned24();
         rangeY[i] = RangeSigned24();
@@ -457,7 +478,6 @@ template SettlementPeriodV6(N_FIXES, TREE_DEPTH, K_WINDOW) {
         // V6 billing is driven only by the explicit availability bit.
         // position_valid=1 selects delta-odometer * zone rate;
         // position_valid=0 selects delta-odometer * canonical r_max.
-        position_valid[i] * (position_valid[i] - 1) === 0;
         fallback_flag[i] <== 1 - position_valid[i];
         normal_fee[i] <== odo_delta[i] * zone_rate_cents_per_m[i];
         fallback_distance_m[i] <== odo_delta[i];

@@ -1,0 +1,93 @@
+{
+  "accepted": {
+    "fallback_intervals": 3,
+    "period_id": "2026-05-v6-k6",
+    "policy_profile_commitment": "19189060107095078943373029755233485227080367977087589742745959455447551318479",
+    "total_distance_m": 2400,
+    "total_fee_cents": 3600
+  },
+  "artifact_sha256": {
+    "proof.json": "5099f0a54aef05b9c1e0e31ecdd652f7db4dd1f646bafa5fd384002669e4af16",
+    "public.json": "fa27ada2eb81290a7ec9e8f41f0f7bd65ddd96f914514580e1d2c74280af5fd9",
+    "submission.json": "c27fe9d4a52f6878c9d98c5763eeaa0bb611eb8f6599bc83bf32f3fff83d1808",
+    "verification_key.json": "9715ac43bc809c94844b0cb8af120fb3b5342f6bcfa8adf27f9dcbce30add471"
+  },
+  "code_sha256": {
+    "common/http_security.py": "2beff414b353e98dcbf79218c3aa31881b6491e0a6bcf3c72a1e51d2b150e74f",
+    "common/policy_profile.py": "42319b79fb14d9a45f81c7860e493ed2a372fdac82d549295c4781b885578788",
+    "common/receiver_signer.py": "0672f9c93866139fc9b9858d45e78bd29c0f9c1a921b687d1021eb220d6d06af",
+    "common/settlement.py": "9df2877e74803eda2b66fcd67dcef8783ce0cfd92845ef7a4ea44ba842152d0a",
+    "common/settlement_v6.py": "e5beb773d16fd989aa8b61bcac1d8aa2d8418147f1a5ed63f9da6cb5938eaecf",
+    "script/prove_settlement_period_v6.py": "c062f0246a3f8094ab0e7b00f11464e491d6c18717f25c68bc12af9570bdaa89",
+    "script/run_waybill_m1_endpoint_gate.py": "a4f61a1d766580b67fe2227df4f2922cc336a32f7b1351d8aeeade574ec33fc1",
+    "services/charger/app.py": "fb80f07fd82787ed7fde12e5ee24c34b5f52fee3706856b39c156476f85f004c",
+    "services/charger/store.py": "75c19f1c34d371afff39dcffd4cd9614139d224246e4a4de0cca811cfecd661e",
+    "services/receiver_signer/app.py": "cdae4e9968df17343c8a1158dd8d3dcb6757b412533e097f4b6978ce51937d32"
+  },
+  "gates": {
+    "accepted_public_exactly_matches": true,
+    "canonical_proof_accepted": true,
+    "independent_receiver_attestation": true,
+    "month_attestation_conflict_rejected": true,
+    "month_attestation_exact_retry_idempotent": true,
+    "month_attestation_online_anchored": true,
+    "month_close_completed": true,
+    "nonzero_profile_commitment": true,
+    "only_unaccounted_distance_reconciled": true,
+    "receiver_attestation_anchored": true,
+    "replay_rejected": true,
+    "tampered_public_signal_rejected": true
+  },
+  "hard_gate_passed": true,
+  "http_status": {
+    "accepted": 200,
+    "anchor": 200,
+    "month_attestation": 200,
+    "month_attestation_conflict": 409,
+    "month_attestation_conflict_probe_anchor": 200,
+    "month_attestation_conflict_probe_registration": 200,
+    "month_attestation_retry": 200,
+    "month_close": 200,
+    "replay": 409,
+    "tampered_signal": 400
+  },
+  "month_attestation_anchor": {
+    "attestation_sha256": "32c31945be63e53aa874cabd7a84d896fd4b1d009d9da51ff806a7dbe5001f80",
+    "conflict_probe_device_id": "dev-v6-month-conflict-probe",
+    "conflict_status": 409,
+    "created": true,
+    "retry_idempotent": true
+  },
+  "month_close": {
+    "accepted_period_fee_cents": 3600,
+    "accounted_distance_m": 2400,
+    "device_id": "dev-v6",
+    "idempotent": false,
+    "immutable": true,
+    "month_id": "202605",
+    "month_id_field": 202605,
+    "monthly_distance_m": 3000,
+    "ok": true,
+    "periods": 1,
+    "profile_commitments": [
+      "19189060107095078943373029755233485227080367977087589742745959455447551318479"
+    ],
+    "receipt_sha256": "99d1f351609454bf8cefc2c98a2f78840a8b3a8a43c655a1eb96ea878af90adb",
+    "reconciliation_fee_cents": 3000,
+    "reconciliation_rate_cents_per_m": 5,
+    "status": "closed",
+    "total_month_bill_cents": 6600,
+    "unaccounted_distance_m": 600
+  },
+  "policy_artifact_sha256": {
+    "ruc-demo-tariff-v9-d8.json": "385d274e3a122e1356b0f8928c08045d046c9e29fb435c4f76ee32020da4b6ab",
+    "ruc-demo-v9.json": "159fe53a594ef2944311aaf08a17ef4cfdac812603b0f333cc36709694e894ec"
+  },
+  "receiver_chain_head": {
+    "attestation_sha256": "c559ec4671bb96c04d685b038a95bd98acf209cd8014e4f76b928b721a94c992",
+    "log_epoch": 1,
+    "previous_attestation_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "schema": "waybill-m1-v6-charger-endpoint-gate-v3",
+  "status": "verified"
+}

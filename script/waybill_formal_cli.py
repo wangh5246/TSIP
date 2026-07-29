@@ -35,6 +35,39 @@ from waybill_formal.core import (  # noqa: E402
 DEFAULT_PROTOCOL = ROOT / "configs/waybill_formal/protocol-v1.json"
 DEFAULT_DATA_REGISTRY = ROOT / "configs/waybill_formal/data-sources-v1.json"
 DEFAULT_TARIFF_REGISTRY = ROOT / "configs/waybill_formal/tariff-registry-v1.json"
+DEFAULT_CODE_MANIFEST_PATHS = (
+    Path(".dockerignore"),
+    Path(".env.example"),
+    Path(".gitattributes"),
+    Path(".gitignore"),
+    Path("WayBill"),
+    Path("common"),
+    Path("configs/waybill_formal"),
+    Path("configs/settlement_policy_profiles"),
+    Path("containers"),
+    Path("circuits"),
+    Path("deploy"),
+    Path("experiments-heatmap/circuits"),
+    Path("experiments/waybill_m1"),
+    Path("experiments/waybill_m2"),
+    Path("TSIP_heatmap_version/runtime/experiments-heatmap/make_v4_fair_heatmap.py"),
+    Path("memory/Research/waybill-ruc"),
+    Path("requirements"),
+    Path("script"),
+    Path("services/charger"),
+    Path("services/receiver_signer"),
+    Path("services/__init__.py"),
+    Path("tests"),
+    Path("waybill_formal"),
+    Path("zk/settlement_period_v6_k6/verification_key.json"),
+    Path("DATA_NOTICE.md"),
+    Path("Makefile"),
+    Path("README_ARTIFACT.md"),
+    Path("README_SERVER_DEPLOY.md"),
+    Path("package.json"),
+    Path("package-lock.json"),
+    Path("pyproject.toml"),
+)
 
 
 def _json_arg(raw: str) -> dict[str, Any]:
@@ -77,6 +110,11 @@ def parse_args() -> argparse.Namespace:
     init_run.add_argument("--container-manifest", type=Path, required=True)
     init_run.add_argument("--prepared-manifest", type=Path, required=True)
     init_run.add_argument("--gate-receipts", type=Path, required=True)
+    init_run.add_argument("--container-runtime-image", type=Path, required=True)
+    init_run.add_argument("--prepared-root", type=Path, required=True)
+    init_run.add_argument("--corpus-root", type=Path, required=True)
+    init_run.add_argument("--ptau", type=Path, required=True)
+    init_run.add_argument("--workspace-root", type=Path, required=True)
 
     code = sub.add_parser("code-manifest")
     code.add_argument("--output", type=Path, required=True)
@@ -84,28 +122,7 @@ def parse_args() -> argparse.Namespace:
         "paths",
         nargs="*",
         type=Path,
-        default=[
-            Path("WayBill"),
-            Path("common"),
-            Path("configs/waybill_formal"),
-            Path("configs/settlement_policy_profiles"),
-            Path("containers"),
-            Path("circuits"),
-            Path("experiments-heatmap/circuits"),
-            Path("experiments/waybill_m1"),
-            Path("experiments/waybill_m2"),
-            Path("memory/Research/waybill-ruc"),
-            Path("requirements"),
-            Path("script"),
-            Path("services/charger"),
-            Path("tests"),
-            Path("waybill_formal"),
-            Path("Makefile"),
-            Path("README_SERVER_DEPLOY.md"),
-            Path("package.json"),
-            Path("package-lock.json"),
-            Path("pyproject.toml"),
-        ],
+        default=list(DEFAULT_CODE_MANIFEST_PATHS),
     )
 
     host = sub.add_parser("host-preflight")
@@ -114,6 +131,8 @@ def parse_args() -> argparse.Namespace:
     host.add_argument("--ptau", type=Path)
     host.add_argument("--container-digest")
     host.add_argument("--expected-container-digest")
+    host.add_argument("--container-runtime-image", type=Path, required=True)
+    host.add_argument("--expected-container-runtime-sha256", required=True)
     host.add_argument("--required-workspace-gib", type=int, default=500)
     host.add_argument("--output", type=Path, required=True)
 
@@ -139,6 +158,11 @@ def parse_args() -> argparse.Namespace:
     slurm = sub.add_parser("render-slurm")
     slurm.add_argument("--run-root", type=Path, required=True)
     slurm.add_argument("--output", type=Path, required=True)
+    slurm.add_argument("--container-image", type=Path, required=True)
+    slurm.add_argument("--prepared-root", type=Path, required=True)
+    slurm.add_argument("--corpus-root", type=Path, required=True)
+    slurm.add_argument("--ptau", type=Path, required=True)
+    slurm.add_argument("--workspace-root", type=Path, required=True)
     slurm.add_argument("--stage", choices=["S1", "S2", "S3", "S4", "S5"])
     slurm.add_argument("--kind")
     return parser.parse_args()
@@ -200,6 +224,11 @@ def main() -> int:
                 "prepared_manifest": read_json(args.prepared_manifest),
             },
             gate_receipts=receipts,
+            container_runtime_image=args.container_runtime_image,
+            prepared_root=args.prepared_root,
+            corpus_root=args.corpus_root,
+            ptau=args.ptau,
+            workspace_root=args.workspace_root,
         )
         print(run_root)
         return 0
@@ -216,6 +245,8 @@ def main() -> int:
             ptau=args.ptau.resolve() if args.ptau else None,
             container_digest=args.container_digest,
             expected_container_digest=args.expected_container_digest,
+            container_runtime_image=args.container_runtime_image,
+            expected_container_runtime_sha256=args.expected_container_runtime_sha256,
             required_workspace_gib=args.required_workspace_gib,
         )
         write_json(args.output.resolve(), receipt)
@@ -262,6 +293,11 @@ def main() -> int:
         render_slurm_array(
             args.run_root.resolve(),
             args.output.resolve(),
+            container_image=args.container_image,
+            prepared_root=args.prepared_root,
+            corpus_root=args.corpus_root,
+            ptau=args.ptau,
+            workspace_root=args.workspace_root,
             stage=args.stage,
             kind=args.kind,
         )

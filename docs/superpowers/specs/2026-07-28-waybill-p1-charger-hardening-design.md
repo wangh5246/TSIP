@@ -162,6 +162,13 @@ Legacy unbound attestations are rejected by the production Charger. Fixture and
 proof-generation scripts are updated together so canonical V6 artifacts all
 carry the same domain.
 
+The acquisition API accepts only unsigned measurement fields. The independent
+signer creates every fix signature under its enrolled identity, persists the
+signed fixes, and exposes them read-only to the prover with the sealed validity
+vector. It also persists and signs the monthly odometer boundary. This keeps a
+randomly initialized signer usable end to end and prevents an acquisition
+caller from injecting a signature made under a different device identity.
+
 SQLite remains a supported evaluation backend, not the formal server backend.
 The server guide uses PostgreSQL, one Charger application instance initially,
 explicit secrets, a persistent volume, and a readiness check. Multi-worker

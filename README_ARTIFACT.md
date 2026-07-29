@@ -1,103 +1,259 @@
-# TSIP-RUC Artifact Guide
+# WayBill artifact guide
 
-> 2026-06-11。本文件回答三个问题:哪些测试是默认/扩展/需要 proof 工具链的;k6 电路 artifact 的权威指纹是什么;哪些实验目录是当前可引用的权威输出。设计与实验口径见 `TSIP_RUC_完整设计文档_2026-06-10.md`。
+> Active protocol baseline: V6 validity-bound settlement, policy profile
+> `ruc-demo-v9`, receipt schema V2. V5 artifacts are retained only as historical
+> baselines and are not paper-facing evidence.
 
-## 1. 测试分层
+## 1. Default verification
 
-### 1.1 默认 pytest(纯 Python,无外部工具链)
+The default command collects the complete repository test suite:
 
 ```bash
 python -m pytest
 ```
 
-`pytest.ini` 的 `python_files` 限定默认只收集:
+`pytest.ini` no longer hides non-legacy tests behind an explicit three-file
+allowlist. Tests that require unavailable external tools or restricted datasets
+must skip or fail with an explicit prerequisite error; they must not silently
+substitute a reduced experiment.
 
-- `tests/test_charger_service.py` — charger API、proof-only 提交路径、负例
-- `tests/test_settlement_architecture.py` — settlement 数据模型、commitment、billing、public statement
-- `tests/test_dispute_opening.py` — 争议仲裁选择性披露 opening builder/verifier
-
-### 1.2 扩展评估测试(纯 Python,需显式指定文件)
-
-```bash
-python -m pytest tests/test_eval_harness.py tests/test_eval_experiments.py \
-  tests/test_run_e1_forensic.py tests/test_run_e4_e5_ruc_experiments.py \
-  tests/test_run_e4_baseline_comparison.py tests/test_run_baseline_r_simulator.py \
-  tests/test_build_rome_parking_tariff_geojson.py tests/test_trajectory_preprocess.py
-```
-
-这些覆盖 E1/E3 RCSPP solver、E2 fallback frontier、E4/E5 proxy runner 和数据管线。不在默认集是为了让默认 `pytest` 保持秒级。
-
-### 1.3 Proof 工具链测试(需要 node / snarkjs / 已编译 artifact)
+The focused P0 checks are:
 
 ```bash
-python -m pytest tests/test_prove_settlement_period_v5.py
+python -m pytest \
+  tests/test_receiver_signer.py \
+  tests/test_receiver_chain_anchor.py \
+  tests/test_settlement_v6.py \
+  tests/test_charger_service.py \
+  tests/test_charger_auth.py \
+  tests/test_charger_persistence.py \
+  tests/test_policy_profile.py \
+  tests/test_waybill_release_finalizer.py \
+  tests/test_waybill_formal.py \
+  tests/test_waybill_formal_stages.py
 ```
 
-依赖 `node` + `snarkjs` 和 `zk/settlement_period_v5_k6/` 下的编译产物。其中包含 wrapper public list / prover 输入前缀 / artifact `.sym` / vkey / charger `_TIME_SIGNAL_LAYOUT` 的三方一致性回归——**改动 public signal 顺序前必须先跑它**。
+## 2. Canonical V6 circuit and policy
 
-端到端 witness/prove/verify 实测:
-
-```bash
-python script/prove_settlement_period_v5.py
-```
-
-## 2. k6 电路 artifact 指纹(协议接口,不允许无测试漂移)
-
-| 项 | 值 |
+| Item | Frozen value |
 |---|---|
-| circuit wrapper | `circuits/settlement_period_v5_k6.circom`(21 项 public list) |
-| R1CS SHA-256 | `227782fe4208af6c85889bd6367b267ff139149d1498736c36a87e81356e9257` |
-| SYM SHA-256 | `d0cdd919958c3af7e598f728d4e02cb4f060114acda0f41a1e15dd87c41739d7` |
-| vkey `nPublic` | `21` |
-| profile | `N_FIXES=25`, intervals=24, `max_dt_sec=600`, tariff depth 8 |
+| Circuit | `SettlementPeriodV6(25,8,6)` |
+| Circuit identifier | `settlement-period-v6-validity-bound-k25-d8` |
+| Constraints | 246,255 |
+| Public signals | 22 |
+| Policy profile | `configs/settlement_policy_profiles/ruc-demo-v9.json` |
+| Profile commitment | `19189060107095078943373029755233485227080367977087589742745959455447551318479` |
+| Verification-key SHA-256 | `9715ac43bc809c94844b0cb8af120fb3b5342f6bcfa8adf27f9dcbce30add471` |
+| Receiver commitment semantics | `receiver-fix-validity-v2` |
+| Position-validity rule | `origin-osnma-authenticated-v1` |
+| Root-attestation schema | `waybill.receiver.root-attestation/v5` |
 
-Public signal 顺序(= `script/prove_settlement_period_v5.py` 的 `PUBLIC_SIGNAL_ORDER`,charger `_TIME_SIGNAL_LAYOUT` 依赖 index 15-20):
+The receiver root commits every fix together with its receiver-owned
+`position_valid` bit (the terminal fix binds a false sentinel). The root
+attestation is emitted only by the independent receiver signer after it seals
+an append-only acquisition log. The acquisition API accepts unsigned
+measurement fields; the signer creates fix signatures itself and separately
+seals the monthly odometer boundary. For interval `i`, it derives validity
+solely from the exact signed status of origin fix `i`: `authenticated` is true
+and `unavailable` is false. The terminal status is checked but has no outgoing
+flag. A normal prover cannot submit a caller-chosen signature, root, validity
+vector, rule, or month attestation. Root-attestation V5 includes the previous
+attestation hash. Before a local seal commits, the signer extends the
+authenticated Charger head with an epoch-and-hash compare-and-swap; the exact
+one-link-ahead response is the only recoverable crash case. Local tail deletion,
+snapshot rollback, epoch gaps, and forks therefore fail closed.
 
-```text
- 0 receiver_fix_root        7 total_distance_m       14 max_zone_rate_cents_per_m
- 1 tariff_root              8 fallback_intervals     15 max_dt_sec
- 2 interval_commitment_root 9 cadence_sec            16 period_start_time
- 3 period_id_field         10 tier_vmax_mps          17 period_end_time
- 4 tariff_version          11 tier_vmax_sq           18 month_id
- 5 device_attestation_…    12 mode_vmax_sq           19 month_start_time
- 6 total_fee_cents         13 cap_policy_sq          20 month_end_time
+Large R1CS/WASM/zkey files remain outside ordinary Git history. Their immutable
+hashes are recorded in the checked-in receipt. The checked-in verification key
+is `zk/settlement_period_v6_k6/verification_key.json`.
+
+## 3. Reproduce the canonical proof path
+
+The external test PTAU and direct Groth16 setup are test-only. They demonstrate
+the circuit/prover/charger differential path and are not a production ceremony.
+`zk/hello/pot18_final_phase2.ptau` is deliberately not in the source bundle;
+its expected size is 301,989,824 bytes and its SHA-256 is
+`d324d7af83d1c1016529856f33b8610bb4d5c7211f84c6fb292303f1b9f90558`.
+
+Initialize the receiver signer in a separate process. Production mode requires
+an already-running HTTPS Charger, a CA file that validates its certificate, and
+a registered device token; loopback HTTP is intentionally rejected. The exact
+certificate, registration, and service commands are in
+`README_SERVER_DEPLOY.md`.
+
+```bash
+python script/init_receiver_signer.py \
+  --key-file /srv/waybill/receiver-ed25519.key
+
+WAYBILL_RECEIVER_DB=/srv/waybill/receiver.sqlite3 \
+WAYBILL_RECEIVER_KEY_FILE=/srv/waybill/receiver-ed25519.key \
+WAYBILL_RECEIVER_ACQUISITION_TOKEN='replace-with-secret' \
+WAYBILL_RECEIVER_PROVER_TOKEN='replace-with-independent-secret' \
+WAYBILL_RECEIVER_CHARGER_DEVICE_TOKEN='replace-with-device-secret' \
+WAYBILL_RECEIVER_ID=receiver-01 \
+WAYBILL_RECEIVER_DEVICE_ID=dev-v6 \
+WAYBILL_CHARGER_DOMAIN=ruc-demo.charger-test \
+WAYBILL_RECEIVER_POLICY_PROFILE="$PWD/configs/settlement_policy_profiles/ruc-demo-v9.json" \
+WAYBILL_RECEIVER_CHARGER_URL=https://127.0.0.1:8443 \
+WAYBILL_RECEIVER_CHARGER_CA_FILE=/etc/waybill/charger-ca.pem \
+WAYBILL_RECEIVER_TEST_MODE=0 \
+uvicorn services.receiver_signer.app:app \
+  --host 127.0.0.1 --port 8779 --workers 1 \
+  --no-proxy-headers --no-server-header
 ```
 
-体量:`zk/settlement_period_v5_k6/` 共约 257MB(`.zkey` 124MB、`.r1cs` 94MB)。这些是 trusted-setup 产物,默认不应直接进普通 git 历史;归档策略见设计文档 §21.4 #16(LFS / 外部 artifact 存储 / `script/setup_settlement_period_v5.sh` 重现)。
+After an authorized acquisition component has appended and sealed the period
+and monthly boundary, prove against the signer-owned material. The deterministic
+fixture loader exercises both protected write paths:
 
-## 3. 权威实验输出目录
+```bash
+python script/load_receiver_fixture_v6.py \
+  --receiver-url https://127.0.0.1:8779 \
+  --receiver-ca-file /etc/waybill/receiver-api-ca.pem \
+  --acquisition-token 'replace-with-secret'
 
-| 目录 | 实验 | 状态 |
-|---|---|---|
-| `experiments/e1_objective_fix/` | E1 | 权威(objective/billing drift 修复后) |
-| `experiments/e1_rome_real_tariff_ratio_fix/` | E1 Rome 官方 tariff | 权威 |
-| `experiments/e1_E1_FINAL_README.md` | E1 memo | 可引用数字清单 |
-| `experiments/e2_fallback_frontier/` | E2 anchor(GeoLife/Rome) | 权威 |
-| `experiments/e2_fallback_frontier_all4/` | E2 四数据集覆盖(+Porto/T-Drive) | 权威(2026-06-11) |
-| `experiments/e3_relay_residual_all4/` | E3 四数据集全量 sweep | 权威(2026-06-11) |
-| `experiments/e3_relay_residual_full/` | E3 GeoLife+Rome 全量 | 被 all4 取代,保留 |
-| `experiments/e3_relay_residual/` | E3 首版 | 保留为 first-version 样本 |
-| `experiments/e4_e5_ruc/` | E4/E5(proxy + 真实 drivable graph + GeoLife) | 权威(2026-06-11) |
-| `experiments/e6_rapidsnark/` | E6 rapidsnark 实测 | 权威(2026-06-11,median 1.389s/proof) |
+WAYBILL_RECEIVER_PROVER_TOKEN='replace-with-independent-secret' \
+python script/prove_settlement_period_v6.py \
+  --receiver-url https://127.0.0.1:8779 \
+  --receiver-ca-file /etc/waybill/receiver-api-ca.pem \
+  --policy-profile configs/settlement_policy_profiles/ruc-demo-v9.json \
+  --artifacts-dir zk/settlement_period_v6_k6 \
+  --ptau zk/hello/pot18_final_phase2.ptau \
+  --proof-output-dir experiments/waybill_m1/v2/circuit_differential \
+  --receipt experiments/waybill_m1/v2/circuit_differential/receipt.json
 
-**不要引用**:`experiments/e1_sweeps/` 的 pre-fix Rome `0.94` 诊断、`experiments/e1_rome_real_tariff_smoke/` 的旧 `3/5/6` mapping;`TSIP_Baseline实验详细方案.md` 适用于 pivot 前聚合版 TSIP(已加 archived banner)。
+python script/run_waybill_m1_endpoint_gate.py
+```
 
-## 4. 主要 runner
+P1 Charger persistence and security checks are:
 
-| 命令 | 输出 |
-|---|---|
-| `python script/run_e1_forensic.py` | E1 约束消融 + receipts |
-| `python script/run_e2_fallback_frontier.py` | E2 alpha/break-even/incentive 表 |
-| `python script/run_e3_relay_residual.py --output-dir … --workers 8` | E3 residual sweep(默认即全量口径) |
-| `python script/run_e4_e5_ruc_experiments.py` | E4 spot-check proxy + E5 anonymity set |
-| `python script/prove_settlement_period_v5.py` | E6 单 period witness/prove/verify 实测 |
-| `python script/build_e4_drivable_graph.py` | E4 真实路网宇宙(需 osmium-tool + pyrosm) |
-| `python script/run_e4_baseline_comparison.py` | E4 检出曲线 / 等检出工作点 / R-T-Z head-to-head |
-| `python script/run_baseline_r_simulator.py` | Baseline R 经验 spot-check 仿真 + E5 泄漏光谱 |
-| `python script/run_cross_system_fairness.py` | 交叉对称评估:同攻击/同度量/同数据打两个系统 |
-| `python script/run_e0_billing_accuracy.py` | E0 诚实账单 vs 连续 GPS 真值(Rome 锚定) |
-| `python script/run_e1_tariff_spread.py` | E1 zone-binding ε vs tariff 极差曲线 |
-| `python script/run_e5_fee_bucketing.py` | E5 statement-bucketing 匿名度缓解曲线 |
-| `python script/bench_rapidsnark.py` | E6 rapidsnark prover 实测(需先编译 rapidsnark) |
+```bash
+python -m pytest \
+  tests/test_charger_auth.py \
+  tests/test_charger_persistence.py \
+  tests/test_charger_service.py \
+  tests/test_charger_v6_month_close.py
+```
 
-性能口径提醒(2026-06-11 更新):`snarkjs` 与 `rapidsnark` 均为 measured;rapidsnark median 1.389s/proof(5 runs,arm64 本机编译),receipt 见 `experiments/e6_rapidsnark/receipt.json`。
+The PostgreSQL parity test runs only when `WAYBILL_TEST_POSTGRES_URL` is set. It
+must be exercised on the formal server; a skipped local test is not evidence of
+PostgreSQL deployment readiness.
+
+The canonical evidence directory is
+`experiments/waybill_m1/v2/circuit_differential/`. Its circuit receipt records
+the sealed receiver-log hash; its endpoint receipt covers canonical acceptance,
+replay rejection, public-signal tampering, and month-close reconciliation. The
+endpoint gate also verifies that the signed monthly odometer boundary is
+online-anchored at the Charger by its exact canonical SHA-256, that an exact
+retry is idempotent, and that a different validly signed boundary for the same
+device-month is rejected as a conflict.
+
+## 4. Build the self-verifying release
+
+`script/finalize_waybill_release.py` accepts exactly the four configured image
+roles: `formal-runner`, `charger`, `postgres`, and `receiver-signer`. Each image archive is
+parsed independently; its platform, immutable digest, config digest, image
+reference, and four source-binding labels are derived from the archive rather
+than trusted from caller metadata. Every image also requires both a bound SPDX
+2.3 SBOM and a bound Trivy JSON vulnerability report. The finalizer verifies
+that Trivy 0.72.0 scanned the same image ID and enforces the role-specific
+HIGH/CRITICAL policy. Preflight recomputes the policy commitment and
+public-signal vector and runs `snarkjs groth16 verify` over the tagged proof.
+
+The formal-runner image embeds the reviewed execution source at `/work` and a
+machine-readable copy of the same Git commit, Git tree, code-manifest hash, and
+protocol hash under `/opt/waybill/release-bindings.json`. Server jobs execute
+those image bytes directly; a host source checkout is not an execution mount.
+The release finalizer reconstructs `/work` from the ordered OCI layers,
+applies whiteout semantics, rejects links and extra files, and compares every
+embedded byte, mode, and path with the tagged V2 code manifest.
+
+The checked-in V2 config currently contains a fail-closed release blocker for
+the pending Node.js July 2026 security release. Do not remove it merely to make
+preflight pass. First update the pinned Node 26.x image to the published
+security build, refresh the lockfiles if required, rebuild all four images, and
+rerun dependency, SBOM, and vulnerability checks. Removing the blocker must be
+part of the reviewed tagged source.
+
+Run `preflight` on a clean annotated release tag first. Use the emitted Git
+commit, tree, code-manifest hash, and protocol hash as the four Docker build
+arguments for all four images. Save each built image, derive its metadata from
+the archive, scan the immutable image ID, and bind both scanner outputs:
+
+```bash
+python script/finalize_waybill_release.py preflight \
+  --tag waybill-formal-readiness-v2 \
+  --config configs/waybill_formal/release-v2.json \
+  --output-manifest artifacts/release-inputs/preflight.json
+
+docker save --output artifacts/release-inputs/formal-runner-image.tar \
+  waybill-formal:readiness-v2
+python script/finalize_waybill_release.py image-metadata \
+  --image artifacts/release-inputs/formal-runner-image.tar \
+  --image-ref waybill-formal:readiness-v2 \
+  --role formal-runner \
+  --config configs/waybill_formal/release-v2.json \
+  --preflight artifacts/release-inputs/preflight.json \
+  --output artifacts/release-inputs/formal-runner-metadata.json
+docker run --rm \
+  -v "$PWD/artifacts/release-inputs:/out" \
+  aquasec/trivy:0.72.0@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f \
+  image --format spdx-json \
+  --output /out/formal-runner-raw.spdx.json \
+  --input /out/formal-runner-image.tar
+python script/finalize_waybill_release.py bind-sbom \
+  --input artifacts/release-inputs/formal-runner-raw.spdx.json \
+  --metadata artifacts/release-inputs/formal-runner-metadata.json \
+  --role formal-runner \
+  --preflight artifacts/release-inputs/preflight.json \
+  --output artifacts/release-inputs/formal-runner-sbom.spdx.json
+docker run --rm \
+  -v "$PWD/artifacts/release-inputs:/out" \
+  aquasec/trivy:0.72.0@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f \
+  image --scanners vuln --format json \
+  --output /out/formal-runner-raw.trivy.json \
+  --input /out/formal-runner-image.tar
+python script/finalize_waybill_release.py bind-vulnerability-report \
+  --input artifacts/release-inputs/formal-runner-raw.trivy.json \
+  --metadata artifacts/release-inputs/formal-runner-metadata.json \
+  --role formal-runner \
+  --config configs/waybill_formal/release-v2.json \
+  --preflight artifacts/release-inputs/preflight.json \
+  --output artifacts/release-inputs/formal-runner-vulnerabilities.trivy.json
+```
+
+Repeat those image/SBOM/vulnerability steps for `charger`, `postgres`, and
+`receiver-signer`, then
+invoke `build` with one repeated
+`--image ROLE=PATH`, `--image-metadata ROLE=PATH`, `--sbom ROLE=PATH`, and
+`--vulnerability-report ROLE=PATH` for each role. The resulting directory
+contains its own tagged source bundle and can be checked without a
+caller-supplied config. The finalizer verifies SPDX and Trivy report structure,
+binds both scanner outputs to the exact image archive and tagged source, and
+fails on any fixable vulnerability or an unexpected HIGH/CRITICAL finding. It does not
+independently reimplement either package scanner.
+
+```bash
+python script/finalize_waybill_release.py verify \
+  --release artifacts/releases/waybill-formal-readiness-v2
+```
+
+## 5. Formal experiment receipts
+
+Formal jobs emit `waybill.formal.stage-result/v2` with a job hash and a recursive
+artifact manifest. Attempt receipts bind the job, stage result, and artifact
+hashes. Merge revalidates all of these values from disk, so a copied or edited
+`passed` field cannot satisfy a gate. The final gate receipt is likewise sealed
+under its V2 receipt hash.
+
+Restricted four-dataset results are separate evidence. If the authorized raw
+datasets are not mounted, the cryptographic endpoint receipt explicitly reports
+that the data gate was not run; it never infers a data result from circuit
+success.
+
+## 6. Historical material
+
+`settlement_period_v5_*`, `ruc-demo-v7`, and
+`experiments/waybill_m1/v1/` remain for regression and historical comparison.
+They implement the earlier time/speed fallback and must not be cited as the
+active WayBill protocol or as evidence for V6 validity binding.

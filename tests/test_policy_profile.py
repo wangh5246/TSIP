@@ -3,18 +3,12 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import sys
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi.testclient import TestClient
-
-ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-
 from common.policy_profile import (
     POLICY_PROFILE_DOMAIN,
     PolicyProfile,
@@ -27,6 +21,7 @@ from common.settlement import (
     ReceiverFix,
     TariffTable,
     build_period_public_statement,
+    canonical_json,
     compute_public_statement_commitment,
     make_device_attestation_commitment,
     sign_receiver_fix,
@@ -35,6 +30,7 @@ from common.settlement import (
 from services.charger import app as charger_app
 
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
 _SEED = hashlib.sha256(b"waybill-m0-policy-test-device").digest()
 _PRIVATE_KEY = Ed25519PrivateKey.from_private_bytes(_SEED)
 _PUBLIC_KEY = _PRIVATE_KEY.public_key().public_bytes_raw()
@@ -134,11 +130,26 @@ def _proof_payload(public: dict[str, object]) -> dict[str, object]:
         "proof": {"protocol": "groth16", "test_valid": True},
         "public_signals": [str(value) for value in charger_app._expected_public_signal_values(public)],
         "root_attestation": sign_receiver_root_attestation(
-            public_statement=public,
+            receiver_id="test-receiver",
+            charger_domain="ruc-demo.charger-test",
             device_id="dev-m0",
+            period_id=str(public["period_id"]),
+            log_epoch=1,
+            fix_count=2,
+            receiver_fix_root=str(public["receiver_fix_root"]),
+            device_attestation_commitment=str(public["device_attestation_commitment"]),
+            log_sha256=hashlib.sha256(canonical_json(public).encode()).hexdigest(),
             private_key_bytes=_SEED,
         ),
     }
+
+
+def _anchor(client: TestClient, payload: dict[str, object]) -> None:
+    response = client.post(
+        "/settlement/receiver-chain/anchor",
+        json={"root_attestation": payload["root_attestation"]},
+    )
+    assert response.status_code == 200, response.text
 
 
 def _configure_charger(
@@ -166,8 +177,12 @@ def _configure_charger(
 def test_checked_in_profile_schema_commitment_and_tariff_are_self_consistent() -> None:
     directory = ROOT_DIR / "configs" / "settlement_policy_profiles"
     registry = load_policy_profiles(directory)
-    assert len(registry.profiles) == 1
-    profile = registry.profiles[0]
+    assert len(registry.profiles) == 2
+    profile = max(registry.profiles, key=lambda item: item.profile_version)
+    assert profile.profile_version == 9
+    assert profile.circuit_id == "settlement-period-v6-validity-bound-k25-d8"
+    assert profile.receiver_attestation_schema == "waybill.receiver.root-attestation/v5"
+    assert profile.position_validity_rule == "origin-osnma-authenticated-v1"
     assert profile.semantic_payload()["domain_sep"] == POLICY_PROFILE_DOMAIN
     validate_profile_local_artifacts(profile, base_dir=directory)
 
@@ -176,12 +191,16 @@ def test_checked_in_profile_schema_commitment_and_tariff_are_self_consistent() -
     )["vectors"]
     assert vectors == [
         {
-            "name": "ruc-demo-v7",
+            "name": "ruc-demo-v9",
             "canonical_serialization": profile.canonical_serialization,
             "profile_sha256": profile.profile_sha256,
             "policy_profile_commitment": str(profile.commitment),
         }
     ]
+    with pytest.raises(ValueError, match="position-validity rule"):
+        replace(profile, position_validity_rule="caller-supplied-legacy")
+    with pytest.raises(ValueError, match="attestation schema"):
+        replace(profile, receiver_attestation_schema="waybill.receiver.root-attestation/v3")
 
 
 def test_local_tariff_artifact_rejects_stale_declared_root(tmp_path: Path) -> None:
@@ -260,7 +279,9 @@ def test_canonical_profile_accepts_and_profile_pinned_vkey_is_used(
         },
     )
 
-    response = client.post("/settlement/period/proof-only", json=_proof_payload(_statement(profile)))
+    payload = _proof_payload(_statement(profile))
+    _anchor(client, payload)
+    response = client.post("/settlement/period/proof-only", json=payload)
     assert response.status_code == 200, response.text
     assert calls == [vkey.resolve()]
 
@@ -402,10 +423,11 @@ def test_rollback_revocation_cross_jurisdiction_and_replay_are_rejected(
 
     client = _configure_charger(monkeypatch, [current])
     payload = _proof_payload(_statement(current))
+    _anchor(client, payload)
     assert client.post("/settlement/period/proof-only", json=payload).status_code == 200
     replay = client.post("/settlement/period/proof-only", json=payload)
     assert replay.status_code == 409
-    assert "already accepted" in replay.json()["detail"]
+    assert "already been settled" in replay.json()["detail"]
 
 
 def test_profile_rollover_selects_the_unique_active_version(tmp_path: Path) -> None:
@@ -423,3 +445,8 @@ def test_profile_rollover_selects_the_unique_active_version(tmp_path: Path) -> N
     registry = PolicyRegistry([v7, v8])
     assert registry.resolve(jurisdiction_id=v7.jurisdiction_id, period_start_time=cutover - 1) == v7
     assert registry.resolve(jurisdiction_id=v7.jurisdiction_id, period_start_time=cutover) == v8
+
+
+def test_v6_circuit_identifier_uses_one_canonical_prefix() -> None:
+    assert charger_app._is_v6_settlement_circuit("settlement-period-v6-canonical")
+    assert not charger_app._is_v6_settlement_circuit("settlement_period_v6_legacy")

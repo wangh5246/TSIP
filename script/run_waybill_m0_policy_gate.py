@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
+"""Reproduce the historical V5 canonical-policy attack matrix.
+
+This runner is retained for regression only.  The active paper-facing policy
+and proof path is V6/ruc-demo-v9 under ``run_waybill_m1_endpoint_gate.py``.
+"""
 from __future__ import annotations
 
 import argparse
 import copy
 import hashlib
 import json
+import os
 import platform
 import subprocess
 import sys
@@ -22,11 +28,18 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+os.environ["WAYBILL_CHARGER_TEST_MODE"] = "1"
+os.environ["WAYBILL_CHARGER_DATABASE_URL"] = "sqlite+pysqlite://"
+os.environ["WAYBILL_CHARGER_DOMAIN"] = "ruc-demo.charger-test"
+os.environ["WAYBILL_CHARGER_ADMIN_TOKEN"] = "waybill-test-admin-token"
+os.environ["WAYBILL_CHARGER_TOKEN_PEPPER"] = "waybill-test-token-pepper"
+
 from common.eval_harness import HarnessParams  # noqa: E402
 from common.policy_profile import PolicyProfile, PolicyRegistry, load_policy_profiles, sha256_file  # noqa: E402
 from common.settlement import (  # noqa: E402
     ReceiverFix,
     TariffTable,
+    canonical_json,
     compute_public_statement_commitment,
     sign_receiver_fix,
     sign_receiver_root_attestation,
@@ -186,8 +199,15 @@ def _payload(public: dict[str, Any], proof_artifact: dict[str, Any]) -> dict[str
         "proof": proof_artifact["proof"],
         "public_signals": actual,
         "root_attestation": sign_receiver_root_attestation(
-            public_statement=public,
+            receiver_id="m0-test-receiver",
+            charger_domain="ruc-demo.charger-test",
             device_id="dev-m0-real-proof",
+            period_id=str(public["period_id"]),
+            log_epoch=1,
+            fix_count=N_FIXES,
+            receiver_fix_root=str(public["receiver_fix_root"]),
+            device_attestation_commitment=str(public["device_attestation_commitment"]),
+            log_sha256=hashlib.sha256(canonical_json(public).encode()).hexdigest(),
             private_key_bytes=_DEVICE_SEED,
         ),
     }
@@ -249,9 +269,14 @@ def run_gate(output_dir: Path) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     registry = load_policy_profiles(PROFILE_DIR)
-    if len(registry.profiles) != 1:
-        raise RuntimeError("M0 runner expects exactly one checked-in canonical demo profile")
-    canonical_profile = registry.profiles[0]
+    legacy_profiles = [
+        profile
+        for profile in registry.profiles
+        if profile.jurisdiction_id == "ruc-demo" and int(profile.profile_version) == 7
+    ]
+    if len(legacy_profiles) != 1:
+        raise RuntimeError("historical M0 runner requires exactly one ruc-demo-v7 profile")
+    canonical_profile = legacy_profiles[0]
     canonical_tariff = build_tariff()
     canonical_profile.assert_tariff_matches(canonical_tariff)
     fixes = _build_expensive_route_fixes("2026-05-m0-real-proof")
@@ -425,7 +450,9 @@ def run_gate(output_dir: Path) -> dict[str, Any]:
             "accepted": False,
             "detail": second.json().get("detail"),
             "first_http_status": first.status_code,
-            "ledger_periods_after_replay": len(charger_app.accepted_periods),
+            "ledger_periods_after_replay": charger_app.app.state.charger_store.counts()[
+                "accepted_periods"
+            ],
             "proof_case": canonical_proof["name"],
             "proof_sha256": canonical_proof["proof_sha256"],
             "proof_valid_under_submitted_vkey": True,
@@ -507,7 +534,9 @@ def run_gate(output_dir: Path) -> dict[str, Any]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the WayBill M0 canonical-policy proof gate.")
+    parser = argparse.ArgumentParser(
+        description="Reproduce the historical V5 WayBill M0 canonical-policy proof gate."
+    )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
     print(json.dumps(run_gate(args.output_dir), indent=2, sort_keys=True))

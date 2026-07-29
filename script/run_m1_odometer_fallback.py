@@ -47,7 +47,7 @@ def _percentile(values: list[int], probability: float) -> float:
 
 def validate_circuit_receipt(path: Path, *, require_profile_bound: bool = True) -> dict[str, Any]:
     receipt = json.loads(path.read_text(encoding="utf-8"))
-    if receipt.get("schema") != "waybill-settlement-v6-circuit-differential-receipt-v1":
+    if receipt.get("schema") != "waybill-settlement-v6-circuit-differential-receipt-v2":
         raise ValueError("unexpected V6 circuit receipt schema")
     if receipt.get("ok") is not True:
         raise ValueError("V6 Groth16 receipt is not verified")
@@ -55,6 +55,27 @@ def validate_circuit_receipt(path: Path, *, require_profile_bound: bool = True) 
         raise ValueError("V6 circuit/reference differential receipt failed")
     if receipt.get("public_signals") != receipt.get("python_reference_public_signals"):
         raise ValueError("V6 receipt public-signal vectors differ")
+    if receipt.get("commitment_semantics") != "receiver-fix-validity-v2":
+        raise ValueError("V6 receipt does not bind receiver-authenticated validity")
+    if receipt.get("receiver_attestation_mode") != "independent-receiver-process":
+        raise ValueError("V6 receipt was not produced from an independent receiver signer")
+    if receipt.get("receiver_attestation_schema") != "waybill.receiver.root-attestation/v5":
+        raise ValueError("V6 receipt uses an unexpected receiver attestation schema")
+    if receipt.get("position_validity_rule") != "origin-osnma-authenticated-v1":
+        raise ValueError("V6 receipt uses an unexpected position-validity rule")
+    if len(str(receipt.get("receiver_log_sha256", ""))) != 64:
+        raise ValueError("V6 receipt does not identify the sealed receiver log")
+    if receipt.get("receiver_chain_mode") != "charger-online-cas-v1":
+        raise ValueError("V6 receipt does not bind the Charger online confirmation chain")
+    for field in (
+        "receiver_attestation_sha256",
+        "previous_attestation_sha256",
+    ):
+        digest = str(receipt.get(field, ""))
+        if len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest):
+            raise ValueError(f"V6 receipt has a malformed {field}")
+    if int(receipt.get("receiver_log_epoch", 0)) < 1:
+        raise ValueError("V6 receipt has an invalid receiver log epoch")
     if require_profile_bound:
         if receipt.get("canonical_profile_bound") is not True:
             raise ValueError("V6 circuit receipt is not bound to a canonical profile")
@@ -177,7 +198,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20260713)
     parser.add_argument(
         "--circuit-receipt",
-        default="experiments/waybill_m1/v1/circuit_differential/receipt.json",
+        default="experiments/waybill_m1/v2/circuit_differential/receipt.json",
     )
     parser.add_argument("--output", default="")
     args = parser.parse_args()

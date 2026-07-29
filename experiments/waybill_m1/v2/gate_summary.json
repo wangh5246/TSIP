@@ -1,0 +1,20 @@
+{
+  "conditional_claim": "Verified as a protocol/model result under authenticated, monotone, calibrated odometer assumptions; this is not receiver/odometer field certification.",
+  "data_gate": {
+    "available": false,
+    "hard_gate_passed": null,
+    "note": "The restricted four-dataset gate is intentionally reported separately and is not inferred from the cryptographic endpoint artifact."
+  },
+  "evidence": {
+    "charger": "circuit_differential/charger_endpoint_receipt.json",
+    "circuit": "circuit_differential/receipt.json",
+    "data": null
+  },
+  "gates": {
+    "canonical_profile_bound_circuit": true,
+    "production_charger_endpoint_gate": true
+  },
+  "hard_gate_passed": true,
+  "schema": "waybill-m1-combined-gate/v2",
+  "status": "verified"
+}

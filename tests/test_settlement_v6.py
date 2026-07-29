@@ -4,16 +4,12 @@ import random
 import hashlib
 import json
 import re
-import sys
 from pathlib import Path
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
-ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-
+from common.eval_harness import HarnessParams
+from common.policy_profile import PolicyProfile, validate_profile_local_artifacts
 from common.settlement import (
     ReceiverFix,
     TariffTable,
@@ -21,7 +17,6 @@ from common.settlement import (
     make_device_attestation_commitment,
     sign_receiver_fix,
 )
-from common.policy_profile import PolicyProfile, validate_profile_local_artifacts
 from common.settlement_v6 import (
     PUBLIC_SIGNAL_COUNT_V6,
     PUBLIC_SIGNAL_ORDER_V6,
@@ -36,15 +31,48 @@ from common.settlement_v6 import (
 )
 import common.settlement_v6 as settlement_v6
 from script.prove_settlement_period_v6 import (
-    build_input as build_circuit_input_v6,
+    _strict_json_bytes,
+    CADENCE_SEC,
+    MAX_DT_SEC,
+    TIER_VMAX_MPS,
+    build_input_for_fixes,
+    build_tariff,
+    receiver_url_context,
     sha256_file,
 )
 from script.run_m1_odometer_fallback import run_m1_checks, validate_circuit_receipt
 
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
 _DEVICE_SEED = hashlib.sha256(b"waybill-v6-reference-test-key").digest()
 _DEVICE_PUBLIC_KEY = Ed25519PrivateKey.from_private_bytes(_DEVICE_SEED).public_key().public_bytes_raw()
 _DEVICE_DAC = make_device_attestation_commitment(_DEVICE_PUBLIC_KEY)
+
+
+def test_receiver_client_requires_authenticated_https_by_default(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError, match="requires HTTPS"):
+        receiver_url_context("http://127.0.0.1:8779")
+    assert (
+        receiver_url_context(
+            "http://127.0.0.1:8779",
+            allow_insecure_http=True,
+        )
+        is None
+    )
+    with pytest.raises(RuntimeError, match="credentials, query, or fragment"):
+        receiver_url_context("https://token@127.0.0.1:8779")
+    with pytest.raises(RuntimeError, match="CA file is missing or unsafe"):
+        receiver_url_context(
+            "https://127.0.0.1:8779",
+            ca_file=str(tmp_path / "missing.pem"),
+        )
+
+
+def test_receiver_client_rejects_ambiguous_or_nonfinite_json() -> None:
+    with pytest.raises(RuntimeError, match="duplicate JSON key"):
+        _strict_json_bytes(b'{"status":"ok","status":"forged"}', label="fixture")
+    with pytest.raises(RuntimeError, match="non-finite JSON number"):
+        _strict_json_bytes(b'{"value":NaN}', label="fixture")
 
 
 def _fix(seq: int, timestamp: int, odometer_m: int, cell_x: int = 0, cell_y: int = 0) -> ReceiverFix:
@@ -176,7 +204,7 @@ def test_verify_v6_submission_rejects_position_flag_tampering() -> None:
     )
     assert verified == public
 
-    with pytest.raises(ValueError, match="public statement mismatch"):
+    with pytest.raises(ValueError, match="position_valid does not match"):
         verify_period_submission_v6(
             fixes=fixes,
             tariff=_tariff(),
@@ -211,11 +239,24 @@ def test_v6_receiver_root_commits_each_fix_exactly_once(monkeypatch: pytest.Monk
         return original(fix, **kwargs)
 
     monkeypatch.setattr(settlement_v6, "compute_fix_commitment_v6", counting_commitment)
-    root = settlement_v6.compute_receiver_fix_root_v6(fixes, dac_field=7, policy_profile_commitment=11)
+    root = settlement_v6.compute_receiver_fix_root_v6(
+        fixes,
+        position_valid=[True, False, True],
+        dac_field=7,
+        policy_profile_commitment=11,
+    )
 
     assert seen == [0, 1, 2, 3]
     assert root == settlement_v6.commitment_chain_root(
-        [original(fix, dac_field=7, policy_profile_commitment=11) for fix in fixes]
+        [
+            original(
+                fix,
+                validity_to_next=[True, False, True, False][index],
+                dac_field=7,
+                policy_profile_commitment=11,
+            )
+            for index, fix in enumerate(fixes)
+        ]
     )
 
 
@@ -232,28 +273,60 @@ def test_v6_wrapper_and_prover_share_the_public_signal_order() -> None:
 
 
 def test_real_circuit_receipt_matches_current_python_input_vector() -> None:
-    receipt_dir = ROOT_DIR / "experiments" / "waybill_m1" / "v1" / "circuit_differential"
+    receipt_dir = ROOT_DIR / "experiments" / "waybill_m1" / "v2" / "circuit_differential"
     receipt_path = receipt_dir / "receipt.json"
+    profile_dir = ROOT_DIR / "configs" / "settlement_policy_profiles"
     profile = PolicyProfile.from_dict(
-        json.loads((receipt_dir / "policy-profile-v6-k6.json").read_text(encoding="utf-8"))
+        json.loads(
+            (profile_dir / "ruc-demo-v9.json").read_text(encoding="utf-8")
+        )
     )
-    validate_profile_local_artifacts(profile, base_dir=receipt_dir)
+    validate_profile_local_artifacts(profile, base_dir=profile_dir)
     receipt = validate_circuit_receipt(receipt_path)
-    input_json, submission = build_circuit_input_v6(profile)
+    for relative, expected_sha256 in receipt["code_sha256"].items():
+        assert hashlib.sha256((ROOT_DIR / relative).read_bytes()).hexdigest() == expected_sha256
+    artifact_submission = json.loads(
+        (receipt_dir / "submission.json").read_text(encoding="utf-8")
+    )
+    input_json, submission = build_input_for_fixes(
+        [ReceiverFix.from_dict(item) for item in artifact_submission["fixes"]],
+        build_tariff(),
+        position_valid=artifact_submission["position_valid"],
+        params=HarnessParams(
+            cadence_sec=CADENCE_SEC,
+            max_dt_sec=MAX_DT_SEC,
+            tier_vmax_mps=TIER_VMAX_MPS,
+        ),
+        policy_profile=profile,
+        receiver_root_attestation=artifact_submission["receiver_root_attestation"],
+        device_public_key_bytes=bytes.fromhex(artifact_submission["receiver_public_key_hex"]),
+        device_attestation_commitment=artifact_submission["receiver_root_attestation"][
+            "device_attestation_commitment"
+        ],
+    )
     expected = [input_json[name] for name in PUBLIC_SIGNAL_ORDER_V6]
 
     assert receipt["ok"] is True
-    assert receipt["constraints"] == 240_258
+    assert receipt["constraints"] == 246_255
     assert receipt["canonical_profile_bound"] is True
+    assert receipt["commitment_semantics"] == "receiver-fix-validity-v2"
+    assert receipt["receiver_attestation_mode"] == "independent-receiver-process"
     assert int(receipt["policy_profile_commitment"]) == profile.commitment != 0
     assert submission["receiver_root_attestation"]["signature"]
+    assert input_json == json.loads((receipt_dir / "input.json").read_text(encoding="utf-8"))
     assert receipt["public_signal_count"] == PUBLIC_SIGNAL_COUNT_V6
     assert receipt["public_signal_order"] == PUBLIC_SIGNAL_ORDER_V6
     assert receipt["public_signals"] == receipt["python_reference_public_signals"] == expected
-    circuit_dir = receipt_dir.parent / "circuit"
+    circuit_dir = ROOT_DIR / "zk" / "settlement_period_v6_k6"
     artifact_paths = {
         "r1cs": circuit_dir / "settlement_period_v6_k6.r1cs",
         "wasm": circuit_dir / "settlement_period_v6_k6_js" / "settlement_period_v6_k6.wasm",
+        "generate_witness_js": circuit_dir
+        / "settlement_period_v6_k6_js"
+        / "generate_witness.js",
+        "witness_calculator_js": circuit_dir
+        / "settlement_period_v6_k6_js"
+        / "witness_calculator.js",
         "zkey": circuit_dir / "settlement_period_v6_k6_final.zkey",
         "verification_key": circuit_dir / "verification_key.json",
         "proof_json": receipt_dir / "proof.json",

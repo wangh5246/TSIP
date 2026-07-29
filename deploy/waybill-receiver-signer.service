@@ -1,0 +1,55 @@
+[Unit]
+Description=WayBill independent receiver signer
+Documentation=file:/opt/waybill-formal/current/README_SERVER_DEPLOY.md
+Wants=network-online.target
+After=network-online.target
+ConditionFileIsExecutable=/opt/waybill-formal/venv/bin/uvicorn
+ConditionPathIsDirectory=/opt/waybill-formal/current
+
+[Service]
+Type=simple
+User=waybill-receiver
+Group=waybill-receiver
+WorkingDirectory=/opt/waybill-formal/current
+EnvironmentFile=/etc/waybill/receiver-signer.env
+UMask=0077
+ExecStartPre=/usr/bin/test -r /var/lib/waybill-receiver/receiver-ed25519.key
+ExecStartPre=/usr/bin/test -r /opt/waybill-formal/current/configs/settlement_policy_profiles/ruc-demo-v9.json
+ExecStartPre=/usr/bin/test -r /etc/waybill/charger-ca.pem
+ExecStartPre=/usr/bin/test -r /etc/waybill/tls/receiver-server-chain.pem
+ExecStartPre=/usr/bin/test -r /etc/waybill/tls/receiver-server.key
+ExecStart=/opt/waybill-formal/venv/bin/uvicorn services.receiver_signer.app:app --host 127.0.0.1 --port 8779 --workers 1 --ssl-certfile /etc/waybill/tls/receiver-server-chain.pem --ssl-keyfile /etc/waybill/tls/receiver-server.key --no-proxy-headers --no-server-header
+Restart=on-failure
+RestartSec=3s
+TimeoutStopSec=30s
+KillSignal=SIGINT
+
+# Only the SQLite database, WAL, and receiver key may be written by the signer.
+ReadWritePaths=/var/lib/waybill-receiver
+ReadOnlyPaths=/opt/waybill-formal/current
+ReadOnlyPaths=/etc/waybill/charger-ca.pem
+ReadOnlyPaths=/etc/waybill/tls
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectProc=invisible
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

@@ -6,7 +6,13 @@ import os
 from pathlib import Path
 from typing import Any, Mapping
 
-from .core import FormalError, read_json, write_json
+from .core import (
+    FormalError,
+    build_stage_artifact_manifest,
+    canonical_sha256,
+    read_json,
+    write_json,
+)
 
 
 def load_job_environment() -> tuple[dict[str, Any], Path, Path]:
@@ -42,7 +48,11 @@ def prepared_dataset(
     if len(matches) != 1:
         raise FormalError(f"prepared manifest must contain exactly one {dataset} record")
     row = dict(matches[0])
-    root = prepared_root or Path(os.environ.get("WAYBILL_PREPARED_ROOT", "."))
+    root_label = str(manifest.get("prepared_root_label", ""))
+    root_value = os.environ.get(root_label) if root_label else None
+    root = prepared_root or (Path(root_value) if root_value else None)
+    if root is None:
+        raise FormalError("prepared dataset root is not bound into the formal runtime")
     for key in ("periods_path", "tariff_path"):
         path = Path(str(row[key]))
         row[key] = path if path.is_absolute() else root / path
@@ -55,11 +65,18 @@ def finish_stage(
     attempt_dir: Path,
     payload: Mapping[str, Any],
 ) -> None:
+    artifacts = build_stage_artifact_manifest(attempt_dir)
     result = {
-        "schema": "waybill.formal.stage-result/v1",
+        **dict(payload),
+        "schema": "waybill.formal.stage-result/v2",
         "job_id": job["job_id"],
         "stage": job["stage"],
         "kind": job["kind"],
-        **dict(payload),
+        "job_sha256": canonical_sha256(job),
+        "artifacts": artifacts,
+        "artifact_manifest_sha256": canonical_sha256(artifacts),
     }
+    if result.get("status") not in {"passed", "failed"}:
+        raise FormalError("stage payload must declare status passed or failed")
+    result["result_sha256"] = canonical_sha256(result)
     write_json(attempt_dir / "stage-result.json", result, exclusive=True)

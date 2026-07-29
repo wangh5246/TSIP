@@ -19,8 +19,14 @@ SNARK_FIELD = 218882428718392752222464057452572750885483644004160343436982041865
 
 SETTLEMENT_FIX_DOMAIN = "tsip_settlement_receiver_fix_v1"
 SETTLEMENT_PUBLIC_DOMAIN = "tsip_settlement_public_v1"
-SETTLEMENT_ROOT_ATTESTATION_DOMAIN = "tsip_settlement_receiver_root_attestation_v1"
-SETTLEMENT_ODOMETER_ATTESTATION_DOMAIN = "tsip_settlement_monthly_odometer_attestation_v1"
+SETTLEMENT_ROOT_ATTESTATION_DOMAIN = "waybill_receiver_root_attestation_v5"
+SETTLEMENT_ROOT_ATTESTATION_SCHEMA = "waybill.receiver.root-attestation/v5"
+SETTLEMENT_ROOT_ATTESTATION_GENESIS_SHA256 = "0" * 64
+SETTLEMENT_FIX_COMMITMENT_SEMANTICS = "receiver-fix-validity-v2"
+SETTLEMENT_POSITION_VALIDITY_RULE = "origin-osnma-authenticated-v1"
+SETTLEMENT_RECEIVER_STATUS_VALUES = frozenset({"authenticated", "unavailable"})
+SETTLEMENT_ODOMETER_ATTESTATION_DOMAIN = "waybill_monthly_odometer_attestation_v2"
+SETTLEMENT_ODOMETER_ATTESTATION_SCHEMA = "waybill.receiver.monthly-odometer-attestation/v2"
 SETTLEMENT_MAX_DT_SEC = 600
 SETTLEMENT_PERIOD_MAX_SEC = 14_400
 SETTLEMENT_CAP_POLICY_SQ = 3_000_000_000
@@ -103,40 +109,105 @@ def compute_public_statement_commitment(public_statement: dict[str, Any]) -> str
 
 
 def verify_public_statement_commitment(public_statement: dict[str, Any]) -> bool:
-    return str(public_statement.get("statement_commitment", "")) == compute_public_statement_commitment(public_statement)
+    return str(public_statement.get("statement_commitment", "")) == (
+        compute_public_statement_commitment(public_statement)
+    )
 
 
-def receiver_root_attestation_payload(*, public_statement: dict[str, Any], device_id: str) -> dict[str, Any]:
+def receiver_root_attestation_payload(*, attestation: dict[str, Any]) -> dict[str, Any]:
+    """Return the receiver-owned facts covered by a V5 chained log attestation.
+
+    The payload deliberately excludes the tariff-dependent public statement.
+    A receiver signs only metadata recomputed from its sealed sensor log; the
+    proof and charger bind that root to billing policy and arithmetic.
+    """
+
     return {
         "domain_sep": SETTLEMENT_ROOT_ATTESTATION_DOMAIN,
-        "device_id": str(device_id),
-        "period_id": str(public_statement["period_id"]),
-        "receiver_fix_root": str(public_statement["receiver_fix_root"]),
-        "device_attestation_commitment": str(public_statement["device_attestation_commitment"]),
-        "statement_commitment": str(public_statement["statement_commitment"]),
+        "receiver_id": str(attestation["receiver_id"]),
+        "charger_domain": str(attestation["charger_domain"]),
+        "device_id": str(attestation["device_id"]),
+        "period_id": str(attestation["period_id"]),
+        "log_epoch": int(attestation["log_epoch"]),
+        "fix_count": int(attestation["fix_count"]),
+        "receiver_fix_root": str(attestation["receiver_fix_root"]),
+        "device_attestation_commitment": str(attestation["device_attestation_commitment"]),
+        "commitment_semantics": str(attestation["commitment_semantics"]),
+        "position_validity_rule": str(attestation["position_validity_rule"]),
+        "log_sha256": str(attestation["log_sha256"]),
+        "previous_attestation_sha256": str(
+            attestation["previous_attestation_sha256"]
+        ),
     }
+
+
+def receiver_attestation_sha256(attestation: dict[str, Any]) -> str:
+    """Hash one complete signed attestation for use as the next chain link."""
+
+    return hashlib.sha256(canonical_json(attestation).encode("utf-8")).hexdigest()
 
 
 def sign_receiver_root_attestation(
     *,
-    public_statement: dict[str, Any],
+    receiver_id: str,
+    charger_domain: str,
     device_id: str,
+    period_id: str,
+    log_epoch: int,
+    fix_count: int,
+    receiver_fix_root: str | int,
+    device_attestation_commitment: str,
+    log_sha256: str,
     private_key_bytes: bytes,
-) -> dict[str, str]:
-    """Sign the receiver root and public-statement commitment.
+    previous_attestation_sha256: str = SETTLEMENT_ROOT_ATTESTATION_GENESIS_SHA256,
+    position_validity_rule: str = SETTLEMENT_POSITION_VALIDITY_RULE,
+) -> dict[str, Any]:
+    """Sign metadata produced by an independently sealed receiver log.
 
-    This is the proof-only submission gate: the charger verifies this signature
-    against the registered device key instead of receiving every raw fix.
+    Callers must not pass a public statement or a caller-selected root.  The
+    independent receiver store is responsible for recomputing every field
+    before invoking this cryptographic primitive.
     """
 
-    payload = receiver_root_attestation_payload(public_statement=public_statement, device_id=device_id)
+    if not str(charger_domain):
+        raise ValueError("charger_domain must not be empty")
+    if str(position_validity_rule) != SETTLEMENT_POSITION_VALIDITY_RULE:
+        raise ValueError("unsupported receiver position-validity rule")
+    previous_hash = str(previous_attestation_sha256)
+    if len(previous_hash) != 64 or any(
+        char not in "0123456789abcdef" for char in previous_hash
+    ):
+        raise ValueError("previous receiver attestation hash must be lowercase SHA-256")
+    if int(log_epoch) < 1:
+        raise ValueError("receiver log_epoch must be positive")
+    if int(log_epoch) == 1 and previous_hash != SETTLEMENT_ROOT_ATTESTATION_GENESIS_SHA256:
+        raise ValueError("first receiver attestation must link to the genesis hash")
+    if int(log_epoch) > 1 and previous_hash == SETTLEMENT_ROOT_ATTESTATION_GENESIS_SHA256:
+        raise ValueError("non-genesis receiver attestation must link to a previous attestation")
+    wire: dict[str, Any] = {
+        "schema": SETTLEMENT_ROOT_ATTESTATION_SCHEMA,
+        "receiver_id": str(receiver_id),
+        "charger_domain": str(charger_domain),
+        "device_id": str(device_id),
+        "period_id": str(period_id),
+        "log_epoch": int(log_epoch),
+        "fix_count": int(fix_count),
+        "receiver_fix_root": str(receiver_fix_root),
+        "device_attestation_commitment": str(device_attestation_commitment),
+        "commitment_semantics": SETTLEMENT_FIX_COMMITMENT_SEMANTICS,
+        "position_validity_rule": SETTLEMENT_POSITION_VALIDITY_RULE,
+        "log_sha256": str(log_sha256),
+        "previous_attestation_sha256": previous_hash,
+    }
+    payload = receiver_root_attestation_payload(attestation=wire)
     private_key = Ed25519PrivateKey.from_private_bytes(private_key_bytes)
     sig = private_key.sign(canonical_json(payload).encode("utf-8"))
-    return {"device_id": str(device_id), "signature": _b64url(sig)}
+    return {**wire, "signature": _b64url(sig)}
 
 
 def monthly_odometer_attestation_payload(
     *,
+    charger_domain: str,
     device_id: str,
     month_id: str,
     odometer_start_m: int,
@@ -144,6 +215,8 @@ def monthly_odometer_attestation_payload(
 ) -> dict[str, Any]:
     return {
         "domain_sep": SETTLEMENT_ODOMETER_ATTESTATION_DOMAIN,
+        "schema": SETTLEMENT_ODOMETER_ATTESTATION_SCHEMA,
+        "charger_domain": str(charger_domain),
         "device_id": str(device_id),
         "month_id": str(month_id),
         "odometer_start_m": int(odometer_start_m),
@@ -153,6 +226,7 @@ def monthly_odometer_attestation_payload(
 
 def sign_monthly_odometer_attestation(
     *,
+    charger_domain: str,
     device_id: str,
     month_id: str,
     odometer_start_m: int,
@@ -167,7 +241,10 @@ def sign_monthly_odometer_attestation(
     monthly extension of the E2 monotone-degradation rule).
     """
 
+    if not str(charger_domain):
+        raise ValueError("charger_domain must not be empty")
     payload = monthly_odometer_attestation_payload(
+        charger_domain=charger_domain,
         device_id=device_id,
         month_id=month_id,
         odometer_start_m=odometer_start_m,
@@ -179,9 +256,19 @@ def sign_monthly_odometer_attestation(
     return {**wire, "signature": _b64url(sig)}
 
 
-def verify_monthly_odometer_attestation(*, attestation: dict[str, Any], public_key_bytes: bytes) -> bool:
+def verify_monthly_odometer_attestation(
+    *,
+    attestation: dict[str, Any],
+    public_key_bytes: bytes,
+    expected_charger_domain: str,
+) -> bool:
     try:
+        if attestation.get("schema") != SETTLEMENT_ODOMETER_ATTESTATION_SCHEMA:
+            return False
+        if str(attestation["charger_domain"]) != str(expected_charger_domain):
+            return False
         payload = monthly_odometer_attestation_payload(
+            charger_domain=str(attestation["charger_domain"]),
             device_id=str(attestation["device_id"]),
             month_id=str(attestation["month_id"]),
             odometer_start_m=int(attestation["odometer_start_m"]),
@@ -202,11 +289,44 @@ def verify_receiver_root_attestation(
     public_statement: dict[str, Any],
     attestation: dict[str, Any],
     public_key_bytes: bytes,
+    expected_charger_domain: str,
 ) -> bool:
     try:
-        device_id = str(attestation["device_id"])
+        if attestation.get("schema") != SETTLEMENT_ROOT_ATTESTATION_SCHEMA:
+            return False
+        if str(attestation["charger_domain"]) != str(expected_charger_domain):
+            return False
+        if str(attestation["device_id"]) == "":
+            return False
+        if str(attestation["period_id"]) != str(public_statement["period_id"]):
+            return False
+        if str(attestation["receiver_fix_root"]) != str(public_statement["receiver_fix_root"]):
+            return False
+        if str(attestation["device_attestation_commitment"]) != str(
+            public_statement["device_attestation_commitment"]
+        ):
+            return False
+        if attestation.get("commitment_semantics") != SETTLEMENT_FIX_COMMITMENT_SEMANTICS:
+            return False
+        if attestation.get("position_validity_rule") != SETTLEMENT_POSITION_VALIDITY_RULE:
+            return False
+        if int(attestation["log_epoch"]) < 1 or int(attestation["fix_count"]) < 2:
+            return False
+        previous_hash = str(attestation["previous_attestation_sha256"])
+        if len(previous_hash) != 64 or any(
+            ch not in "0123456789abcdef" for ch in previous_hash
+        ):
+            return False
+        if int(attestation["log_epoch"]) == 1:
+            if previous_hash != SETTLEMENT_ROOT_ATTESTATION_GENESIS_SHA256:
+                return False
+        elif previous_hash == SETTLEMENT_ROOT_ATTESTATION_GENESIS_SHA256:
+            return False
+        log_sha256 = str(attestation["log_sha256"])
+        if len(log_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in log_sha256):
+            return False
         sig = _b64url_decode(str(attestation["signature"]))
-        payload = receiver_root_attestation_payload(public_statement=public_statement, device_id=device_id)
+        payload = receiver_root_attestation_payload(attestation=attestation)
         public_key = Ed25519PublicKey.from_public_bytes(public_key_bytes)
         public_key.verify(sig, canonical_json(payload).encode("utf-8"))
         return True
@@ -260,6 +380,29 @@ class ReceiverFix:
             nonce=str(data["nonce"]),
             receiver_sig=str(data.get("receiver_sig", "")),
         )
+
+
+def derive_position_valid(fixes: list[ReceiverFix]) -> list[bool]:
+    """Derive interval validity from the receiver's signed origin-fix status.
+
+    V6 prices an interval using its origin cell.  Consequently, interval ``i``
+    is position-valid exactly when fix ``i`` carries the canonical
+    ``authenticated`` receiver status.  The terminal fix has no outgoing
+    interval but its status is still restricted to the same fail-closed enum.
+    """
+
+    if len(fixes) < 2:
+        raise ValueError("at least two receiver fixes are required")
+    for index, fix in enumerate(fixes):
+        status = str(fix.osnma_status)
+        if status not in SETTLEMENT_RECEIVER_STATUS_VALUES:
+            raise ValueError(
+                f"fix[{index}] has unsupported receiver availability status"
+            )
+    return [
+        str(fix.osnma_status) == "authenticated"
+        for fix in fixes[:-1]
+    ]
 
 
 def sign_receiver_fix(fix: ReceiverFix, private_key_bytes: bytes) -> ReceiverFix:
@@ -447,6 +590,7 @@ def verify_fix_sequence(
     *,
     public_key_bytes: bytes,
     period_id: str,
+    allow_unavailable: bool = False,
 ) -> None:
     if len(fixes) < 2:
         raise ValueError("at least two receiver fixes are required")
@@ -457,7 +601,10 @@ def verify_fix_sequence(
     for fix in fixes:
         if fix.period_id != period_id:
             raise ValueError("fix period mismatch")
-        if str(fix.osnma_status).lower() != "authenticated":
+        status = str(fix.osnma_status)
+        if status not in SETTLEMENT_RECEIVER_STATUS_VALUES:
+            raise ValueError("fix has unsupported receiver availability status")
+        if not allow_unavailable and status != "authenticated":
             raise ValueError("fix is not OSNMA-authenticated")
         if fix.nonce in seen_nonce:
             raise ValueError("duplicate receiver nonce")

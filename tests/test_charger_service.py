@@ -1,23 +1,18 @@
 from __future__ import annotations
 
 import hashlib
-import sys
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi.testclient import TestClient
-
-ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-
 from common.policy_profile import PolicyProfile, PolicyRegistry, sha256_file
 from common.settlement import (
     ReceiverFix,
     TariffTable,
     build_period_public_statement as _build_period_public_statement,
+    canonical_json,
     field_from_text,
     make_device_attestation_commitment,
     sign_receiver_root_attestation,
@@ -25,11 +20,14 @@ from common.settlement import (
 )
 from services.charger import app as charger_app
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
+
 # Same deterministic test key used across settlement tests.
 _TEST_SEED = hashlib.sha256(b"tsip-test-device-key-v1").digest()
 _TEST_PRIVATE_KEY = Ed25519PrivateKey.from_private_bytes(_TEST_SEED)
 _TEST_PUBLIC_KEY_BYTES = _TEST_PRIVATE_KEY.public_key().public_bytes_raw()
 _TEST_DAC = make_device_attestation_commitment(_TEST_PUBLIC_KEY_BYTES)
+_CHARGER_DOMAIN = "ruc-demo.charger-test"
 _MAY_2026_START = 1_777_593_600
 
 
@@ -155,11 +153,26 @@ def _proof_only_payload(public: dict[str, object]) -> dict[str, object]:
         "proof": {},
         "public_signals": _public_signals(public),
         "root_attestation": sign_receiver_root_attestation(
-            public_statement=public,
+            receiver_id="test-receiver",
+            charger_domain=_CHARGER_DOMAIN,
             device_id="dev-1",
+            period_id=str(public["period_id"]),
+            log_epoch=1,
+            fix_count=2,
+            receiver_fix_root=str(public["receiver_fix_root"]),
+            device_attestation_commitment=str(public["device_attestation_commitment"]),
+            log_sha256=hashlib.sha256(canonical_json(public).encode()).hexdigest(),
             private_key_bytes=_TEST_SEED,
         ),
     }
+
+
+def _anchor(client: TestClient, payload: dict[str, object]) -> None:
+    response = client.post(
+        "/settlement/receiver-chain/anchor",
+        json={"root_attestation": payload["root_attestation"]},
+    )
+    assert response.status_code == 200, response.text
 
 
 def test_charger_accepts_period_and_aggregates_month():
@@ -314,7 +327,9 @@ def test_charger_accepts_proof_only_period_without_raw_fixes():
         device_attestation_commitment=_TEST_DAC,
     )
 
-    resp = client.post("/settlement/period/proof-only", json=_proof_only_payload(public))
+    payload = _proof_only_payload(public)
+    _anchor(client, payload)
+    resp = client.post("/settlement/period/proof-only", json=payload)
 
     assert resp.status_code == 200, resp.text
     body = resp.json()
@@ -395,6 +410,75 @@ def test_charger_rejects_proof_only_bad_root_attestation():
 
     assert resp.status_code == 400
     assert "root attestation" in resp.json()["detail"]
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("schema", "waybill.receiver.root-attestation/v3"),
+        ("position_validity_rule", "caller-supplied-legacy"),
+    ],
+)
+def test_charger_rejects_receiver_attestation_downgrade(field: str, value: str):
+    client = TestClient(charger_app.app)
+    client.post("/settlement/reset")
+    _register_device(client)
+    fixes = [
+        _fix(0, 1_777_593_600, 1_000, 0, 0),
+        _fix(1, 1_777_593_900, 1_070, 1, 0),
+    ]
+    public = build_period_public_statement(
+        fixes=fixes,
+        tariff=_tariff(),
+        period_id=f"2026-05-downgrade-{field}",
+        month_id="2026-05",
+        cadence_sec=60,
+        tier_vmax_mps=33,
+        device_attestation_commitment=_TEST_DAC,
+    )
+    payload = _proof_only_payload(public)
+    payload["root_attestation"] = {
+        **payload["root_attestation"],
+        field: value,
+    }
+
+    response = client.post("/settlement/period/proof-only", json=payload)
+    assert response.status_code == 400
+    assert "root attestation" in response.json()["detail"]
+
+
+def test_charger_rejects_root_attestation_from_another_charger_domain():
+    client = TestClient(charger_app.app)
+    client.post("/settlement/reset")
+    _register_device(client)
+
+    fixes = [_fix(0, 1_777_593_600, 1_000, 0, 0), _fix(1, 1_777_593_900, 1_070, 1, 0)]
+    public = build_period_public_statement(
+        fixes=fixes,
+        tariff=_tariff(),
+        period_id="2026-05-cross-domain",
+        month_id="2026-05",
+        cadence_sec=60,
+        tier_vmax_mps=33,
+        device_attestation_commitment=_TEST_DAC,
+    )
+    payload = _proof_only_payload(public)
+    payload["root_attestation"] = sign_receiver_root_attestation(
+        receiver_id="test-receiver",
+        charger_domain="ruc-demo.charger-other",
+        device_id="dev-1",
+        period_id=str(public["period_id"]),
+        log_epoch=1,
+        fix_count=2,
+        receiver_fix_root=str(public["receiver_fix_root"]),
+        device_attestation_commitment=str(public["device_attestation_commitment"]),
+        log_sha256=hashlib.sha256(canonical_json(public).encode()).hexdigest(),
+        private_key_bytes=_TEST_SEED,
+    )
+
+    response = client.post("/settlement/period/proof-only", json=payload)
+    assert response.status_code == 400
+    assert "root attestation rejected" in response.json()["detail"]
 
 
 def test_charger_rejects_unregistered_device():
@@ -531,6 +615,7 @@ def test_monthly_reconciliation_bills_withheld_kilometres():
 
     # The receiver attests 2000m driven this month; only 70m were settled.
     att = sign_monthly_odometer_attestation(
+        charger_domain=_CHARGER_DOMAIN,
         device_id="dev-1", month_id="2026-05",
         odometer_start_m=0, odometer_end_m=2_000,
         private_key_bytes=_TEST_SEED,
@@ -615,6 +700,7 @@ def test_bad_or_conflicting_odometer_attestation_rejected():
 
     # Signed by the wrong key.
     bad = sign_monthly_odometer_attestation(
+        charger_domain=_CHARGER_DOMAIN,
         device_id="dev-1", month_id="2026-05",
         odometer_start_m=0, odometer_end_m=100,
         private_key_bytes=_TEST_SEED_2,
@@ -625,6 +711,7 @@ def test_bad_or_conflicting_odometer_attestation_rejected():
     assert client.get("/settlement/month/2026-05/reconcile", params={"device_id": "dev-1"}).status_code == 400
 
     good = sign_monthly_odometer_attestation(
+        charger_domain=_CHARGER_DOMAIN,
         device_id="dev-1", month_id="2026-05",
         odometer_start_m=0, odometer_end_m=100,
         private_key_bytes=_TEST_SEED,
@@ -632,6 +719,7 @@ def test_bad_or_conflicting_odometer_attestation_rejected():
     assert client.post("/settlement/month/attest", json=good).status_code == 200
     # Conflicting re-attestation is rejected; identical replay is idempotent.
     conflicting = sign_monthly_odometer_attestation(
+        charger_domain=_CHARGER_DOMAIN,
         device_id="dev-1", month_id="2026-05",
         odometer_start_m=0, odometer_end_m=999,
         private_key_bytes=_TEST_SEED,
@@ -657,6 +745,7 @@ def test_missing_monthly_attestation_report_flags_enrolled_devices():
     fixes = [_fix(0, 100, 1_000, 0, 0), _fix(1, 110, 1_070, 1, 0)]
     assert _submit(client, fixes, _statement(fixes, "2026-05-p01", _TEST_DAC)).status_code == 200
     att = sign_monthly_odometer_attestation(
+        charger_domain=_CHARGER_DOMAIN,
         device_id="dev-1",
         month_id="2026-05",
         odometer_start_m=1_000,
@@ -681,6 +770,7 @@ def test_monthly_odometer_attestations_must_chain_across_adjacent_months():
     _register_device(client)
 
     may = sign_monthly_odometer_attestation(
+        charger_domain=_CHARGER_DOMAIN,
         device_id="dev-1",
         month_id="2026-05",
         odometer_start_m=0,
@@ -690,6 +780,7 @@ def test_monthly_odometer_attestations_must_chain_across_adjacent_months():
     assert client.post("/settlement/month/attest", json=may).status_code == 200
 
     june_bad = sign_monthly_odometer_attestation(
+        charger_domain=_CHARGER_DOMAIN,
         device_id="dev-1",
         month_id="2026-06",
         odometer_start_m=90,
@@ -701,6 +792,7 @@ def test_monthly_odometer_attestations_must_chain_across_adjacent_months():
     assert "odometer month chain" in resp.json()["detail"]
 
     june_good = sign_monthly_odometer_attestation(
+        charger_domain=_CHARGER_DOMAIN,
         device_id="dev-1",
         month_id="2026-06",
         odometer_start_m=100,

@@ -4,14 +4,15 @@
   "private": true,
   "description": "Pinned JavaScript dependencies for WayBill formal experiments",
   "engines": {
-    "node": "26.0.0",
-    "npm": "11.12.1"
+    "node": "26.5.0",
+    "npm": "11.17.0"
   },
   "dependencies": {
     "circomlib": "2.0.5",
     "snarkjs": "0.7.6"
   },
   "overrides": {
+    "ejs": "6.0.1",
     "underscore": "1.13.8"
   }
 }

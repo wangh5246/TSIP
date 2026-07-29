@@ -1,6 +1,313 @@
 # WayBill V6 formal server runbook
 
-This runbook is only for the frozen M4 full-scale experiment. It does not
+The active settlement profile is
+`configs/settlement_policy_profiles/ruc-demo-v9.json`. It pins the
+validity-bound V6 circuit and verification key; V5/v7 artifacts are historical
+baselines only.
+
+## Independent receiver signer
+
+The paper-facing prover must obtain fixes, signer-derived `position_valid`
+flags, and a root attestation from a separate process. Production uses one
+Linux service account and one systemd instance per `device_id`; do not use
+`--allow-test-signer` or `WAYBILL_RECEIVER_TEST_MODE=1` in a formal run.
+
+Install the frozen source read-only at `/opt/waybill-formal/current`, create a
+Python 3.12 virtual environment at `/opt/waybill-formal/venv`, and install the
+hash-locked dependencies before installing the service boundary:
+
+```bash
+sudo python3.12 -m venv /opt/waybill-formal/venv
+sudo /opt/waybill-formal/venv/bin/python -m pip install --require-hashes \
+  -r /opt/waybill-formal/current/services/receiver_signer/requirements.lock
+sudo /opt/waybill-formal/current/deploy/install-waybill-receiver-signer.sh
+```
+
+The installer creates the non-login `waybill-receiver` account, the
+owner-only `/var/lib/waybill-receiver` directory, and a hardened unit. It does
+not create secrets, enable, or start the service. Copy the environment template
+and generate three independent 32-byte tokens. The device token must also be
+the token registered for this device at the Charger; it must not equal either
+signer API token, the Charger administrator token, or the token pepper.
+
+```bash
+sudo install -o root -g root -m 0600 \
+  /etc/waybill/receiver-signer.env.example \
+  /etc/waybill/receiver-signer.env
+openssl rand -hex 32  # acquisition token; place in the environment file
+openssl rand -hex 32  # prover token; place in the environment file
+openssl rand -hex 32  # Charger device token; place in both registration and the environment file
+sudoedit /etc/waybill/receiver-signer.env
+```
+
+Initialize the key exactly once as the service account. The helper refuses to
+overwrite an existing identity and creates the raw key with mode `0600`; the
+state directory remains owned by `waybill-receiver` with mode `0700`.
+
+```bash
+sudo -u waybill-receiver \
+  /opt/waybill-formal/venv/bin/python \
+  /opt/waybill-formal/current/script/init_receiver_signer.py \
+  --key-file /var/lib/waybill-receiver/receiver-ed25519.key \
+  | sudo tee /root/waybill-receiver-public.json >/dev/null
+
+sudo stat -c '%U:%G %a %n' \
+  /var/lib/waybill-receiver \
+  /var/lib/waybill-receiver/receiver-ed25519.key \
+  /etc/waybill/receiver-signer.env
+```
+
+Expected permissions are `waybill-receiver:waybill-receiver 700` for the state
+directory, `waybill-receiver:waybill-receiver 600` for the key, and
+`root:root 600` for the environment file. The SQLite database, WAL, and SHM are
+created by the signer as mode `0600` files in the same private directory.
+
+The signer API is also authenticated with TLS; loopback is not treated as an
+endpoint-authentication boundary. Issue a separate server certificate whose
+`subjectAltName` contains `IP:127.0.0.1`, install the public CA, and make the
+private key readable only by the signer group. A dedicated receiver CA is
+preferred, although the same offline CA may issue separate Charger and signer
+certificates.
+
+```bash
+sudo install -o root -g root -m 0644 RECEIVER_CA_CERT.pem \
+  /etc/waybill/receiver-api-ca.pem
+sudo install -o root -g root -m 0644 RECEIVER_SERVER_CHAIN.pem \
+  /etc/waybill/tls/receiver-server-chain.pem
+sudo install -o root -g waybill-receiver -m 0640 RECEIVER_SERVER_KEY.pem \
+  /etc/waybill/tls/receiver-server.key
+openssl x509 -in /etc/waybill/tls/receiver-server-chain.pem \
+  -noout -ext subjectAltName
+```
+
+Start the Charger first, verify its health, and register the public key plus
+the exact device token from the signer environment file as described below.
+Verify the authenticated chain-head API as well: the public `/health` endpoint
+is only process/database liveness and deliberately does not make a transitive
+Charger request. Only after registration and this authenticated check succeed
+should the signer be enabled:
+
+```bash
+curl --fail --cacert /etc/waybill/charger-ca.pem https://127.0.0.1:8443/health
+sudo sh -c '. /etc/waybill/receiver-signer.env; exec curl --fail \
+  --cacert "$WAYBILL_RECEIVER_CHARGER_CA_FILE" \
+  -H "Authorization: Bearer $WAYBILL_RECEIVER_CHARGER_DEVICE_TOKEN" \
+  "https://127.0.0.1:8443/settlement/devices/$WAYBILL_RECEIVER_DEVICE_ID/receiver-head"'
+sudo systemctl enable --now waybill-receiver-signer.service
+curl --fail --cacert /etc/waybill/receiver-api-ca.pem \
+  https://127.0.0.1:8779/health
+sudo systemctl status --no-pager waybill-receiver-signer.service
+```
+
+The signer calls the authenticated Charger TLS endpoint at
+`https://127.0.0.1:8443` before sealing each period or monthly odometer
+boundary. Periods atomically extend the Charger-side V5 receiver-attestation
+chain. Monthly boundaries form a separate append-only device chain: the next
+calendar month must begin at the exact previous odometer end, exact bytes are
+idempotent, and conflicting bytes are rejected. These online comparisons make
+deletion or restoration of a stale local SQLite tail fail closed. A Charger
+outage therefore intentionally prevents new period and month seals;
+acquisition may retry after Charger recovery. Never delete, edit, or restore
+only the SQLite database, `-wal`, or `-shm` files.
+
+After an ordinary process crash, systemd restarts the same single worker. If a
+crash occurred after the Charger committed a period link or month boundary but
+before SQLite committed it, the acquisition component must retry the exact
+same request; the signer recovers only that exact remote-commit/local-loss
+case. For storage loss or corruption, stop the signer, preserve the failed
+directory for audit, and restore a complete cold backup of the directory. If
+its local and Charger states do not match, do not edit or reset either side. An
+unrecoverable state requires a new key and a new `device_id` enrollment under
+an incident record.
+
+There must be only one active signer for a device. Before planned migration,
+stop the old unit, copy the complete stopped state directory over an
+authenticated channel while preserving ownership and modes, and compare the
+last local `(log_epoch, attestation_sha256)` with the authenticated Charger
+`GET /settlement/devices/{device_id}/receiver-head` response. Use SQLite
+read-only mode while the signer is stopped; never repair a mismatch by editing
+either database. Start the replacement only when the heads match. Do not copy
+the private key to two live hosts. The Charger compare-and-swap head rejects an
+epoch gap or fork, but operational single-writer discipline is still
+mandatory.
+
+```bash
+sudo -u waybill-receiver sqlite3 -readonly \
+  /var/lib/waybill-receiver/receiver.sqlite3 \
+  'SELECT log_epoch, attestation_sha256 FROM receiver_logs ORDER BY log_epoch DESC LIMIT 1;'
+sudo sh -c '. /etc/waybill/receiver-signer.env; exec curl --fail \
+  --cacert "$WAYBILL_RECEIVER_CHARGER_CA_FILE" \
+  -H "Authorization: Bearer $WAYBILL_RECEIVER_CHARGER_DEVICE_TOKEN" \
+  "https://127.0.0.1:8443/settlement/devices/$WAYBILL_RECEIVER_DEVICE_ID/receiver-head"'
+```
+
+### OCI alternative on Linux
+
+The standalone signer image contains only the receiver runtime, a Linux-x86_64
+hash lock, the active policy profile, and the one-time key initializer. Build
+the release image with the same four source-identity values used by the release
+finalizer; placeholders are forbidden in a release image:
+
+```bash
+docker buildx build --platform linux/amd64 --load \
+  -t waybill-receiver-signer:readiness-v2 \
+  -f services/receiver_signer/Dockerfile \
+  --build-arg WAYBILL_GIT_COMMIT="$WAYBILL_GIT_COMMIT" \
+  --build-arg WAYBILL_GIT_TREE="$WAYBILL_GIT_TREE" \
+  --build-arg WAYBILL_CODE_MANIFEST_SHA256="$WAYBILL_CODE_MANIFEST_SHA256" \
+  --build-arg WAYBILL_PROTOCOL_SHA256="$WAYBILL_PROTOCOL_SHA256" .
+```
+
+This option requires native Linux host networking. It is intentionally not a
+portable bridge-network recipe: `--network host` lets the unmodified signer
+reach the authenticated loopback TLS endpoint while the signer itself remains
+bound to host loopback. Do not add `-p`, change the bind address, bypass CA
+verification, or replace the Charger URL with an unencrypted bridge hostname.
+
+Use a container-specific state directory owned by the image UID/GID `10001`;
+do not point a simultaneously installed systemd service at it. Initialize the
+key once, make a container-specific copy of the receiver API key owned by GID
+`10001`, then verify directory/key modes are `0700`/`0600` and `0640`:
+
+```bash
+sudo install -d -o 10001 -g 10001 -m 0700 /var/lib/waybill-receiver-oci
+sudo docker run --rm --network host --read-only \
+  --user 10001:10001 \
+  --mount type=bind,src=/var/lib/waybill-receiver-oci,dst=/var/lib/waybill-receiver \
+  --entrypoint python waybill-receiver-signer:readiness-v2 \
+  /app/script/init_receiver_signer.py \
+  --key-file /var/lib/waybill-receiver/receiver-ed25519.key \
+  | sudo tee /root/waybill-receiver-public.json >/dev/null
+sudo stat -c '%u:%g %a %n' \
+  /var/lib/waybill-receiver-oci \
+  /var/lib/waybill-receiver-oci/receiver-ed25519.key
+sudo install -d -o root -g root -m 0755 /etc/waybill/receiver-oci-tls
+sudo install -o root -g root -m 0644 \
+  /etc/waybill/tls/receiver-server-chain.pem \
+  /etc/waybill/receiver-oci-tls/receiver-server-chain.pem
+sudo install -o root -g 10001 -m 0640 \
+  /etc/waybill/tls/receiver-server.key \
+  /etc/waybill/receiver-oci-tls/receiver-server.key
+```
+
+After the same Charger registration/readiness sequence, run exactly one
+read-only container. The explicit policy override replaces the systemd host
+path in the shared environment example. `/tmp` is ephemeral; only the state
+bind mount is writable.
+
+```bash
+sudo docker run -d --name waybill-receiver-signer \
+  --network host --read-only --tmpfs /tmp:size=16m,mode=1777 \
+  --security-opt no-new-privileges:true --cap-drop ALL \
+  --user 10001:10001 --restart unless-stopped \
+  --env-file /etc/waybill/receiver-signer.env \
+  --env WAYBILL_RECEIVER_POLICY_PROFILE=/app/configs/settlement_policy_profiles/ruc-demo-v9.json \
+  --mount type=bind,src=/etc/waybill/charger-ca.pem,dst=/etc/waybill/charger-ca.pem,readonly \
+  --mount type=bind,src=/etc/waybill/receiver-api-ca.pem,dst=/etc/waybill/receiver-api-ca.pem,readonly \
+  --mount type=bind,src=/etc/waybill/receiver-oci-tls,dst=/run/waybill-tls,readonly \
+  --mount type=bind,src=/var/lib/waybill-receiver-oci,dst=/var/lib/waybill-receiver \
+  waybill-receiver-signer:readiness-v2
+curl --fail --cacert /etc/waybill/receiver-api-ca.pem \
+  https://127.0.0.1:8779/health
+```
+
+The systemd and OCI commands are alternatives, never two replicas. The same
+one-active-signer, cold-backup, exact-retry, TLS authentication, and
+Charger-head reconciliation rules apply to both.
+
+The Charger TLS certificate and pinned CA authenticate the anchor endpoint;
+the signer API has an independent TLS server identity for the same reason. The
+signer still listens only on `127.0.0.1:8779`. Acquisition and proving clients
+must use `https://127.0.0.1:8779` and validate
+`/etc/waybill/receiver-api-ca.pem`; redirects and proxy-environment routing are
+disabled by the supplied clients. If acquisition or proving clients are remote,
+expose only the necessary API through a separately managed reverse proxy with
+TLS, preferably mutual TLS and route-specific access policy. Never bind either
+bearer-token API directly to a public or untrusted interface. Only the trusted
+acquisition component receives the write token; the prover receives the
+read-only token.
+
+The signer accepts unsigned measurement fields and monthly odometer
+boundaries, owns all receiver signatures, and rejects caller-provided
+signatures, roots, validity flags, or policy commitments. For each interval,
+validity is derived from the exact signed status of its origin fix under
+`origin-osnma-authenticated-v1`; unknown values fail closed. It rejects
+duplicate period/month logs and sequence, time, or odometer rollback. The V5
+root attestation is policy-pinned and chained to the Charger-confirmed previous
+head; monthly boundaries use domain-bound attestation V2 and must be confirmed
+online by the Charger before local persistence. The first enrolled monthly
+boundary is an explicit bootstrap trust point; all later boundaries are
+calendar-sequential and odometer-continuous.
+
+## Transactional Charger and PostgreSQL
+
+The formal server path uses PostgreSQL; SQLite is only the local/CI evaluation
+backend and production startup rejects a SQLite URL. The current relational
+schema is V3; it adds a database-enforced unique device-token digest. A V2
+database is rejected rather than silently altered: preserve it for audit and
+perform an explicit migration or start the formal run from a fresh V3 database.
+Generate independent random values of at least 32 characters for the
+administrator token and token pepper. URL-encode the PostgreSQL password when
+placing it in `WAYBILL_CHARGER_DATABASE_URL`.
+
+Issue a server certificate from a dedicated offline or managed CA. Its
+`subjectAltName` must contain `IP:127.0.0.1` (or the exact DNS name used in
+`WAYBILL_RECEIVER_CHARGER_URL`); a CN-only certificate is rejected. Do not copy
+the CA private key to this host. Install the public CA, server chain, and server
+private key with the following ownership. GID `10002` is the fixed non-root
+Charger group inside the release image.
+
+```bash
+sudo install -d -o root -g root -m 0755 /etc/waybill /etc/waybill/tls
+sudo install -o root -g root -m 0644 CA_CERT.pem /etc/waybill/charger-ca.pem
+sudo install -o root -g root -m 0644 SERVER_CHAIN.pem \
+  /etc/waybill/tls/charger-server-chain.pem
+sudo install -o root -g 10002 -m 0640 SERVER_KEY.pem \
+  /etc/waybill/tls/charger-server.key
+openssl x509 -in /etc/waybill/tls/charger-server-chain.pem \
+  -noout -ext subjectAltName
+```
+
+The compose file mounts only `/etc/waybill/tls` read-only, runs Uvicorn TLS as
+UID/GID `10002`, and publishes only `127.0.0.1:8443`; host port `8020` is not
+published. Start the pinned stack and validate its certificate against the
+installed CA:
+
+```bash
+export WAYBILL_POSTGRES_PASSWORD='replace-with-random-password'
+export WAYBILL_CHARGER_DATABASE_URL='postgresql+psycopg://waybill:URL_ENCODED_PASSWORD@postgres:5432/waybill'
+export WAYBILL_CHARGER_DOMAIN='ruc-demo.charger-01'
+export WAYBILL_CHARGER_ADMIN_TOKEN='replace-with-at-least-32-random-characters'
+export WAYBILL_CHARGER_TOKEN_PEPPER='replace-with-at-least-32-random-characters'
+export WAYBILL_GIT_COMMIT='from-release-preflight'
+export WAYBILL_GIT_TREE='from-release-preflight'
+export WAYBILL_CODE_MANIFEST_SHA256='from-release-preflight'
+export WAYBILL_PROTOCOL_SHA256='from-release-preflight'
+docker compose -f deploy/waybill-charger-compose.yml up -d --build
+curl --fail --cacert /etc/waybill/charger-ca.pem https://127.0.0.1:8443/health
+```
+
+Register each receiver public key with an administrator credential and a
+separate random device token. The token is returned to the device out of band;
+the Charger stores only a keyed digest:
+
+```bash
+curl --fail --cacert /etc/waybill/charger-ca.pem \
+  -X POST https://127.0.0.1:8443/settlement/devices/register \
+  -H "Authorization: Bearer $WAYBILL_CHARGER_ADMIN_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --data '{"device_id":"dev-v6","public_key_hex":"REPLACE_HEX","jurisdiction_id":"ruc-demo","device_token":"REPLACE_RANDOM_DEVICE_TOKEN"}'
+```
+
+Proof and monthly-attestation submissions use that device token. Month status,
+reconciliation, close, and registration use the administrator token. The reset
+endpoint and transparent raw-fix endpoints cannot be enabled outside explicit
+test mode. Keep the Charger at one application
+worker for the first formal run; PostgreSQL serializes its write transactions,
+but multi-worker throughput is not a paper claim until the target-host stress
+receipt is produced.
+
+The remaining runbook is only for the frozen M4 full-scale experiment. It does not
 define a smoke, reduced, or publication-eligible shortcut.
 
 ## 0. Rent the target
@@ -14,6 +321,10 @@ host is acceptable only if its CPU, RAM, and disk meet the same requirements.
 
 ```bash
 docker buildx build --provenance=false --platform linux/amd64 --load \
+  --build-arg WAYBILL_GIT_COMMIT="$WAYBILL_GIT_COMMIT" \
+  --build-arg WAYBILL_GIT_TREE="$WAYBILL_GIT_TREE" \
+  --build-arg WAYBILL_CODE_MANIFEST_SHA256="$WAYBILL_CODE_MANIFEST_SHA256" \
+  --build-arg WAYBILL_PROTOCOL_SHA256="$WAYBILL_PROTOCOL_SHA256" \
   -t waybill-formal:local \
   -f containers/waybill-formal/Dockerfile .
 docker image inspect waybill-formal:local
@@ -22,29 +333,66 @@ docker image inspect waybill-formal:local
 The verified local digest is recorded in
 `artifacts/waybill_formal/container-manifest.json`. Either push this image to
 a controlled registry or transfer the frozen image archive created during
-release finalization. Copy these three release files to the target:
+release finalization. Copy the complete V2 release directory to the target;
+its inventory is self-verified and contains:
 
-- `waybill-formal-readiness-v1.bundle`
-- `waybill-formal-readiness-v1-image.tar`
+- `source.bundle`
+- `containers/formal-runner-image.tar`
+- `containers/charger-image.tar`
+- `containers/postgres-image.tar`
+- `containers/receiver-signer-image.tar`
+- one bound SPDX JSON SBOM beside each image archive
+- one bound Trivy JSON vulnerability report beside each image archive
+- `prover.tar.zst`
+- `code-manifest-v2.json`
+- `protocol.json`
+- `container-manifest.json`
+- `release-manifest.json`
 - `SHA256SUMS`
 
 Verify and restore them on the target:
 
 ```bash
 sha256sum -c SHA256SUMS
-GIT_LFS_SKIP_SMUDGE=1 git clone --branch waybill-formal-readiness-v1 \
-  waybill-formal-readiness-v1.bundle waybill_formal
+GIT_LFS_SKIP_SMUDGE=1 git clone --branch waybill-formal-readiness-v2 \
+  source.bundle waybill_formal
 cd waybill_formal
-docker load -i waybill-formal-readiness-v1-image.tar
+test "$(git rev-parse HEAD)" = "$(jq -r .identity.commit ../release-manifest.json)"
+docker load -i ../containers/formal-runner-image.tar
+docker load -i ../containers/charger-image.tar
+docker load -i ../containers/postgres-image.tar
+docker load -i ../containers/receiver-signer-image.tar
 docker image inspect waybill-formal:local
+docker image inspect waybill-charger:readiness-v2
+docker image inspect waybill-postgres:readiness-v2
+docker image inspect waybill-receiver-signer:readiness-v2
+```
+
+Build one immutable Apptainer runtime from the frozen formal-runner archive and
+record its own byte hash. The OCI image digest and SIF SHA-256 are separate
+bindings and both are required:
+
+```bash
+sudo install -d -m 0755 /opt/waybill-formal/runtime
+sudo apptainer build /opt/waybill-formal/runtime/waybill-formal-v2.sif \
+  docker-archive:../containers/formal-runner-image.tar
+sudo chown root:root /opt/waybill-formal/runtime/waybill-formal-v2.sif
+sudo chmod 0555 /opt/waybill-formal/runtime/waybill-formal-v2.sif
+export WAYBILL_FORMAL_SIF=/opt/waybill-formal/runtime/waybill-formal-v2.sif
+export WAYBILL_FORMAL_SIF_SHA256="$(sha256sum "$WAYBILL_FORMAL_SIF" | awk '{print $1}')"
+stat -c '%U:%G %a %n' "$WAYBILL_FORMAL_SIF" /opt/waybill-formal/runtime
+apptainer inspect --json "$WAYBILL_FORMAL_SIF"
 ```
 
 The LFS skip is intentional: historical proof artifacts are not release
 inputs. The authorized datasets and exact PTAU are transferred separately in
 the following steps.
 
-The observed digest must match the frozen manifest. A mutable tag alone is
-insufficient.
+The observed image IDs, `linux/amd64` platform, OCI revision labels, source
+commit, and code-manifest hash must match the frozen manifests. Mutable tags
+alone are insufficient. The proving archive supplies the exact R1CS, WASM,
+zkey, and verification key; the source bundle intentionally omits those large
+files and historical V5 LFS payloads.
 
 ## 2. Transfer restricted data and verify RG2
 
@@ -81,7 +429,9 @@ python script/materialize_waybill_formal_corpus.py \
 
 The materializer must produce exactly 12 S3 canonical variants per accepted
 period: four bucket sizes times three radii. It fails if any prepared period is
-silently dropped.
+silently dropped. `WAYBILL_PREPARED_ROOT` contains the period/tariff corpus;
+`WAYBILL_CORPUS_ROOT` contains the generated canonical S3 instances. They must
+be distinct directories and neither may overlap the writable run directory.
 
 ## 4. Freeze cardinality and resource plan
 
@@ -107,6 +457,8 @@ WAYBILL_WORKSPACE=/srv/waybill \
 WAYBILL_PTAU=/srv/waybill/powersOfTau28_hez_final_22.ptau \
 WAYBILL_CONTAINER_DIGEST='repo/image@sha256:...' \
 WAYBILL_EXPECTED_CONTAINER_DIGEST='repo/image@sha256:...' \
+WAYBILL_CONTAINER_RUNTIME_IMAGE="$WAYBILL_FORMAL_SIF" \
+WAYBILL_EXPECTED_CONTAINER_RUNTIME_SHA256="$WAYBILL_FORMAL_SIF_SHA256" \
 WAYBILL_REQUIRED_WORKSPACE_GIB=500 \
 script/check_deploy_host.sh
 ```
@@ -116,28 +468,75 @@ cannot close RG6.
 
 ## 6. Initialize and execute the immutable run
 
-After RG0-RG8 receipts are all `passed`, initialize once with
+After RG0-RG8 receipts are all `passed` and semantically valid under receipt V2,
+initialize once with
 `script/waybill_formal.py init-run`. Existing run directories are never
-overwritten. Render separate arrays so S2 main setup/proof jobs finish before
-S2 concurrency jobs:
+overwritten. The `init-run` command must include
+`--container-runtime-image "$WAYBILL_FORMAL_SIF"`,
+`--workspace-root "$WAYBILL_WORKSPACE"`; the resulting `run.json` binds the
+execution-container receipt and byte-hashes every immutable protocol, plan,
+manifest, gate, and expected-job input before any job can start. Initialization
+is staged and atomically renamed, so a failed check cannot leave a runnable
+partial run directory. The formal source is already embedded in the immutable
+OCI image and SIF; never mount a host checkout over `/work`.
 
 ```bash
+python script/waybill_formal.py init-run \
+  --plan-dir artifacts/waybill_formal/plan \
+  --output-root "$WAYBILL_WORKSPACE/runs" \
+  --run-id formal-001 \
+  --code-manifest "$WAYBILL_RELEASE_DIR/code-manifest-v2.json" \
+  --data-manifest artifacts/waybill_formal/data/data-manifest.json \
+  --environment-manifest artifacts/waybill_formal/environment.json \
+  --container-manifest "$WAYBILL_RELEASE_DIR/container-manifest.json" \
+  --prepared-manifest "$WAYBILL_CORPUS_ROOT/prepared_manifest.json" \
+  --gate-receipts artifacts/waybill_formal/gate-receipts.json \
+  --container-runtime-image "$WAYBILL_FORMAL_SIF" \
+  --prepared-root "$WAYBILL_PREPARED_ROOT" \
+  --corpus-root "$WAYBILL_CORPUS_ROOT" \
+  --ptau "$WAYBILL_PTAU" \
+  --workspace-root "$WAYBILL_WORKSPACE"
+```
+
+Render separate arrays so S2 main setup/proof jobs finish before S2
+concurrency jobs:
+
+```bash
+SLURM_CONTAINER_ARGS=(
+  --container-image "$WAYBILL_FORMAL_SIF"
+  --prepared-root "$WAYBILL_PREPARED_ROOT"
+  --corpus-root "$WAYBILL_CORPUS_ROOT"
+  --ptau "$WAYBILL_PTAU"
+  --workspace-root "$WAYBILL_WORKSPACE"
+)
 python script/waybill_formal.py render-slurm \
   --run-root "$RUN_ROOT" --stage S2 --kind main \
-  --output "$RUN_ROOT/slurm/s2-main.sbatch"
+  --output "$RUN_ROOT/slurm/s2-main.sbatch" "${SLURM_CONTAINER_ARGS[@]}"
 python script/waybill_formal.py render-slurm \
   --run-root "$RUN_ROOT" --stage S2 --kind concurrency \
-  --output "$RUN_ROOT/slurm/s2-concurrency.sbatch"
+  --output "$RUN_ROOT/slurm/s2-concurrency.sbatch" "${SLURM_CONTAINER_ARGS[@]}"
 python script/waybill_formal.py render-slurm \
   --run-root "$RUN_ROOT" --stage S5 --kind corpus \
-  --output "$RUN_ROOT/slurm/s5-corpus.sbatch"
+  --output "$RUN_ROOT/slurm/s5-corpus.sbatch" "${SLURM_CONTAINER_ARGS[@]}"
 python script/waybill_formal.py render-slurm \
   --run-root "$RUN_ROOT" --stage S5 --kind verifier \
-  --output "$RUN_ROOT/slurm/s5-verifier.sbatch"
+  --output "$RUN_ROOT/slurm/s5-verifier.sbatch" "${SLURM_CONTAINER_ARGS[@]}"
 python script/waybill_formal.py render-slurm \
   --run-root "$RUN_ROOT" --stage S5 --kind charger \
-  --output "$RUN_ROOT/slurm/s5-charger.sbatch"
+  --output "$RUN_ROOT/slurm/s5-charger.sbatch" "${SLURM_CONTAINER_ARGS[@]}"
 ```
+
+The generated arrays refuse host-Python execution. They verify the SIF hash,
+launch with `--containall --cleanenv --no-home --no-mount hostfs`, disable the
+network namespace, execute the image-embedded source at `/work`, and expose
+only the sealed run directory read-write. Prepared datasets, canonical S3
+instances, and the exact PTAU are separate read-only mounts. The runtime also
+compares the embedded
+Git/tree/code-manifest/protocol binding file with `execution-container.json`.
+Each attempt receipt includes the OCI image digest, SIF hash, source bindings,
+and `apptainer` launcher binding. S2 materializes its generated Circom wrapper
+and a byte-identical base-circuit copy inside the attempt directory; it never
+writes into the immutable image source tree.
 
 Submit S1, S2-main, S3, S4, S2-concurrency, S5-corpus, and finally the
 S5-verifier/S5-charger jobs with scheduler dependencies appropriate to the

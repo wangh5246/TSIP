@@ -6,15 +6,20 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
+import ssl
 import subprocess
 import sys
 import tempfile
 import time
+import urllib.error
+import urllib.request
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote, urlsplit
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
@@ -24,12 +29,15 @@ if str(ROOT_DIR) not in sys.path:
 
 from common.eval_harness import HarnessParams  # noqa: E402
 from common.policy_profile import PolicyProfile  # noqa: E402
+from common.receiver_signer import receiver_log_body, receiver_log_sha256  # noqa: E402
 from common.settlement import (  # noqa: E402
+    SETTLEMENT_POSITION_VALIDITY_RULE,
     ReceiverFix,
     TariffTable,
     field_from_text,
     make_device_attestation_commitment,
     month_window_from_period_start,
+    receiver_attestation_sha256,
     sign_receiver_root_attestation,
     sign_receiver_fix,
 )
@@ -54,6 +62,7 @@ CAP_POLICY_SQ = 3_000_000_000
 CELL_SIZE = 100
 GRID_W = 100
 SETTLEMENT_PROFILE = "k6"
+DEFAULT_TEST_CHARGER_DOMAIN = "ruc-demo.charger-test"
 
 # Short aliases retained for tooling that imports the prover module directly.
 PUBLIC_SIGNAL_ORDER = PUBLIC_SIGNAL_ORDER_V6
@@ -63,10 +72,209 @@ _DEVICE_SEED = hashlib.sha256(b"tsip-prove-v6-device-key").digest()
 _DEVICE_PRIVATE_KEY = Ed25519PrivateKey.from_private_bytes(_DEVICE_SEED)
 _DEVICE_PUBLIC_KEY_BYTES = _DEVICE_PRIVATE_KEY.public_key().public_bytes_raw()
 _DEVICE_DAC = make_device_attestation_commitment(_DEVICE_PUBLIC_KEY_BYTES)
+MAX_RECEIVER_RESPONSE_BYTES = 4 * 1024 * 1024
+
+
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(
+        self,
+        req: Any,
+        fp: Any,
+        code: int,
+        msg: str,
+        headers: Any,
+        newurl: str,
+    ) -> None:
+        return None
+
+
+def receiver_url_context(
+    receiver_url: str,
+    *,
+    ca_file: str = "",
+    allow_insecure_http: bool = False,
+) -> ssl.SSLContext | None:
+    parsed = urlsplit(receiver_url)
+    if parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise RuntimeError("receiver URL must not contain credentials, query, or fragment")
+    if not parsed.hostname:
+        raise RuntimeError("receiver URL must contain a hostname")
+    if parsed.scheme == "http":
+        if allow_insecure_http:
+            return None
+        raise RuntimeError(
+            "paper-facing receiver access requires HTTPS; insecure HTTP is test-only"
+        )
+    if parsed.scheme != "https":
+        raise RuntimeError("receiver URL must use HTTPS")
+    context = ssl.create_default_context()
+    if ca_file:
+        ca_path = Path(ca_file).expanduser()
+        if not ca_path.is_absolute():
+            ca_path = (ROOT_DIR / ca_path).resolve()
+        if not ca_path.is_file() or ca_path.is_symlink():
+            raise RuntimeError("receiver CA file is missing or unsafe")
+        context = ssl.create_default_context(cafile=str(ca_path))
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
+    return context
+
+
+def _strict_json_bytes(payload: bytes, *, label: str) -> dict[str, Any]:
+    def pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in items:
+            if key in result:
+                raise RuntimeError(f"{label} contains a duplicate JSON key: {key}")
+            result[key] = value
+        return result
+
+    try:
+        value = json.loads(
+            payload,
+            object_pairs_hook=pairs,
+            parse_constant=lambda raw: (_ for _ in ()).throw(
+                RuntimeError(f"{label} contains a non-finite JSON number: {raw}")
+            ),
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"{label} is not valid UTF-8 JSON") from exc
+    if not isinstance(value, dict):
+        raise RuntimeError(f"{label} must be a JSON object")
+    return value
+
+
+def fetch_receiver_json(
+    request: urllib.request.Request,
+    *,
+    ssl_context: ssl.SSLContext | None,
+    timeout: int = 30,
+) -> dict[str, Any]:
+    handlers: list[Any] = [urllib.request.ProxyHandler({}), _NoRedirectHandler()]
+    if ssl_context is not None:
+        handlers.append(urllib.request.HTTPSHandler(context=ssl_context))
+    opener = urllib.request.build_opener(*handlers)
+    with opener.open(request, timeout=timeout) as response:
+        content_length = response.headers.get("Content-Length")
+        if content_length is not None:
+            try:
+                if int(content_length) > MAX_RECEIVER_RESPONSE_BYTES:
+                    raise RuntimeError("receiver response exceeds the configured size limit")
+            except ValueError as exc:
+                raise RuntimeError("receiver returned an invalid Content-Length") from exc
+        payload = response.read(MAX_RECEIVER_RESPONSE_BYTES + 1)
+    if len(payload) > MAX_RECEIVER_RESPONSE_BYTES:
+        raise RuntimeError("receiver response exceeds the configured size limit")
+    return _strict_json_bytes(payload, label="receiver response")
 
 
 def field_str(value: Any) -> str:
     return str(int(value))
+
+
+def build_test_root_attestation(
+    *,
+    fixes: Sequence[ReceiverFix],
+    position_valid: Sequence[bool],
+    policy_profile_commitment: int,
+    receiver_fix_root: str | int,
+    charger_domain: str = DEFAULT_TEST_CHARGER_DOMAIN,
+) -> dict[str, Any]:
+    """Build a clearly labeled in-process attestation for unit/artifact tests.
+
+    The paper-facing CLI replaces this value with material fetched from the
+    independent receiver process.  Keeping the primitive here allows circuit
+    matrix tests to build deterministic endpoint bundles without claiming a
+    process boundary.
+    """
+
+    body = receiver_log_body(
+        receiver_id="waybill-test-receiver",
+        charger_domain=charger_domain,
+        device_id=str(fixes[0].device_id),
+        period_id=str(fixes[0].period_id),
+        fixes_payload=[fix.to_dict() for fix in fixes],
+        position_valid=position_valid,
+        policy_profile_commitment=policy_profile_commitment,
+        receiver_fix_root=receiver_fix_root,
+        device_attestation_commitment=_DEVICE_DAC,
+    )
+    return sign_receiver_root_attestation(
+        receiver_id="waybill-test-receiver",
+        charger_domain=charger_domain,
+        device_id=str(fixes[0].device_id),
+        period_id=str(fixes[0].period_id),
+        log_epoch=1,
+        fix_count=len(fixes),
+        receiver_fix_root=receiver_fix_root,
+        device_attestation_commitment=_DEVICE_DAC,
+        log_sha256=receiver_log_sha256(body),
+        private_key_bytes=_DEVICE_SEED,
+    )
+
+
+def fetch_receiver_period_material(
+    *,
+    receiver_url: str,
+    device_id: str,
+    period_id: str,
+    prover_token: str,
+    ssl_context: ssl.SSLContext | None = None,
+) -> dict[str, Any]:
+    endpoint = (
+        f"{receiver_url.rstrip('/')}/v2/receiver/logs/"
+        f"{quote(device_id, safe='')}/{quote(period_id, safe='')}/attestation"
+    )
+    try:
+        request = urllib.request.Request(
+            endpoint,
+            headers={"Authorization": f"Bearer {prover_token}"},
+        )
+        payload = fetch_receiver_json(request, ssl_context=ssl_context)
+    except (urllib.error.URLError, TimeoutError, RuntimeError) as exc:
+        raise RuntimeError(f"cannot fetch sealed receiver attestation: {exc}") from exc
+    if payload.get("schema") != "waybill.receiver.period-material/v2":
+        raise RuntimeError("receiver returned an unsupported period-material schema")
+    if not isinstance(payload.get("position_valid"), list):
+        raise RuntimeError("receiver period material lacks position_valid")
+    if payload.get("position_validity_rule") != SETTLEMENT_POSITION_VALIDITY_RULE:
+        raise RuntimeError("receiver period material uses an unsupported validity rule")
+    if not isinstance(payload.get("fixes"), list):
+        raise RuntimeError("receiver period material lacks signed fixes")
+    public_key_hex = payload.get("receiver_public_key_hex")
+    if not isinstance(public_key_hex, str) or len(public_key_hex) != 64:
+        raise RuntimeError("receiver period material lacks a valid public key")
+    if not isinstance(payload.get("attestation"), dict):
+        raise RuntimeError("receiver period material lacks an attestation")
+    return payload
+
+
+def fetch_receiver_month_attestation(
+    *,
+    receiver_url: str,
+    device_id: str,
+    month_id: str,
+    prover_token: str,
+    ssl_context: ssl.SSLContext | None = None,
+) -> dict[str, Any]:
+    endpoint = (
+        f"{receiver_url.rstrip('/')}/v2/receiver/months/"
+        f"{quote(device_id, safe='')}/{quote(month_id, safe='')}/attestation"
+    )
+    try:
+        request = urllib.request.Request(
+            endpoint,
+            headers={"Authorization": f"Bearer {prover_token}"},
+        )
+        payload = fetch_receiver_json(request, ssl_context=ssl_context)
+    except (urllib.error.URLError, TimeoutError, RuntimeError) as exc:
+        raise RuntimeError(f"cannot fetch sealed receiver month attestation: {exc}") from exc
+    if payload.get("schema") != "waybill.receiver.month-material/v2":
+        raise RuntimeError("receiver returned an unsupported month-material schema")
+    if not isinstance(payload.get("attestation"), dict):
+        raise RuntimeError("receiver month material lacks an attestation")
+    attestation = dict(payload["attestation"])
+    attestation.pop("month_epoch", None)
+    return attestation
 
 
 def run(cmd: list[str], *, cwd: Path = ROOT_DIR, timeout: int = 600) -> subprocess.CompletedProcess[str]:
@@ -129,7 +337,7 @@ def compile_circuit(artifact_dir: Path, *, circomlib_include: str = "") -> Path:
 def build_tariff() -> TariffTable:
     cells = {idx: (10 if idx < 128 else 20) for idx in range(1 << TREE_DEPTH)}
     return TariffTable(
-        tariff_version=8,
+        tariff_version=9,
         grid_w=GRID_W,
         cell_zones=cells,
         zone_rates_cents_per_m={10: 1, 20: 5},
@@ -146,7 +354,11 @@ def build_fixes(period_id: str) -> list[ReceiverFix]:
             auth_gnss_time=1_777_593_600 + seq * CADENCE_SEC,
             cell_x=seq,
             cell_y=0,
-            osnma_status="authenticated",
+            osnma_status=(
+                "unavailable"
+                if seq < N_FIXES - 1 and seq % 7 == 3
+                else "authenticated"
+            ),
             odometer_reading_m=10_000 + seq * CELL_SIZE,
             # Deterministic benchmark nonce; deployments use receiver entropy.
             nonce=f"v6-benchmark-nonce-{seq}",
@@ -192,6 +404,7 @@ def build_raw_witness_input_for_fixes(
     params: HarnessParams,
     policy_profile_commitment: int = 0,
     payload_rem_zero: bool = True,
+    device_attestation_commitment: str = _DEVICE_DAC,
 ) -> dict[str, Any]:
     if len(fixes) != N_FIXES:
         raise ValueError(f"expected exactly {N_FIXES} fixes")
@@ -203,7 +416,7 @@ def build_raw_witness_input_for_fixes(
         raise ValueError(f"compiled circuit requires cell_size_m={CELL_SIZE}")
 
     period_id = str(fixes[0].period_id)
-    dac_field = field_from_text(_DEVICE_DAC)
+    dac_field = field_from_text(device_attestation_commitment)
     month_id, month_start_time, month_end_time = month_window_from_period_start(fixes[0].auth_gnss_time)
     aggregate = aggregate_intervals_for_witness(
         fixes,
@@ -217,6 +430,7 @@ def build_raw_witness_input_for_fixes(
         "receiver_fix_root": field_str(
             compute_receiver_fix_root_v6(
                 fixes,
+                position_valid=position_valid,
                 dac_field=dac_field,
                 policy_profile_commitment=policy_profile_commitment,
             )
@@ -284,11 +498,19 @@ def build_input_for_fixes(
     params: HarnessParams,
     policy_profile: Any | None = None,
     validate_submission: bool = True,
+    receiver_root_attestation: dict[str, Any] | None = None,
+    device_public_key_bytes: bytes = _DEVICE_PUBLIC_KEY_BYTES,
+    device_attestation_commitment: str | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     if len(fixes) != N_FIXES:
         raise ValueError(f"expected exactly {N_FIXES} fixes")
     profile_commitment = 0 if policy_profile is None else int(policy_profile.commitment)
     period_id = str(fixes[0].period_id)
+    device_dac = device_attestation_commitment or make_device_attestation_commitment(
+        device_public_key_bytes
+    )
+    if make_device_attestation_commitment(device_public_key_bytes) != device_dac:
+        raise ValueError("receiver public key does not match its device attestation commitment")
     month_id, _month_start, _month_end = month_window_from_period_start(fixes[0].auth_gnss_time)
     public = build_period_public_statement_v6(
         fixes=fixes,
@@ -300,7 +522,7 @@ def build_input_for_fixes(
         tier_vmax_mps=int(params.tier_vmax_mps),
         max_dt_sec=int(params.max_dt_sec),
         r_max_cents_per_m=tariff.max_zone_rate_cents_per_m,
-        device_attestation_commitment=_DEVICE_DAC,
+        device_attestation_commitment=device_dac,
         tariff_tree_depth=TREE_DEPTH,
         mode_vmax_sq=MODE_VMAX_SQ,
         cap_policy_sq=CAP_POLICY_SQ,
@@ -312,7 +534,7 @@ def build_input_for_fixes(
             tariff=tariff,
             position_valid=position_valid,
             public_statement=public,
-            public_key_bytes=_DEVICE_PUBLIC_KEY_BYTES,
+            public_key_bytes=device_public_key_bytes,
             cadence_sec=int(params.cadence_sec),
             tier_vmax_mps=int(params.tier_vmax_mps),
             max_dt_sec=int(params.max_dt_sec),
@@ -329,6 +551,7 @@ def build_input_for_fixes(
         position_valid=position_valid,
         params=params,
         policy_profile_commitment=profile_commitment,
+        device_attestation_commitment=device_dac,
     )
     statement_to_signal = {
         "month_id": "month_id_field",
@@ -339,9 +562,24 @@ def build_input_for_fixes(
             expected = field_str(field_from_text(str(public["device_attestation_commitment"])))
         else:
             statement_key = statement_to_signal.get(signal, signal)
+            if statement_key is None:
+                raise RuntimeError(f"missing public-statement mapping for {signal}")
             expected = field_str(public[statement_key])
         if input_json[signal] != expected:
             raise RuntimeError(f"V6 public signal mismatch before proving: {signal}")
+
+    root_attestation = receiver_root_attestation or build_test_root_attestation(
+        fixes=fixes,
+        position_valid=position_valid,
+        policy_profile_commitment=profile_commitment,
+        receiver_fix_root=public["receiver_fix_root"],
+    )
+    if str(root_attestation.get("receiver_fix_root")) != str(public["receiver_fix_root"]):
+        raise ValueError("sealed receiver root does not match the witness root")
+    if str(root_attestation.get("period_id")) != period_id:
+        raise ValueError("sealed receiver period does not match the witness period")
+    if str(root_attestation.get("device_attestation_commitment")) != device_dac:
+        raise ValueError("sealed receiver identity does not match the witness identity")
 
     submission = {
         "fixes": [fix.to_dict() for fix in fixes],
@@ -353,10 +591,11 @@ def build_input_for_fixes(
             "zone_rates_cents_per_m": tariff.zone_rates_cents_per_m,
         },
         "public_statement": public,
-        "receiver_root_attestation": sign_receiver_root_attestation(
-            public_statement=public,
-            device_id=str(fixes[0].device_id),
-            private_key_bytes=_DEVICE_SEED,
+        "receiver_root_attestation": root_attestation,
+        "receiver_attestation_mode": (
+            "independent-receiver-process"
+            if receiver_root_attestation is not None
+            else "test-only-in-process"
         ),
     }
     if policy_profile is not None:
@@ -364,7 +603,15 @@ def build_input_for_fixes(
     return input_json, submission
 
 
-def build_input(policy_profile: PolicyProfile | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
+def build_input(
+    policy_profile: PolicyProfile | None = None,
+    *,
+    position_valid: Sequence[bool] | None = None,
+    receiver_root_attestation: dict[str, Any] | None = None,
+    fixes: Sequence[ReceiverFix] | None = None,
+    device_public_key_bytes: bytes = _DEVICE_PUBLIC_KEY_BYTES,
+    device_attestation_commitment: str | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
     period_id = f"2026-05-v6-{SETTLEMENT_PROFILE}"
     params = HarnessParams(
         cadence_sec=CADENCE_SEC,
@@ -372,11 +619,14 @@ def build_input(policy_profile: PolicyProfile | None = None) -> tuple[dict[str, 
         tier_vmax_mps=TIER_VMAX_MPS,
     )
     return build_input_for_fixes(
-        build_fixes(period_id),
+        list(fixes) if fixes is not None else build_fixes(period_id),
         build_tariff(),
-        position_valid=build_position_valid(),
+        position_valid=list(position_valid) if position_valid is not None else build_position_valid(),
         params=params,
         policy_profile=policy_profile,
+        receiver_root_attestation=receiver_root_attestation,
+        device_public_key_bytes=device_public_key_bytes,
+        device_attestation_commitment=device_attestation_commitment,
     )
 
 
@@ -411,6 +661,34 @@ def main() -> None:
     parser.add_argument("--write-input", default="")
     parser.add_argument("--receipt", default="")
     parser.add_argument(
+        "--receiver-url",
+        default="",
+        help="Independent receiver signer base URL; required for paper-facing proofs.",
+    )
+    parser.add_argument(
+        "--receiver-prover-token",
+        default=os.getenv("WAYBILL_RECEIVER_PROVER_TOKEN", ""),
+        help=(
+            "Read-scope receiver credential; defaults to "
+            "WAYBILL_RECEIVER_PROVER_TOKEN."
+        ),
+    )
+    parser.add_argument(
+        "--receiver-ca-file",
+        default=os.getenv("WAYBILL_RECEIVER_API_CA_FILE", ""),
+        help="CA certificate used to authenticate the independent receiver HTTPS endpoint.",
+    )
+    parser.add_argument(
+        "--allow-insecure-receiver-http",
+        action="store_true",
+        help="Permit HTTP only for explicit local tests; never use for paper-facing evidence.",
+    )
+    parser.add_argument(
+        "--allow-test-signer",
+        action="store_true",
+        help="Use the deterministic in-process signer only for unit/artifact tests.",
+    )
+    parser.add_argument(
         "--proof-output-dir",
         default="",
         help="Persist input/proof/public/submission JSON for endpoint tests.",
@@ -432,7 +710,70 @@ def main() -> None:
     if args.policy_profile:
         profile_path = (ROOT_DIR / args.policy_profile).resolve()
         policy_profile = PolicyProfile.from_dict(json.loads(profile_path.read_text(encoding="utf-8")))
-    input_json, submission = build_input(policy_profile=policy_profile)
+    period_id = f"2026-05-v6-{SETTLEMENT_PROFILE}"
+    receiver_attestation: dict[str, Any] | None = None
+    receiver_position_valid: Sequence[bool] | None = None
+    receiver_fixes: Sequence[ReceiverFix] | None = None
+    receiver_public_key_bytes = _DEVICE_PUBLIC_KEY_BYTES
+    receiver_device_dac: str | None = None
+    receiver_month_attestation: dict[str, Any] | None = None
+    if args.receiver_url:
+        if not args.receiver_prover_token:
+            raise RuntimeError(
+                "--receiver-url requires WAYBILL_RECEIVER_PROVER_TOKEN or "
+                "--receiver-prover-token"
+            )
+        receiver_ssl_context = receiver_url_context(
+            args.receiver_url,
+            ca_file=args.receiver_ca_file,
+            allow_insecure_http=args.allow_insecure_receiver_http,
+        )
+        material = fetch_receiver_period_material(
+            receiver_url=args.receiver_url,
+            device_id="dev-v6",
+            period_id=period_id,
+            prover_token=args.receiver_prover_token,
+            ssl_context=receiver_ssl_context,
+        )
+        expected_profile_commitment = 0 if policy_profile is None else int(policy_profile.commitment)
+        if int(material["policy_profile_commitment"]) != expected_profile_commitment:
+            raise RuntimeError("receiver log is bound to a different policy profile")
+        receiver_position_valid = list(material["position_valid"])
+        receiver_attestation = dict(material["attestation"])
+        receiver_fixes = [
+            ReceiverFix.from_dict(dict(item))
+            for item in material["fixes"]
+        ]
+        try:
+            receiver_public_key_bytes = bytes.fromhex(str(material["receiver_public_key_hex"]))
+        except ValueError as exc:
+            raise RuntimeError("receiver public key is not valid hexadecimal") from exc
+        if len(receiver_public_key_bytes) != 32:
+            raise RuntimeError("receiver public key must be exactly 32 bytes")
+        receiver_device_dac = str(receiver_attestation["device_attestation_commitment"])
+        receiver_month_attestation = fetch_receiver_month_attestation(
+            receiver_url=args.receiver_url,
+            device_id="dev-v6",
+            month_id="202605",
+            prover_token=args.receiver_prover_token,
+            ssl_context=receiver_ssl_context,
+        )
+    elif not args.allow_test_signer:
+        raise RuntimeError(
+            "paper-facing V6 proving requires --receiver-url; "
+            "use --allow-test-signer only for deterministic tests"
+        )
+    input_json, submission = build_input(
+        policy_profile=policy_profile,
+        position_valid=receiver_position_valid,
+        receiver_root_attestation=receiver_attestation,
+        fixes=receiver_fixes,
+        device_public_key_bytes=receiver_public_key_bytes,
+        device_attestation_commitment=receiver_device_dac,
+    )
+    submission["receiver_public_key_hex"] = receiver_public_key_bytes.hex()
+    if receiver_month_attestation is not None:
+        submission["receiver_monthly_odometer_attestation"] = receiver_month_attestation
     if args.write_input:
         Path(args.write_input).write_text(json.dumps(input_json, indent=2, sort_keys=True), encoding="utf-8")
 
@@ -448,7 +789,18 @@ def main() -> None:
         run(["snarkjs", "wtns", "calculate", str(wasm), str(input_path), str(witness_path)], timeout=1200)
         witness_ms = (time.perf_counter() - t0) * 1000
         t0 = time.perf_counter()
-        run(["snarkjs", "groth16", "prove", str(zkey), str(witness_path), str(proof_path), str(public_path)], timeout=1200)
+        run(
+            [
+                "snarkjs",
+                "groth16",
+                "prove",
+                str(zkey),
+                str(witness_path),
+                str(proof_path),
+                str(public_path),
+            ],
+            timeout=1200,
+        )
         prove_ms = (time.perf_counter() - t0) * 1000
         t0 = time.perf_counter()
         verify_out = run(
@@ -477,9 +829,24 @@ def main() -> None:
     r1cs_info = run(["snarkjs", "r1cs", "info", str(r1cs)]).stdout
     constraints_match = re.search(r"# of Constraints:\s*(\d+)", r1cs_info)
     constraints = int(constraints_match.group(1)) if constraints_match else None
+    root_attestation = submission["receiver_root_attestation"]
     receipt = {
-        "schema": "waybill-settlement-v6-circuit-differential-receipt-v1",
+        "schema": "waybill-settlement-v6-circuit-differential-receipt-v2",
         "ok": "OK" in verify_out,
+        "commitment_semantics": "receiver-fix-validity-v2",
+        "receiver_attestation_mode": submission["receiver_attestation_mode"],
+        "receiver_attestation_schema": root_attestation["schema"],
+        "position_validity_rule": root_attestation["position_validity_rule"],
+        "receiver_id": root_attestation["receiver_id"],
+        "receiver_log_sha256": root_attestation["log_sha256"],
+        "receiver_log_epoch": root_attestation["log_epoch"],
+        "receiver_attestation_sha256": receiver_attestation_sha256(
+            dict(root_attestation)
+        ),
+        "previous_attestation_sha256": root_attestation[
+            "previous_attestation_sha256"
+        ],
+        "receiver_chain_mode": "charger-online-cas-v1",
         "profile": SETTLEMENT_PROFILE,
         "circuit": f"SettlementPeriodV6({N_FIXES},{TREE_DEPTH},6)",
         "constraints": constraints,
@@ -505,10 +872,29 @@ def main() -> None:
             "wasm": sha256_file(wasm),
             "zkey": sha256_file(zkey),
             "verification_key": sha256_file(vkey),
+            "generate_witness_js": sha256_file(
+                wasm.parent / "generate_witness.js"
+            ),
+            "witness_calculator_js": sha256_file(
+                wasm.parent / "witness_calculator.js"
+            ),
             "proof_json": proof_sha256,
             "public_json": public_sha256,
         },
-        "trusted_setup_note": "test-only direct Groth16 setup from the repository pot18",
+        "code_sha256": {
+            str(path.relative_to(ROOT_DIR)): sha256_file(path)
+            for path in (
+                ROOT_DIR / "common/policy_profile.py",
+                ROOT_DIR / "common/http_security.py",
+                ROOT_DIR / "common/receiver_signer.py",
+                ROOT_DIR / "common/settlement.py",
+                ROOT_DIR / "common/settlement_v6.py",
+                ROOT_DIR / "experiments-heatmap/circuits/settlement_period_v6_base.circom",
+                ROOT_DIR / "script/prove_settlement_period_v6.py",
+                ROOT_DIR / "services/receiver_signer/app.py",
+            )
+        },
+        "trusted_setup_note": "test-only direct Groth16 setup from an external pot18",
     }
     if args.receipt:
         Path(args.receipt).write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")

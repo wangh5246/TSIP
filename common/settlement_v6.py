@@ -27,6 +27,7 @@ from common.settlement import (
     canonical_month_window,
     commitment_chain_root,
     compute_public_statement_commitment,
+    derive_position_valid,
     field_from_text,
     month_window_from_period_start,
     poseidon_chain,
@@ -142,13 +143,15 @@ def _validate_tariff_and_rmax(tariff: TariffTable, r_max_cents_per_m: object) ->
 def compute_fix_commitment_v6(
     fix: ReceiverFix,
     *,
+    validity_to_next: bool,
     dac_field: int = 0,
     policy_profile_commitment: int = 0,
 ) -> int:
-    """Commit a fix under the exact V6 policy profile used by the circuit."""
+    """Commit a fix and its receiver-authenticated next-interval validity."""
 
     dac = _require_field("dac_field", dac_field)
     policy_commitment = _require_field("policy_profile_commitment", policy_profile_commitment)
+    validity = _require_bool("validity_to_next", validity_to_next)
     return poseidon_chain(
         [
             dac,
@@ -160,6 +163,7 @@ def compute_fix_commitment_v6(
             _require_uint("cell_y", fix.cell_y, RATE_BITS),
             _require_uint("odometer_reading_m", fix.odometer_reading_m, ODOMETER_BITS),
             field_from_text(fix.nonce),
+            int(validity),
         ]
     )
 
@@ -167,17 +171,27 @@ def compute_fix_commitment_v6(
 def compute_receiver_fix_root_v6(
     fixes: Sequence[ReceiverFix],
     *,
+    position_valid: Sequence[bool],
     dac_field: int = 0,
     policy_profile_commitment: int = 0,
 ) -> int:
+    if len(fixes) < 2:
+        raise ValueError("at least two receiver fixes are required")
+    if len(position_valid) != len(fixes) - 1:
+        raise ValueError("expected one position_valid flag per interval")
+    flags = [
+        _require_bool(f"position_valid[{index}]", flag)
+        for index, flag in enumerate(position_valid)
+    ]
     return commitment_chain_root(
         [
             compute_fix_commitment_v6(
                 fix,
+                validity_to_next=flags[index] if index < len(flags) else False,
                 dac_field=dac_field,
                 policy_profile_commitment=policy_profile_commitment,
             )
-            for fix in fixes
+            for index, fix in enumerate(fixes)
         ]
     )
 
@@ -297,6 +311,15 @@ def fee_for_period_v6(
     fallback_intervals = 0
     private_zone_distance: dict[int, int] = {}
     interval_commitments: list[int] = []
+    fix_commitments = [
+        compute_fix_commitment_v6(
+            fix,
+            validity_to_next=flags[index] if index < len(flags) else False,
+            dac_field=dac,
+            policy_profile_commitment=profile_commitment,
+        )
+        for index, fix in enumerate(fixes)
+    ]
 
     for i, (prev, curr, valid) in enumerate(zip(fixes, fixes[1:], flags)):
         prev_time = _require_uint(f"auth_time[{i}]", prev.auth_gnss_time, TIME_BITS)
@@ -365,16 +388,8 @@ def fee_for_period_v6(
         interval_commitments.append(
             poseidon_chain(
                 [
-                    compute_fix_commitment_v6(
-                        prev,
-                        dac_field=dac,
-                        policy_profile_commitment=profile_commitment,
-                    ),
-                    compute_fix_commitment_v6(
-                        curr,
-                        dac_field=dac,
-                        policy_profile_commitment=profile_commitment,
-                    ),
+                    fix_commitments[i],
+                    fix_commitments[i + 1],
                     delta,
                     zone_id,
                     zone_rate,
@@ -510,6 +525,7 @@ def build_period_public_statement_v6(
         "receiver_fix_root": str(
             compute_receiver_fix_root_v6(
                 fixes,
+                position_valid=position_valid,
                 dac_field=dac_field,
                 policy_profile_commitment=profile_commitment,
             )
@@ -549,11 +565,22 @@ def verify_period_submission_v6(
     """Verify authenticated fixes and recompute the complete V6 statement."""
 
     period_id = str(public_statement["period_id"])
-    verify_fix_sequence(list(fixes), public_key_bytes=public_key_bytes, period_id=period_id)
+    verify_fix_sequence(
+        list(fixes),
+        public_key_bytes=public_key_bytes,
+        period_id=period_id,
+        allow_unavailable=True,
+    )
+    supplied_validity = [
+        _require_bool(f"position_valid[{index}]", flag)
+        for index, flag in enumerate(position_valid)
+    ]
+    if supplied_validity != derive_position_valid(list(fixes)):
+        raise ValueError("position_valid does not match the signed receiver status")
     expected = build_period_public_statement_v6(
         fixes=fixes,
         tariff=tariff,
-        position_valid=position_valid,
+        position_valid=supplied_validity,
         period_id=period_id,
         month_id=str(public_statement["month_id"]),
         cadence_sec=cadence_sec,

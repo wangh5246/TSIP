@@ -6,7 +6,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pubfig as pf
 
 
 ROOT = Path(__file__).resolve().parent
@@ -88,6 +87,13 @@ def load_fixed_frame(path: Path = INPUT) -> pd.DataFrame:
 
 
 def main() -> None:
+    try:
+        import pubfig as pf
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "rendering the V4 heatmap requires the optional pubfig==0.3.0 package"
+        ) from exc
+
     os.environ["SOURCE_DATE_EPOCH"] = FIGURE_SOURCE_DATE_EPOCH
     frame = load_fixed_frame()
     matrix = frame[["proposed_avg_jaccard", "baseline_avg_jaccard"]].to_numpy(dtype=float)

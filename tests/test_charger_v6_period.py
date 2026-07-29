@@ -8,7 +8,14 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi.testclient import TestClient
 
 from common.policy_profile import PolicyProfile, PolicyRegistry, sha256_file
-from common.settlement import ReceiverFix, TariffTable, make_device_attestation_commitment, sign_receiver_fix
+from common.settlement import (
+    SETTLEMENT_POSITION_VALIDITY_RULE,
+    SETTLEMENT_ROOT_ATTESTATION_SCHEMA,
+    ReceiverFix,
+    TariffTable,
+    make_device_attestation_commitment,
+    sign_receiver_fix,
+)
 from common.settlement_v6 import build_period_public_statement_v6
 from services.charger import app as charger_app
 
@@ -18,7 +25,7 @@ SEED = hashlib.sha256(b"waybill-v6-charger-period-test").digest()
 PRIVATE_KEY = Ed25519PrivateKey.from_private_bytes(SEED)
 PUBLIC_KEY = PRIVATE_KEY.public_key().public_bytes_raw()
 DAC = make_device_attestation_commitment(PUBLIC_KEY)
-VKEY = ROOT_DIR / "zk/settlement_period_v5_k6/verification_key.json"
+VKEY = ROOT_DIR / "zk/settlement_period_v6_k6/verification_key.json"
 MAY_START = 1_777_593_600
 
 
@@ -62,6 +69,8 @@ def _profile(*, fallback: str = "odometer-max-rate-v6") -> PolicyProfile:
         monthly_reconciliation_rate_cents_per_m=5,
         fallback_semantics_version=fallback,
         verification_key_path=str(VKEY),
+        receiver_attestation_schema=SETTLEMENT_ROOT_ATTESTATION_SCHEMA,
+        position_validity_rule=SETTLEMENT_POSITION_VALIDITY_RULE,
     )
 
 
@@ -70,7 +79,9 @@ def _registry(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(charger_app, "policy_registry", PolicyRegistry([_profile()]))
 
 
-def _fix(seq: int, timestamp: int, odometer: int) -> ReceiverFix:
+def _fix(
+    seq: int, timestamp: int, odometer: int, *, status: str = "authenticated"
+) -> ReceiverFix:
     return sign_receiver_fix(
         ReceiverFix(
             device_id="dev-v6-period",
@@ -79,7 +90,7 @@ def _fix(seq: int, timestamp: int, odometer: int) -> ReceiverFix:
             auth_gnss_time=timestamp,
             cell_x=0,
             cell_y=0,
-            osnma_status="authenticated",
+            osnma_status=status,
             odometer_reading_m=odometer,
             nonce=f"v6-period-{seq}",
         ),
@@ -88,7 +99,15 @@ def _fix(seq: int, timestamp: int, odometer: int) -> ReceiverFix:
 
 
 def _payload(*, position_valid: list[bool], odometer_end: int = 1_070) -> dict[str, object]:
-    fixes = [_fix(0, MAY_START + 300, 1_000), _fix(1, MAY_START + 600, odometer_end)]
+    fixes = [
+        _fix(
+            0,
+            MAY_START + 300,
+            1_000,
+            status="authenticated" if position_valid[0] else "unavailable",
+        ),
+        _fix(1, MAY_START + 600, odometer_end),
+    ]
     profile = charger_app.policy_registry.profiles[0]
     public = build_period_public_statement_v6(
         fixes=fixes,
@@ -154,7 +173,7 @@ def test_v6_endpoint_rejects_position_flag_tampering_and_non_boolean_wire_values
     payload["position_valid"] = [False]
     response = client.post("/settlement/v6/period", json=payload)
     assert response.status_code == 400
-    assert "public statement mismatch" in response.json()["detail"]
+    assert "signed receiver status" in response.json()["detail"]
 
     payload = _payload(position_valid=[True])
     payload["position_valid"] = [1]

@@ -2,6 +2,34 @@
   "$id": "https://waybill.example/schema/policy-profile-v1.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "circuit_id": {
+            "pattern": "^settlement-period-v6-"
+          }
+        },
+        "required": [
+          "circuit_id"
+        ]
+      },
+      "then": {
+        "properties": {
+          "position_validity_rule": {
+            "const": "origin-osnma-authenticated-v1"
+          },
+          "receiver_attestation_schema": {
+            "const": "waybill.receiver.root-attestation/v5"
+          }
+        },
+        "required": [
+          "position_validity_rule",
+          "receiver_attestation_schema"
+        ]
+      }
+    }
+  ],
   "properties": {
     "authority_id": {
       "minLength": 1,
@@ -77,6 +105,10 @@
       "pattern": "^[0-9]+$",
       "type": "string"
     },
+    "position_validity_rule": {
+      "minLength": 1,
+      "type": "string"
+    },
     "profile_sha256": {
       "pattern": "^[0-9a-f]{64}$",
       "type": "string"
@@ -84,6 +116,10 @@
     "profile_version": {
       "minimum": 1,
       "type": "integer"
+    },
+    "receiver_attestation_schema": {
+      "minLength": 1,
+      "type": "string"
     },
     "revoked_at": {
       "minimum": 0,

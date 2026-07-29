@@ -63,7 +63,6 @@ DEFAULT_OUTPUT_DIR = M2_DIR / "circuit_matrix"
 TARIFF_PATH = M2_DIR / "tariff_rome_medium_10000_cells.json"
 TARIFF_MANIFEST_PATH = M2_DIR / "tariff_manifest_depth14.json"
 BASE_CIRCUIT = ROOT_DIR / "experiments-heatmap" / "circuits" / "settlement_period_v6_base.circom"
-WRAPPER_DIR = ROOT_DIR / "experiments-heatmap" / "circuits" / "generated_v6_matrix"
 
 PTAU_FILENAME = "powersOfTau28_hez_final_22.ptau"
 PTAU_URL = f"https://storage.googleapis.com/zkevm/ptau/{PTAU_FILENAME}"
@@ -132,18 +131,25 @@ component main {{public [
 '''
 
 
-def generate_wrapper(depth: int, fixes: int) -> Path:
-    WRAPPER_DIR.mkdir(parents=True, exist_ok=True)
-    path = WRAPPER_DIR / f"{wrapper_name(depth, fixes)}.circom"
+def generate_wrapper(output_dir: Path, depth: int, fixes: int) -> tuple[Path, Path]:
+    source_dir = output_dir / "circuit-sources"
+    wrapper_dir = source_dir / "generated_v6_matrix"
+    wrapper_dir.mkdir(parents=True, exist_ok=True)
+    frozen_base = source_dir / BASE_CIRCUIT.name
+    base_bytes = BASE_CIRCUIT.read_bytes()
+    if not frozen_base.exists() or frozen_base.read_bytes() != base_bytes:
+        frozen_base.write_bytes(base_bytes)
+    path = wrapper_dir / f"{wrapper_name(depth, fixes)}.circom"
     expected = wrapper_text(depth, fixes)
     if not path.exists() or path.read_text(encoding="utf-8") != expected:
         path.write_text(expected, encoding="utf-8")
-    return path
+    return frozen_base, path
 
 
 def find_circomlib() -> Path:
     candidates = (
         ROOT_DIR / "node_modules",
+        Path("/opt/waybill/node_modules"),
         ROOT_DIR / "TSIP_heatmap_version" / "runtime" / "experiments-heatmap" / "node_modules",
         Path.home() / "node_modules",
     )
@@ -278,10 +284,14 @@ def parse_circom_compile_info(output: str) -> dict[str, int]:
 
 
 def artifact_record(path: Path) -> dict[str, Any]:
+    try:
+        display_path = str(path.relative_to(ROOT_DIR))
+    except ValueError:
+        display_path = str(path)
     if not path.exists():
-        return {"path": str(path.relative_to(ROOT_DIR)), "exists": False}
+        return {"path": display_path, "exists": False}
     return {
-        "path": str(path.relative_to(ROOT_DIR)),
+        "path": display_path,
         "exists": True,
         "bytes": path.stat().st_size,
         "sha256": sha256_file(path),
@@ -303,7 +313,7 @@ def config_paths(output_dir: Path, depth: int, fixes: int) -> dict[str, Path]:
 
 def compile_one(output_dir: Path, depth: int, fixes: int, *, timeout_sec: int) -> dict[str, Any]:
     name = wrapper_name(depth, fixes)
-    wrapper = generate_wrapper(depth, fixes)
+    frozen_base, wrapper = generate_wrapper(output_dir, depth, fixes)
     paths = config_paths(output_dir, depth, fixes)
     paths["directory"].mkdir(parents=True, exist_ok=True)
     command = [
@@ -327,7 +337,7 @@ def compile_one(output_dir: Path, depth: int, fixes: int, *, timeout_sec: int) -
         "template": f"SettlementPeriodV6({fixes},{depth},{K_WINDOW})",
         "compile": asdict(measured),
         "source": {
-            "base": artifact_record(BASE_CIRCUIT),
+            "base": artifact_record(frozen_base),
             "wrapper": artifact_record(wrapper),
         },
         "artifacts": {
@@ -1762,7 +1772,12 @@ def prune_compile_symbol_artifacts(output_dir: Path) -> dict[str, Any]:
         "disk_free_bytes_before": disk_before,
         "disk_free_bytes_after": shutil.disk_usage(output_dir).free,
         "items": items,
-        "status": "passed" if len(items) == 16 and all(item["status"] in {"pruned", "already_pruned"} for item in items) else "failed",
+        "status": (
+            "passed"
+            if len(items) == 16
+            and all(item["status"] in {"pruned", "already_pruned"} for item in items)
+            else "failed"
+        ),
     }
     write_json(receipt_path, receipt)
     return receipt

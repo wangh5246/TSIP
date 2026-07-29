@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import random
 import statistics
 import sys
 from collections import defaultdict
@@ -79,9 +80,10 @@ def _period_observation(
     observation: dict[str, Any] = {
         "period_duration_sec": int(fixes[-1].auth_gnss_time - fixes[0].auth_gnss_time),
         "interval_count": max(0, len(fixes) - 1),
-        "total_fee_cents": fee,
-        "total_distance_m": distance,
     }
+    if view in {"O0", "O1"}:
+        observation["total_fee_cents"] = fee
+        observation["total_distance_m"] = distance
     if view in {"O1", "O2", "O3"}:
         observation["fallback_indicator"] = int(fallback > 0)
         observation["fallback_intervals"] = fallback
@@ -99,12 +101,11 @@ def _period_observation(
 
 
 def _observation_fields(view: str) -> list[str]:
-    fields = [
-        "interval_count",
-        "period_duration_sec",
-        "total_distance_m",
-        "total_fee_cents",
-    ]
+    if view not in {"O0", "O1", "O2", "O3"}:
+        raise FormalError(f"unsupported S4 observation view: {view}")
+    fields = ["interval_count", "period_duration_sec"]
+    if view in {"O0", "O1"}:
+        fields.extend(["total_distance_m", "total_fee_cents"])
     if view in {"O1", "O2", "O3"}:
         fields.extend(["fallback_indicator", "fallback_intervals"])
     if view in {"O2", "O3"}:
@@ -114,17 +115,8 @@ def _observation_fields(view: str) -> list[str]:
     return sorted(fields)
 
 
-def _numeric_vector(observations: list[dict[str, Any]]) -> list[float]:
-    fields = (
-        "period_duration_sec",
-        "interval_count",
-        "total_fee_cents",
-        "total_distance_m",
-        "fallback_indicator",
-        "fallback_intervals",
-        "distance_bucket_100m",
-        "amount_bucket_500c",
-    )
+def _numeric_vector(observations: list[dict[str, Any]], *, view: str) -> list[float]:
+    fields = [field for field in _observation_fields(view) if field != "opened_cells"]
     vector: list[float] = []
     for field in fields:
         values = [float(row[field]) for row in observations if field in row]
@@ -145,7 +137,12 @@ def _sequence_rows(
     opening: float,
     horizon: int,
     seed: int,
+    temporal_gap_periods: int = 1,
 ) -> list[dict[str, Any]]:
+    if horizon < 1:
+        raise FormalError("S4 horizon must be positive")
+    if temporal_gap_periods < 1:
+        raise FormalError("S4 temporal gap must be at least one period")
     by_identity: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for raw in _records(periods_path):
         identity = str(raw.get("device_id") or raw.get("vehicle_id") or "")
@@ -160,7 +157,17 @@ def _sequence_rows(
                 str(row.get("period_id") or row.get("trip_id")),
             )
         )
-        for start in range(0, len(rows) - horizon + 1):
+        starts = [0]
+        starts.extend(
+            range(
+                horizon + temporal_gap_periods,
+                len(rows) - horizon + 1,
+                horizon,
+            )
+        )
+        if len(starts) < 2:
+            continue
+        for start in starts:
             selected = rows[start : start + horizon]
             observations = [
                 _period_observation(row, tariff, view=view, opening=opening, seed=seed)
@@ -175,11 +182,14 @@ def _sequence_rows(
                 {
                     "sequence_id": f"{identity}:{start}:{horizon}",
                     "identity": identity,
-                    "vector": _numeric_vector(observations),
+                    "vector": _numeric_vector(observations, view=view),
                     "opened_cells": sorted(set(opened)),
                     "period_ids": [
                         str(row.get("period_id") or row.get("trip_id")) for row in selected
                     ],
+                    "window_start_index": start,
+                    "window_end_index": start + horizon,
+                    "temporal_gap_periods": temporal_gap_periods,
                 }
             )
     return sequences
@@ -258,6 +268,72 @@ def _auc(positive: list[float], negative: list[float]) -> float:
     return wins / (len(positive) * len(negative))
 
 
+def identity_cluster_bootstrap(
+    rows: list[dict[str, Any]], *, replicates: int, seed: int
+) -> dict[str, Any]:
+    """Bootstrap macro attack metrics over original test identities."""
+
+    if replicates <= 0:
+        raise ValueError("S4 bootstrap replicates must be positive")
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        grouped[str(row["true_identity"])].append(row)
+    identities = sorted(grouped)
+    if not identities:
+        raise ValueError("S4 bootstrap requires at least one test identity")
+    identity_metrics = {
+        identity: {
+            "top1_accuracy": statistics.fmean(
+                float(row["correct_top1"]) for row in grouped[identity]
+            ),
+            "top5_accuracy": statistics.fmean(
+                float(row["correct_top5"]) for row in grouped[identity]
+            ),
+            "linkability_auc": statistics.fmean(
+                float(row["query_auc"]) for row in grouped[identity]
+            ),
+        }
+        for identity in identities
+    }
+    metrics = ("top1_accuracy", "top5_accuracy", "linkability_auc")
+    distributions: dict[str, list[float]] = {metric: [] for metric in metrics}
+    rng = random.Random(int(seed))
+    for _ in range(replicates):
+        selected = [rng.choice(identities) for _ in identities]
+        for metric in metrics:
+            distributions[metric].append(
+                statistics.fmean(identity_metrics[identity][metric] for identity in selected)
+            )
+    return {
+        "cluster_unit": "original vehicle or user",
+        "clusters": len(identities),
+        "replicates": int(replicates),
+        "confidence_interval": "percentile identity-cluster bootstrap 95%",
+        "metrics": {
+            metric: {
+                "macro_estimate": statistics.fmean(
+                    identity_metrics[identity][metric] for identity in identities
+                ),
+                "ci95_lower": _percentile(distributions[metric], 2.5),
+                "ci95_upper": _percentile(distributions[metric], 97.5),
+            }
+            for metric in metrics
+        },
+    }
+
+
+def _percentile(values: list[float], percentile: float) -> float:
+    if not values:
+        raise ValueError("percentile requires values")
+    ordered = sorted(values)
+    rank = (len(ordered) - 1) * float(percentile) / 100.0
+    lower = int(math.floor(rank))
+    upper = int(math.ceil(rank))
+    if lower == upper:
+        return ordered[lower]
+    return ordered[lower] + (ordered[upper] - ordered[lower]) * (rank - lower)
+
+
 def main() -> int:
     job, attempt_dir, run_root = load_job_environment()
     if job.get("stage") != "S4" or job.get("kind") != "privacy-attack":
@@ -275,6 +351,7 @@ def main() -> int:
         opening=float(parameters["opening"]),
         horizon=int(parameters["horizon"]),
         seed=int(parameters["seed"]),
+        temporal_gap_periods=int(parameters.get("temporal_gap_periods", 1)),
     )
     identities = sorted({row["identity"] for row in sequences})
     if len(identities) < 4:
@@ -293,6 +370,25 @@ def main() -> int:
     ]
     if len(gallery) < 2 or not queries:
         raise FormalError("S4 test identities need one gallery and at least one query sequence each")
+    gallery_by_identity = {row["identity"]: row for row in gallery}
+    overlap_checks: list[dict[str, Any]] = []
+    for query in queries:
+        gallery_row = gallery_by_identity[query["identity"]]
+        overlap = sorted(set(gallery_row["period_ids"]) & set(query["period_ids"]))
+        if overlap:
+            raise FormalError("S4 gallery/query windows share periods")
+        actual_gap = int(query["window_start_index"]) - int(gallery_row["window_end_index"])
+        if actual_gap < int(parameters.get("temporal_gap_periods", 1)):
+            raise FormalError("S4 gallery/query temporal gap is below the frozen minimum")
+        overlap_checks.append(
+            {
+                "identity": query["identity"],
+                "gallery_sequence_id": gallery_row["sequence_id"],
+                "query_sequence_id": query["sequence_id"],
+                "shared_periods": overlap,
+                "temporal_gap_periods": actual_gap,
+            }
+        )
     attacker = str(parameters["attacker"])
     weights = _learn_weights(train) if attacker == "supervised-linker" else None
     top1 = 0
@@ -323,6 +419,16 @@ def main() -> int:
                 positive.append(score_value)
             else:
                 negative.append(score_value)
+        positive_score = next(
+            score_value
+            for score_value, candidate in scored
+            if candidate["identity"] == query["identity"]
+        )
+        query_negative = [
+            score_value
+            for score_value, candidate in scored
+            if candidate["identity"] != query["identity"]
+        ]
         rows.append(
             {
                 "query_id": query["sequence_id"],
@@ -331,6 +437,7 @@ def main() -> int:
                 "top5_identities": predictions[:5],
                 "correct_top1": predictions[0] == query["identity"],
                 "correct_top5": query["identity"] in predictions[:5],
+                "query_auc": _auc([positive_score], query_negative),
             }
         )
     output_path = attempt_dir / "query-results.jsonl"
@@ -338,6 +445,15 @@ def main() -> int:
         for row in rows:
             handle.write(canonical_json(row) + "\n")
     observation_fields = _observation_fields(str(parameters["view"]))
+    exact_fields = {"total_fee_cents", "total_distance_m"}
+    if str(parameters["view"]) in {"O2", "O3"} and exact_fields & set(observation_fields):
+        raise FormalError("bucketed S4 views must not contain exact fee or distance")
+    schema_sha256 = hashlib.sha256(canonical_json(observation_fields).encode()).hexdigest()
+    bootstrap = identity_cluster_bootstrap(
+        rows,
+        replicates=int(parameters.get("bootstrap_replicates", 5_000)),
+        seed=int(parameters["seed"]),
+    )
     result = {
         "status": "passed",
         "dataset": parameters["dataset"],
@@ -351,11 +467,21 @@ def main() -> int:
         "test_identities": len(test_ids),
         "gallery_sequences": len(gallery),
         "query_sequences": len(queries),
+        "temporal_gap_periods": int(parameters.get("temporal_gap_periods", 1)),
+        "gallery_query_shared_periods": 0,
+        "overlap_checks": overlap_checks,
         "top1_accuracy": top1 / len(queries),
         "top5_accuracy": top5 / len(queries),
         "linkability_auc": _auc(positive, negative),
+        "cluster_bootstrap": bootstrap,
         "observation_manifest": {
             "fields": observation_fields,
+            "schema_sha256": schema_sha256,
+            "mutually_exclusive_exact_and_bucketed": not bool(
+                exact_fields & set(observation_fields)
+            )
+            if str(parameters["view"]) in {"O2", "O3"}
+            else True,
             "source": "derived from the current WayBill period/public-statement implementation",
         },
         "learned_weights": weights,

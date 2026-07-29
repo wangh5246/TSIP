@@ -15,8 +15,8 @@
   },
   "toolchain": {
     "python": "3.12",
-    "node": "26.0.0",
-    "npm": "11.12.1",
+    "node": "26.5.0",
+    "npm": "11.17.0",
     "circom": "2.1.9",
     "circom_git_commit": "2eaaa6dface934356972b34cab64b25d382e59de",
     "snarkjs": "0.7.6",
@@ -55,6 +55,8 @@
         "v6-dodo-rmax",
         "v6-without-month-close"
       ],
+      "month_close_ablation": "whole-period-withholding-with-versus-without-rmax-reconciliation",
+      "rejected_period_policy": "fail-closed",
       "independent_mask_alpha": [
         0.05,
         0.1,
@@ -191,6 +193,47 @@
         "supervised-linker"
       ],
       "split": "vehicle-or-user-disjoint",
+      "temporal_gap_periods": 1,
+      "gallery_query_overlap_policy": "forbid-any-shared-period",
+      "statistics": {
+        "cluster_unit": "original-vehicle-or-user",
+        "bootstrap_replicates": 5000,
+        "confidence_interval": 0.95,
+        "aggregation": "macro-by-identity"
+      },
+      "view_schemas": {
+        "O0": [
+          "interval_count",
+          "period_duration_sec",
+          "total_distance_m",
+          "total_fee_cents"
+        ],
+        "O1": [
+          "fallback_indicator",
+          "fallback_intervals",
+          "interval_count",
+          "period_duration_sec",
+          "total_distance_m",
+          "total_fee_cents"
+        ],
+        "O2": [
+          "amount_bucket_500c",
+          "distance_bucket_100m",
+          "fallback_indicator",
+          "fallback_intervals",
+          "interval_count",
+          "period_duration_sec"
+        ],
+        "O3": [
+          "amount_bucket_500c",
+          "distance_bucket_100m",
+          "fallback_indicator",
+          "fallback_intervals",
+          "interval_count",
+          "opened_cells",
+          "period_duration_sec"
+        ]
+      },
       "timeout_sec": 43200,
       "resource": {
         "cpus": 8,
@@ -232,6 +275,7 @@
   },
   "stop_rules": [
     "stop on code, protocol, container, data, tariff, or PTAU hash mismatch",
+    "stop if a formal job is not launched by the bound network-isolated Apptainer runtime with image-embedded source and an intact run-input seal",
     "stop on missing expected job during strict merge",
     "stop S3 on LB greater than UB, infeasible incumbent, or invalid relaxation direction",
     "do not alter datasets, seeds, methods, timeout, or filtering during a formal run",

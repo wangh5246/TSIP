@@ -148,6 +148,7 @@ def main() -> int:
             "max_fixes": 0,
         },
         "prepared_root_label": "WAYBILL_PREPARED_ROOT",
+        "corpus_root_label": "WAYBILL_CORPUS_ROOT",
         "datasets": dataset_rows,
         "canonical_period_count": len(base_periods),
         "canonical_instance_count": len(instance_rows),

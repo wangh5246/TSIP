@@ -20,19 +20,25 @@ from waybill_formal.core import (  # noqa: E402
     sha256_file,
 )
 from waybill_formal.stage import finish_stage, load_job_environment  # noqa: E402
+from waybill_formal.stage import load_prepared_manifest  # noqa: E402
 
 
-def _instance_path(job: dict) -> Path:
+def _instance_path(job: dict, manifest: dict) -> Path:
     raw = Path(str(job["parameters"]["instance_path"]))
-    root = Path(os.environ.get("WAYBILL_PREPARED_ROOT", "."))
+    root_label = str(manifest.get("corpus_root_label", ""))
+    root_value = os.environ.get(root_label) if root_label else None
+    if not raw.is_absolute() and not root_value:
+        raise FormalError("formal corpus root is not bound into the S3 runtime")
+    root = Path(str(root_value)) if root_value else Path("/")
     return raw if raw.is_absolute() else root / raw
 
 
 def main() -> int:
-    job, attempt_dir, _run_root = load_job_environment()
+    job, attempt_dir, run_root = load_job_environment()
     if job.get("stage") != "S3" or job.get("kind") != "certified-bound":
         raise FormalError("S3 runner received an unsupported job")
-    path = _instance_path(job)
+    manifest = load_prepared_manifest(run_root)
+    path = _instance_path(job, manifest)
     if not path.is_file():
         raise FormalError(f"canonical instance missing: {path}")
     expected_hash = job["parameters"].get("instance_sha256")

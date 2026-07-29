@@ -1,44 +1,25 @@
 \documentclass[conference]{IEEEtran}
 
-% WayBill paper skeleton.
-% Build from this directory with:
-%   pdflatex -interaction=nonstopmode -halt-on-error main.tex
-%
-% This is an intentionally light first draft: section structure, claim anchors,
-% and vetted prose are included; unverified references and final figures are
-% left as TODO comments instead of becoming accidental claims.
-
 \usepackage{amsmath,amssymb,amsfonts,amsthm}
 \usepackage{booktabs}
-\usepackage{graphicx}
-\usepackage{multirow}
 \usepackage{tabularx}
 \usepackage{array}
-\usepackage{xcolor}
 \usepackage[hidelinks]{hyperref}
 \usepackage{url}
 
-\graphicspath{{../figures/}{../figures/final/}{../experiments/gap_protocol_recheck_20260617/}}
-
 \theoremstyle{plain}
-\newtheorem{proposition}{Proposition}
 \newtheorem{theorem}{Theorem}
-\newtheorem{lemma}{Lemma}
-
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}
 
 \newcommand{\system}{\textsc{WayBill}}
 \newcommand{\ruc}{RUC}
-\newcommand{\zk}{zero-knowledge}
-\newcommand{\epssec}{$\epsilon$-economic soundness}
-\newcommand{\TODO}[1]{\textcolor{red}{[TODO: \detokenize{#1}]}}
+\newcommand{\rmax}{r_{\max}}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
-\renewcommand{\ttdefault}{cmtt}
 
 \begin{document}
 
-\title{\system: Privacy-Preserving Road Usage Charging from Authenticated Trajectory Settlement Proofs}
+\title{\system: Privacy-Preserving Road-Usage Settlement with Receiver-Sealed Validity}
 
 \author{\IEEEauthorblockN{[Author names removed for blind review]}
 \IEEEauthorblockA{[Affiliation removed for blind review]}}
@@ -46,455 +27,467 @@
 \maketitle
 
 \begin{abstract}
-Road usage charging needs to bill vehicles by where and how far they drive, but
-straightforward GNSS upload turns the charging authority into a location
-surveillance service. Existing privacy-preserving road-pricing systems protect
-route information with commitments, anonymous credentials, or spot checks, but
-their enforcement story still relies on roadside observation: a vehicle can be
-forced to open a commitment only when external infrastructure sees it. This
-couples privacy-preserving charging to city-scale cameras, RSUs, or patrol
-coverage.
+Zone-based road-usage charging can expose a driver's trajectory when raw GNSS
+records are uploaded to a charging authority. Prior private tolling systems
+reduce this disclosure with local billing, commitments, and audits, while
+often using roadside observations to detect omitted records. We study a
+different, explicitly conditional design point. \system\ uses an independent
+receiver signer to seal authenticated fixes, monotone odometer readings, and a
+position-validity bit derived from each signed origin-fix status. A vehicle proves in
+zero knowledge that a period bill follows a committed tariff and an
+odometer-backed fallback rule; a charger sees only a fixed public settlement
+statement. At month close, attested distance not covered by accepted,
+non-overlapping period statements is charged at the maximum tariff rate.
 
-We present \system, a settlement protocol for zone-based road usage charging
-that shifts enforcement from roadside observation to proof verification.
-\system\ uses authenticated receiver fixes and odometer readings as the trusted
-sensing layer, but keeps tariff policy, physical feasibility, period binding,
-completeness reconciliation, and billing arithmetic outside the trusted
-computing base. Each vehicle submits a proof-only public statement for a
-period bill; the charger verifies that the bill is consistent with authenticated
-private fixes, a committed tariff table, odometer distance, cadence and speed
-rules, and a canonical billing month. A monthly odometer attestation then
-reconciles any distance not covered by accepted period proofs, so withholding
-an entire period becomes a self-pricing event rather than a free kilometer.
-
-Across four mobility datasets, \system\ exposes the economic value of each
-settlement constraint, quantifies proof-consistent relay residuals, and compares
-proof rejection with reconstructed spot-check enforcement. The implementation
-includes a 226k-constraint Groth16 settlement circuit, a proof-only charger
-service with monthly reconciliation, and a receipted evaluation harness. The
-remaining privacy claim is deliberately narrow: the charger does not see raw
-routes, but the minimal public statement still leaks fee, distance, fallback,
-and timing metadata; we quantify this leakage and evaluate bucketing and
-selective-disclosure dispute openings.
+We specify the trust boundary and prove a scoped economic property: under
+unforgeable receiver attestations, sound proofs, and correct monthly odometry,
+omitting an interval or period cannot reduce the bill relative to the tariff on
+receiver-authenticated cell labels. This is not a theorem about unobserved
+physical ground truth; receiver compromise, odometer tampering, and GNSS relay
+remain outside the guarantee. Our V6 implementation binds validity into the
+receiver root, pins a versioned tariff/profile/verification key, and rejects
+replay and public-signal tampering. A charger-confirmed hash chain also makes a
+deleted signer tail or stale local snapshot fail closed. Monthly odometer
+boundaries are likewise online-anchored as an append-only, calendar-sequential,
+odometer-continuous chain. The canonical 25-fix Groth16 circuit has
+246,255 constraints and 22 public signals. A receipted run using a separate
+signer process produced a 3.65 s proof and 217 ms verification with exact
+circuit/reference agreement. We also characterize the statement's residual
+metadata leakage instead of claiming route indistinguishability.
 \end{abstract}
 
-\IEEEpeerreviewmaketitle
-
 \section{Introduction}
-\label{sec:intro}
 
-Road usage charging (\ruc) is becoming a practical replacement or supplement
-for fuel taxes, congestion charges, and zone-based road pricing. Its technical
-appeal is clear: a public authority can charge vehicles by distance, zone, time,
-or vehicle class instead of relying on fuel consumption as a proxy. Its privacy
-failure mode is equally clear: the simplest implementation uploads GNSS traces
-or detailed trip records to the charging operator.
-\TODO{Add official policy citations: Oregon phase-in from 2027, Singapore ERP
-2.0, EU Smart Tachograph 2 / OSNMA, and RUC survey. Use primary sources only.}
+Road-usage charging can price distance, place, and time more directly than a
+fuel tax, but a straightforward GNSS design gives the operator a detailed
+movement history. VPriv, PrETP, and Milo showed that cryptographic protocols can
+support private toll computation and auditing
+\cite{Popa2009VPriv,Balasch2010PrETP,Meiklejohn2011Milo}. Their enforcement
+analyses also make an important distinction: checking the correctness of a
+reported record does not by itself establish that every trip was reported.
+Spot-check systems obtain evidence of presence from cameras, gates, or patrols;
+P4TC develops a comprehensive model for the DSRC tolling setting
+\cite{Fetzer2020P4TC}.
 
-The classical privacy-preserving tolling literature recognized this tension
-early. Systems such as VPriv, PrETP, Milo, and related cell-based road pricing
-designs hide most of a driver's route, but they rely on spot checks or roadside
-observations to enforce completeness: if a vehicle omits a charged segment, an
-external observer must catch it and demand an opening.
-\TODO{Cite Popa2009VPriv, Balasch2010PrETP, Meiklejohn2011Milo,
-Garcia2013CellBased after bib verification.}
-This is the historical reason for roadside cameras and RSUs in private
-road-pricing systems. They buy completeness, not merely arithmetic correctness.
+\system\ explores how much recurring roadside observation can be replaced by
+cryptographic settlement when a vehicle already has an enrolled sensing unit.
+The sensing unit is deliberately not a biller. It seals acquisition records and
+interval validity, while tariff lookup, fallback arithmetic, period binding,
+proof verification, and month close remain outside that trusted process. This
+split is useful only when its assumptions are stated precisely. Navigation
+message authentication can authenticate transmitted navigation data, but does
+not by itself prove that a receiver occupied a physical location or defeat all
+relay attacks. Galileo OSNMA is therefore an enabling input, not a complete
+location oracle \cite{GalileoOSNMA2025}.
 
-\system\ separates these two enforcement dimensions. Correctness is handled by
-a settlement proof: the vehicle proves that an accepted period bill is computed
-from authenticated fixes, odometer deltas, public tariff rates, and physical
-constraints. Completeness is handled by monthly odometer reconciliation: any
-attested distance not covered by accepted period statements is billed at a
-fallback rate no lower than the maximum tariff rate. Missing fixes, missing
-intervals, missing periods, and missing monthly attestations therefore form a
-monotone degradation chain. Failure to report is not a privacy-preserving way to
-pay less; it moves the vehicle to a fallback or administrative path.
+The resulting protocol separates three claims that are often conflated:
 
-This design point depends on trusted sensing, but it does not place pricing
-policy in the trusted computing base (TCB). The receiver attests sensor readings
-and odometer boundaries; it does not decide how much the user owes. Tariff
-membership, period and month binding, physical feasibility, fallback treatment,
-and bill arithmetic are verified by public statements, proofs, and charger-side
-checks. We summarize the design thesis as follows:
-
-\begin{quote}
-\system\ is, to our knowledge, the first \ruc\ design point that jointly
-achieves zone-based charging, route privacy, and zero roadside enforcement
-infrastructure without placing pricing policy inside the trusted computing
-base: the trusted device attests readings, never bills them.
-\end{quote}
-
-\begin{table}[t]
-\centering
-\caption{Correctness and completeness are separate enforcement problems. Spot
-check systems use roadside observation for completeness; \system\ uses proof
-verification for correctness and odometer reconciliation for completeness.}
-\label{tab:correctness-completeness}
-\small
-\begin{tabularx}{\columnwidth}{lYY}
-\toprule
-Design point & Reported segments correct? & All driven distance billed? \\
-\midrule
-Plain GNSS upload & Operator recomputes & Yes, by observing route \\
-Odometer-only RUC & No zone pricing & Yes, by total distance \\
-Spot-check RUC & Commitment openings & Roadside observation \\
-TEE billing & Trusted billing code & Trusted billing code \\
-\system & Settlement proof & Odometer reconciliation \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-We make six contributions.
 \begin{itemize}
-  \item \textbf{Design point.} We identify the \ruc\ trilemma of zone pricing,
-  route privacy, and zero roadside enforcement, and show how authenticated
-  sensing plus policy-free proof verification dissolves it.
-  \item \textbf{\epssec.} We introduce a quantitative economic security metric
-  for verifiable billing and a receipt-auditable constraint-ablation
-  methodology built around a shared billing oracle.
-  \item \textbf{Incentive-compatible degradation.} We prove sufficient
-  conditions for weakly dominant truthful reporting at every degradation layer,
-  including per-interval outage and whole-period withholding under monthly
-  odometer reconciliation.
-  \item \textbf{Enforcement game.} We model spot-check enforcement as a
-  Stackelberg game on real trajectories and compare deterministic proof
-  rejection with placement-aware omission under partial camera coverage.
-  \item \textbf{Settlement metadata leakage.} We quantify the side channel
-  exposed by proof-only public statements, including bucketing mitigations and
-  selective-disclosure dispute openings.
-  \item \textbf{Artifact.} We implement a 226k-constraint Groth16 settlement
-  circuit, a proof-only charger service with monthly reconciliation, and a
-  receipted evaluation harness over four mobility datasets.
+  \item \emph{relation correctness}: an accepted proof satisfies the frozen
+  settlement circuit and policy profile;
+  \item \emph{conditional completeness}: correct month-boundary odometry makes
+  unaccounted distance no cheaper than the maximum tariff rate; and
+  \item \emph{limited disclosure}: the proof-only endpoint omits raw fixes but
+  still reveals a linkable settlement tuple.
 \end{itemize}
 
+Our contributions are a validity-bound receiver/prover interface, a scoped
+withholding theorem, a version-pinned V6 implementation, and an evaluation
+protocol whose receipts bind jobs, results, and recursive artifact hashes. We
+make no ``first system,'' universal deployment, or information-theoretic route
+privacy claim.
+
 \section{System and Threat Model}
-\label{sec:threat}
 
-\subsection{Parties and Deployment Assumptions}
+\subsection{Parties and trust boundary}
 
-The system has three operational parties. A vehicle carries a receiver that
-records authenticated GNSS fixes, odometer readings, nonces, and receiver
-signatures. A charger maintains the device registry, tariff roots, verification
-keys, accepted period statements, and monthly ledgers. A tariff authority
-publishes the zone-rate table and tariff version.
+The \emph{tariff authority} publishes a versioned cell-to-zone table, zone
+rates, a maximum rate $\rmax$, and a policy profile. The \emph{receiver signer}
+is a process isolated from the normal prover. An authorized acquisition path
+appends fixes with a strict status enum; the signer, rather than the caller,
+derives each outgoing interval bit under the profile-pinned
+`origin-osnma-authenticated-v1' rule. The
+\emph{prover} reads sealed period material and constructs a proof. The
+\emph{charger} enrolls device public keys, pins policy profiles and verification
+keys, accepts period statements, and closes monthly ledgers.
 
-The trusted sensing assumption is deliberately narrow. The receiver is trusted
-to sign sensor readings and monthly odometer boundaries under an enrolled key.
-It is not trusted to evaluate tariffs, choose fallback behavior, or compute the
-final charge. \system\ consumes existing hardware-style assumptions such as
-authenticated GNSS and tamper-evident odometry; it does not claim to solve
-device-key extraction, hardware odometer rollback, or malicious enrollment.
+For each fix $f_i$, the receiver log contains a device and period identifier,
+sequence number, authenticated GNSS time, cell label, odometer reading, nonce,
+and device signature. For every nonterminal fix it also records
+$v_i\in\{0,1\}$, indicating whether the receiver accepts the position label for
+the next interval. The normal prover has no API field with which to replace
+$v_i$ or submit its own root. The receiver signer rejects sequence, time,
+odometer, and log-epoch rollback; duplicate period sealing; and a log whose
+bytes no longer match its stored hash. Before a new seal becomes durable, the
+signer compares its validated local tail with an authenticated charger head and
+atomically extends that per-device chain by one epoch. A stale snapshot, deleted
+tail, epoch gap, or conflicting same-epoch attestation is rejected.
 
-\subsection{Adversary}
+The trusted base includes the enrolled key, acquisition logic that supplies the
+status labels from which the signer derives $v_i$, and monotone calibrated
+odometry. It excludes tariff selection and bill
+arithmetic. We do not address key extraction, a maliciously enrolled receiver,
+undetectable physical odometer tampering, or a compromised acquisition process.
 
-The adversarial driver wants to reduce payment while being accepted by the
-charger. In scope are false zone claims, tariff-root substitution, period or
-month rebinding, lifted replay, interval omission, whole-period withholding, and
-proof-consistent signal-layer relay capabilities. Out of scope are full device
-key compromise, undetectable physical odometer tampering, and enrollment of a
-fake device as honest hardware.
+\subsection{Adversary and goals}
 
-\subsection{Security and Privacy Goals}
+An adversarial prover may alter private witness values, substitute a tariff or
+verification key, replay an old proof, rebind a statement to another period or
+month, omit intervals or entire periods, or modify public signals. It may not
+forge the receiver signature or the proof system. Signal relay and meaconing
+are evaluated as residual sensing attacks, not ruled out cryptographically.
 
-\paragraph{Billing correctness.}
-If a period statement is accepted, the public fee, distance, fallback count,
-period window, month window, and roots are bound to a witness trajectory that
-satisfies the settlement relation.
+An accepted period should have the fee, distance, fallback count, roots,
+profile commitment, and canonical time windows proved together. A withheld
+period should not create an economic discount under the conditional month-close
+model. The privacy goal is narrower: raw fixes and interval charges are absent
+from the proof-only request. The charger still learns the device-month link,
+fee, distance, number of fallback intervals, time bounds, and commitments.
 
-\paragraph{Monthly revenue soundness.}
-Every driven meter is either covered by an accepted period statement or charged
-through monthly reconciliation. Whole-period withholding cannot reduce payment
-when the reconciliation rate is at least the maximum tariff rate.
-
-\paragraph{Policy-free TCB.}
-Tariff policy and billing arithmetic are verified outside the receiver TCB.
-Changing a tariff updates public data and proofs, not trusted billing firmware.
-
-\paragraph{Bounded leakage.}
-The proof-only charger view reveals a leakage profile
-$L=(\mathrm{fee},\mathrm{distance},\mathrm{fallbacks},\mathrm{time/month},
-\mathrm{roots})$ and the monthly odometer delta. It does not reveal raw fixes,
-per-interval fees, or a zone histogram. We do not claim that $L$ is harmless;
-Section~\ref{sec:evaluation} measures its residual side channel.
-
-\section{Protocol Overview}
-\label{sec:protocol}
+\section{Protocol}
 
 \begin{figure*}[t]
 \centering
-\fbox{\begin{minipage}{0.92\textwidth}
-\textbf{WayBill pipeline.}
-(1) The receiver collects authenticated fixes and odometer readings.
-(2) The vehicle constructs a private period witness.
-(3) The prover computes fee, distance, fallback count, roots, and a Groth16 proof.
-(4) The charger verifies the proof-only statement and root attestation.
-(5) Accepted statements accumulate in a per-device monthly ledger.
-(6) A signed monthly odometer attestation reconciles uncovered distance.
+\fbox{\begin{minipage}{0.94\textwidth}
+\textbf{Acquisition and settlement flow.}
+(1) An authorized acquisition component sends unsigned fixes with strict status
+labels to a device-scoped receiver signer.
+(2) The signer validates monotonicity, derives $v_i$ from the origin-fix status,
+and commits each $f_i$ together with $v_i$
+(or a false terminal sentinel), seals the append-only log, and signs the root
+metadata. It then obtains an exact compare-and-swap confirmation from the
+charger before committing the local row.
+(3) The vehicle prover obtains the sealed fixes, validity vector, and root
+attestation; it computes tariff membership, fees, and a Groth16 proof.
+(4) The charger verifies the profile-pinned proof, exact public-signal vector,
+receiver attestation, period uniqueness, and non-overlap.
+(5) Month close bills only attested odometer distance not covered by accepted
+periods at $\rmax$.
 \end{minipage}}
-\caption{Protocol structure. Replace this placeholder with the final
-correctness-completeness pipeline figure.}
-\label{fig:pipeline}
+\caption{The receiver owns acquisition validity and the root; the normal prover
+owns neither. Pricing remains outside the receiver process.}
+\label{fig:flow}
 \end{figure*}
 
-\subsection{Period Statement}
+\subsection{Validity-bound receiver root}
 
-Each period statement contains identifiers, timing fields, roots, and billing
-totals:
-\begin{align*}
-\mathsf{stmt} = (&\mathsf{period\_id}, \mathsf{month\_id},
-\mathsf{period\_start}, \mathsf{period\_end}, \\
-&\mathsf{fee}, \mathsf{distance}, \mathsf{fallbacks},
-\mathsf{fix\_root}, \mathsf{interval\_root}, \\
-&\mathsf{tariff\_root}, \mathsf{tariff\_version},
-\mathsf{device\_attestation}).
-\end{align*}
-The statement also carries a statement commitment, and the proof's public
-signal vector binds the same values. The charger rejects any mismatch between
-the proof signals, statement commitment, canonical month window, and registered
-device attestation commitment.
-
-\subsection{Billing Relation}
-
-For each interval, the witness supplies two authenticated fixes. The circuit and
-charger logic enforce time monotonicity, a maximum interval duration, a speed
-budget on odometer delta, tariff membership under a committed tariff root, and
-the fallback rule. Exact intervals are billed as odometer distance times the
-current zone rate. Fallback intervals are billed as
-$\lceil \Delta t \cdot v_{\max}\rceil$ times the fallback rate.
-
-\subsection{Monthly Reconciliation}
-
-Accepted period windows are keyed by $(\mathsf{device\_id},\mathsf{period\_id})$
-and rejected if they overlap for the same device. At month end, the receiver
-signs $(\mathsf{device\_id},\mathsf{month\_id},
-\mathsf{odometer\_start},\mathsf{odometer\_end})$. The charger computes
+Let $H$ denote the circuit's Poseidon chaining construction. For a nonterminal
+fix, V6 computes
 \[
-  d_{\mathrm{unacct}} =
-  (\mathsf{odometer\_end} - \mathsf{odometer\_start}) -
-  \sum_{\mathsf{accepted}} d_{\mathsf{period}} .
+ c_i=H(\mathsf{DAC},\mathsf{profile},\mathsf{period},i,t_i,x_i,y_i,
+       o_i,n_i,v_i).
 \]
-If $d_{\mathrm{unacct}}\ge 0$, it charges this distance at the reconciliation
-rate. If the monthly attestation is missing, the enrolled device-month appears
-on an administrative queue rather than disappearing from the settlement system.
-Adjacent monthly attestations must chain: the previous month end reading must
-equal the current month start reading.
+The final fix uses the same tuple with a fixed false sentinel. Chaining all
+$c_i$ yields $R_{\mathrm{fix}}$. Consequently, changing a validity decision
+changes the root used by both the proof and the receiver attestation. This
+closes the earlier interface in which signatures covered fixes but a prover
+could choose the fallback flags separately.
 
-\begin{proposition}[Monthly revenue soundness]
-\label{prop:monthly-soundness}
-Assume receiver odometer attestations are unforgeable and chained across
-adjacent months. If the reconciliation rate is at least the maximum tariff rate,
-then the accepted monthly bill is at least the tariff-true fee of all driven
-distance in the month, whether or not the driver submits all period proofs.
-Truthful full submission is weakly dominant; it is strictly dominant for any
-withheld distance whose realized tariff is strictly below the reconciliation
-rate.
-\end{proposition}
+The signer attests the metadata tuple
+\begin{align*}
+(&\mathsf{receiver},\mathsf{device},\mathsf{period},\mathsf{epoch},
+\mathsf{count},R_{\mathrm{fix}},\\
+ &\mathsf{DAC},\mathsf{semantics},\mathsf{rule},\mathsf{charger},
+ \mathsf{loghash},\mathsf{prevhash}).
+\end{align*}
+The attestation does not sign a statement supplied by the prover. The charger
+first verifies its V5 signature and appends its hash only if the epoch and
+previous hash extend the current device head. At settlement, it compares the
+root, device, period, and device-attestation commitment to the proved public
+statement and accepts only the exact previously anchored attestation. The
+read-only preflight avoids spending proof-verification work on an unanchored
+request; the write transaction repeats the check to preserve correctness under
+concurrency.
 
-\begin{proof}[Proof sketch]
-Every accepted period contributes its verified exact or fallback fee to the
-ledger. For any driven distance not covered by accepted periods, monthly
-reconciliation charges at a rate no lower than any tariff rate. Therefore
-withholding a period cannot lower the charge for the withheld distance. Equality
-can occur at the boundary where the realized tariff equals the reconciliation
-rate, which is why the dominance statement is weak at $\alpha=1$.
+\subsection{Period relation}
+
+For interval $i$, let $\Delta o_i=o_{i+1}-o_i$. The circuit enforces odometer
+and time monotonicity, a maximum time gap, an odometer speed bound, Boolean
+$v_i$, tariff Merkle membership, integer width limits, and the profile-pinned
+maximum rate. Its fee is
+\[
+ q_i=\begin{cases}
+ \Delta o_i\,r(z_i),&v_i=1,\\
+ \Delta o_i\,\rmax,&v_i=0.
+ \end{cases}
+\]
+Thus a stationary vehicle pays zero even during an outage; the fallback uses
+the same odometer delta as normal settlement. All products and totals are
+range-checked under the frozen uint32/uint64/uint96 contract.
+
+The public vector contains 22 fields: fix, tariff, and interval roots; the
+policy-profile commitment; period and month identifiers and bounds; tariff
+version and device commitment; totals; fallback count; and physical/policy
+bounds. The proof-only endpoint uses the profile commitment to resolve one
+authority-approved circuit, tariff root, and verification-key hash. Extra raw
+fix fields are rejected by the request schema.
+
+\subsection{Monthly close}
+
+Accepted windows are non-overlapping for each device. At month close, the
+receiver signs boundary readings $(o_{M,0},o_{M,1})$. If accepted periods cover
+distance $D_A$, the charger computes
+\[
+ D_U=\max(0,o_{M,1}-o_{M,0}-D_A),\qquad Q_U=D_U\rmax.
+\]
+An inconsistent excess $D_A$ is rejected outside a named tolerance. A missing
+month attestation does not magically reveal distance; it creates a fail-closed
+administrative exception. Collection policy for that exception is outside the
+cryptographic theorem. Before local persistence, the signer submits the exact
+signed boundary to the authenticated charger. The first enrolled boundary is a
+bootstrap trust point; thereafter the charger accepts only the next calendar
+month with $o_{M,0}$ equal to the preceding $o_{M-1,1}$. Exact retries are
+idempotent and different bytes for an anchored device-month are rejected. This
+closes stale-local-database rollback at the cost of making charger availability
+a prerequisite for sealing a month.
+
+\section{Scoped Security Analysis}
+
+\begin{definition}[Authenticated-label reference bill]
+For a month partitioned into odometer distances $d_i$, associate each distance
+with a receiver-authenticated tariff label $z_i$ and rate
+$0\le r(z_i)\le\rmax$. The reference bill is
+$Q_{\mathrm{auth}}=\sum_i d_i r(z_i)$. This definition concerns labels accepted
+by the receiver acquisition boundary; it is not a physical-location oracle.
+\end{definition}
+
+\begin{theorem}[Conditional no-discount withholding]
+\label{thm:withholding}
+Assume (i) receiver root and month-boundary attestations are unforgeable,
+(ii) accepted V6 proofs are sound and profile-pinned, (iii) monthly odometer
+distance is correct and covers the considered month, and (iv) accepted periods
+are non-overlapping and their accounted distance is subtracted exactly once.
+Then replacing any receiver-authenticated interval by fallback, or withholding
+any set of period statements and closing the month, cannot reduce the bill
+below $Q_{\mathrm{auth}}$. The inequality is strict for positive withheld
+distance whose authenticated-label rate is below $\rmax$.
+\end{theorem}
+
+\begin{proof}
+For an accepted interval with $v_i=1$, the circuit charges
+$d_i r(z_i)$. With $v_i=0$, it charges $d_i\rmax\ge d_i r(z_i)$. Every distance
+not represented by a non-overlapping accepted period remains in $D_U$ and is
+charged at $\rmax$, again no less than its reference rate. Summing these
+disjoint contributions proves the inequality. Strictness follows when
+$d_i>0$ and $r(z_i)<\rmax$ for at least one replaced contribution.
 \end{proof}
 
-\subsection{Dispute Openings}
+Theorem~\ref{thm:withholding} is intentionally not called ``physical tariff
+truth.'' If a compromised receiver signs a false cell, the proof faithfully
+bills that false authenticated label. If odometry understates distance, month
+close inherits the error. OSNMA authenticates navigation messages, whereas the
+receiver's actual presence and resistance to delayed relay require additional
+sensing and operational controls. These are assumption failures, not attacks
+solved by the settlement circuit.
 
-The interval commitment root also supports selective disclosure. In a dispute,
-the vehicle opens only the challenged interval-level accounting tuple, and only
-if necessary escalates to endpoint fix disclosure. The default arbitration mode
-should be level-1 accounting disclosure, because level-2 endpoint openings have
-measurable anonymity loss.
+\paragraph{Proof and replay binding.}
+The charger compares the full public vector against the submitted statement,
+uses only the profile-pinned verification key, checks the validity-bound root
+attestation, rejects duplicate $(\mathsf{device},\mathsf{period})$ keys, and
+rejects overlapping device windows. A valid proof detached from its original
+statement therefore fails signal equality or profile resolution.
 
-\section{Security and Leakage Analysis}
-\label{sec:security}
+\paragraph{Privacy boundary.}
+We do not provide a simulation proof for an application-level privacy notion.
+Instead, we declare the charger view and measure how uniquely it identifies a
+period in a candidate pool. Hash commitments hide neither low-entropy public
+totals nor linkability induced by the billing account. Bucketed release is a
+policy mitigation with an explicit accuracy/leakage tradeoff.
 
-\subsection{Billing Correctness}
+\section{Implementation and Evaluation}
 
-Billing correctness follows from the settlement relation, public-signal binding,
-and charger-side recomputation. A proof cannot be detached from a cheaper
-statement because the public signal vector includes the roots, totals, tariff
-version, device attestation field, maximum interval duration, period window, and
-canonical month window. The raw-fix endpoint is an engineering validation path;
-the privacy deployment path is proof-only and rejects payloads containing raw
-fixes.
+\subsection{Implementation and receipt discipline}
 
-\subsection{\texorpdfstring{\epssec}{epsilon-economic soundness}}
+The V6 reference is implemented in Python and Circom. Groth16 is used for its
+small proofs and mature tooling, not as a novel proof-system contribution
+\cite{Groth2016}. The canonical policy is `ruc-demo-v9'; it pins tariff v9, the
+validity-bound 25-fix circuit, maximum rate, integer semantics, and verification
+key. The checked-in direct setup is explicitly test-only; production requires
+an independently governed ceremony or a different setup strategy.
 
-We use \epssec\ to quantify residual billing attack surface. For an adversary
-class $\mathcal{A}$, $\epsilon$ is the maximum accepted fractional bill reduction
-relative to the canonical billing oracle:
-\[
-  \epsilon(\mathcal{A}) =
-  \sup_{a\in\mathcal{A}}
-  \frac{\mathsf{bill}_{\mathrm{honest}}-\mathsf{bill}_{a}}
-       {\mathsf{bill}_{\mathrm{honest}}}.
-\]
-E1 estimates $\epsilon$ when individual defenses are removed. E3 estimates
-proof-consistent residual $\epsilon$ under relay/meaconing capabilities. E2
-establishes a sufficient zero-gain condition for outage and withholding
-strategies.
+The receiver signer is a device-scoped FastAPI process backed by owner-only
+SQLite state. Its acquisition route requires a write bearer token, accepts only
+unsigned measurement fields, derives rather than accepts interval-validity
+bits, creates the receiver signatures itself, and seals each period and monthly
+odometer boundary once. A separate read bearer token protects prover access to
+sealed trajectories. Root-attestation V5 pins the validity rule and charger
+domain and includes the previous attestation hash. The signer uses an
+authenticated TLS channel to extend a Charger-side compare-and-swap head before
+persisting the local row; an exact one-link-ahead retry recovers a lost response
+or local commit. Monthly-attestation V2 also binds the intended charger domain
+and is online-anchored under exact-retry and conflict-rejection semantics.
+The signer pins the canonical profile itself, enforces its validity window and
+fix cap, and opens its key, database, and profile with fail-closed ownership and
+mode checks. Its SQLite schema is versioned and rejects injected triggers,
+views, unknown objects, and unsupported legacy layouts. The charger stores
+enrollments, accepted periods, month state, immutable receipts, and audit events transactionally;
+the formal server configuration uses PostgreSQL, administrator/device bearer
+credentials, and one application worker. SQLite remains a local-test backend.
+Formal stage-result V2 records include the job hash and recursive artifact
+manifest. Attempt and final gate receipts are hashed; merge revalidates files
+from disk rather than trusting a copied `passed' value.
 
-\subsection{Leakage Profile}
+\subsection{Canonical V6 differential run}
 
-The proof-only view is simulatable from the public leakage profile $L$ and the
-registered device metadata. This is a privacy boundary, not a no-leakage claim.
-The fee-distance-fallback-time tuple can fingerprint periods in a small
-observed pool. Our evaluation therefore reports anonymity sets, bucketing
-effects, and dispute-opening leakage.
+Table~\ref{tab:v6} reports the checked-in receipt generated on an arm64
+development host with snarkjs. Timing is a single artifact-validation run, not
+a population estimate. The test-only setup note is part of the receipt.
 
-\section{Evaluation}
-\label{sec:evaluation}
+\begin{table}[t]
+\centering
+\caption{Canonical validity-bound V6 artifact receipt.}
+\label{tab:v6}
+\small
+\begin{tabular}{lr}
+\toprule
+Metric & Receipt value \\
+\midrule
+Fixes / intervals & 25 / 24 \\
+Constraints & 246,255 \\
+Public signals & 22 \\
+Fallback intervals & 3 \\
+Witness generation & 0.408 s \\
+snarkjs proving & 3.646 s \\
+snarkjs verification & 0.217 s \\
+Proof JSON & 803 bytes \\
+Circuit/reference vector & exact match \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsection{Questions and Setup}
+The same proof passed the production-shaped charger endpoint. Re-submission was
+rejected with HTTP 409; changing the public fee signal was rejected with HTTP
+400. The accepted period covered 2,400 m and 3,600 cents. A signed 3,000 m month
+boundary caused exactly 600 m to be reconciled at five cents/m, for a 3,000-cent
+supplement. The endpoint receipt also records that its root attestation came
+from an independent receiver process, names the sealed-log SHA-256, and records
+the exact V5 chain head anchored before proof acceptance. It separately binds
+the monthly attestation SHA-256, confirms exact-retry idempotence, and records
+rejection of a conflicting validly signed boundary for the same device-month.
 
-The evaluation answers six questions:
-\begin{enumerate}
-  \item E0: How accurate is honest billing under proof-compatible footprints?
-  \item E1: Which defenses block which economic attack surface?
-  \item E2: What fallback and reconciliation rates make withholding
-  unprofitable, and what honest-user penalty do they impose?
-  \item E3: How much economic residual remains under proof-consistent relay?
-  \item E4: How much roadside observation does spot-check enforcement need to
-  match deterministic proof rejection?
-  \item E5/E6: What does the proof-only statement leak, and what is the proving
-  cost?
-\end{enumerate}
+\subsection{Formal experiment design}
 
-The authoritative experiment receipts are listed in
-\texttt{../README\_ARTIFACT.md}. The most recent GAP protocol recheck is under
-\texttt{../experiments/gap\_protocol\_recheck\_20260617/}; it does not replace
-the sealed E0--E6 directories.
+The broader evaluation has five pre-registered stages. S1 reports user/vehicle
+cluster-bootstrap confidence intervals with 5,000 replicates and treats reject
+as fail-closed; its month-close ablation removes the complete close mechanism
+rather than inserting a constant. S2 measures compile, setup, proof, and
+verification across circuit sizes. S3 freezes tariff bucket/radius variants.
+S4 separates four disclosure views: exact totals, exact plus fallback metadata,
+bucket-only totals, and bucket-only plus opened cells. Bucket views contain no
+duplicate exact totals. Gallery and query windows are disjoint with a one-step
+temporal gap. S5 verifies distinct proof corpora and charger concurrency.
 
-\subsection{E0: Honest Billing Accuracy}
+These choices close two common evaluation shortcuts. First, a bootstrap over
+rows would overstate precision when periods from one driver are correlated;
+clustering resamples identities. Second, retaining exact totals beside bucketed
+values would make a ``bucket privacy'' treatment observationally identical to
+the exact view. Restricted dataset stages are not inferred when their inputs
+are absent: the cryptographic receipt reports the data gate as unavailable.
 
-On zone-homogeneous footprints, the honest bill is exact. On the multi-zone
-Beijing grid, the attribution error is two-sided with near-zero mean
-(+0.26\%), median zero, and p95 absolute error 10.7\%. This should be presented
-as quantization noise rather than systematic over- or under-charging.
-\TODO{Insert E0 table/figure from experiments/e0_billing_accuracy.}
+\subsection{Residual sensing and metadata risk}
 
-\subsection{E1: Constraint Ablation}
-
-Constraint ablation measures the marginal economic value of each defense. The
-GeoLife anchor shows that removing zone/rate binding exposes median savings
-0.276, while OSNMA-pinned replay has zero accepted savings. The tariff-spread
-sweep shows that the zone-binding exposure is monotone in rate spread, rising
-from 0.050 at 1.2x to 0.319 at 10x on the same trajectories.
-\TODO{Convert E1 final table and tariff-spread curve into WayBill-local tables/figures.}
-
-\subsection{E2: Fallback and Reconciliation}
-
-The sufficient bound is simple: if fallback and reconciliation rates are no
-lower than the maximum tariff, withholding cannot reduce the bill. The empirical
-frontier then locates less conservative operating points and reports the honest
-penalty. The 2026-06-17 protocol recheck loaded 44 periods and rewrote the E2
-frontier outputs under \texttt{gap\_protocol\_recheck\_20260617}.
-
-\subsection{E3: Proof-Consistent Relay Residual}
-
-Authenticated GNSS does not eliminate relay or meaconing capabilities. \system\
-therefore treats signal-layer manipulation as residual economic exposure rather
-than impossibility. The current full sweep reports a conservative worst p95
-residual of 0.507 in the Rome fine/intra-cell/400m setting; tighter 50m distance
-buckets lower the comparable point from 0.464 to 0.295, and a 60s cadence cuts
-the worst Rome coarse-grid residual to 0.187.
-
-\subsection{E4: Enforcement Exchange Rate}
-
-We compare deterministic proof rejection with reconstructed spot-check
-enforcement. Against a placement-aware omitter, any partial camera coverage can
-yield zero detection if the omitted route avoids covered segments; closing the
-evasion path requires full coverage, at which point honest route visibility is
-also complete. On the central Beijing grid, the spot-check equivalent is about
-17,000 roadside cameras versus zero for proof rejection.
-\TODO{Insert enforcement-privacy Pareto figure and E4 head-to-head table.}
-
-\subsection{E5: Settlement Metadata Leakage}
-
-The proof-only statement is not leakage-free. Exact per-period tuples can have
-median anonymity one in small pools; bucketing improves anonymity monotonically.
-In the current statement-bucketing output, Rome reaches median anonymity three
-at a 50\% grid. Odometer-only mode reaches a higher anonymity set because it
-removes zone-priced timing detail. A single level-2 dispute opening
-de-anonymizes 76\% of periods, so level-1 openings should be the default.
-
-\subsection{E6: Performance and Artifact}
-
-The sealed circuit profile has 21 public signals and about 226k constraints.
-The measured proof cost is 1.049s with rapidsnark and 14.28s with snarkjs for a
-2h period; at 60s cadence a full month costs about 157s of background client
-CPU. Verification costs 242--276ms and proof communication is below 1KB for the
-binary proof, with JSON/public-signal overhead reported separately.
+Earlier trajectory sweeps are retained as versioned, non-V6 empirical context,
+not merged into the canonical cryptographic receipt. They show why the theorem
+is scoped: proof-consistent relay can preserve a nonzero billing residual, and
+exact fee--distance--time tuples can have anonymity set one in small pools.
+Bucketed totals improve this empirical anonymity measure, while opening endpoint
+fixes during a dispute can sharply reduce it. Consequently, deployment should
+combine signal-diversity controls, conservative fallback, bucketed public
+release where policy permits, and accounting-level dispute openings before raw
+endpoint disclosure.
 
 \section{Related Work}
-\label{sec:related}
 
-\paragraph{Privacy-preserving road pricing.}
-\TODO{Write VPriv, PrETP, Milo, P4TC, cell-based road pricing. Emphasize that
-their cryptography differs, but enforcement completeness depends on roadside
-observation or spot checks.}
+VPriv computes location-based fees while using cryptographic commitments and
+audits to limit location disclosure \cite{Popa2009VPriv}. PrETP moves correct
+local fee computation into an optimistic-payment protocol and uses external
+evidence to challenge committed positions \cite{Balasch2010PrETP}. Milo focuses
+on collusion and hides spot-check locations during audits
+\cite{Meiklejohn2011Milo}. P4TC gives provable privacy and security protocols
+for practical DSRC toll collection \cite{Fetzer2020P4TC}. \system\ does not
+subsume these systems; it studies a GNSS/odometer settlement boundary in which
+month-level distance completeness substitutes for some recurring roadside
+observation under stronger trusted-sensing assumptions.
 
-\paragraph{ZK location proofs.}
-\TODO{Position modern ZK proof-of-location and vehicle-tax predicate systems as
-predicate proofs, not full settlement proofs binding authenticated sensing,
-physical feasibility, tariff arithmetic, period/month binding, and monthly
-completeness.}
+Recent zero-knowledge proof-of-location work considers territorial compliance
+for vehicle subsidies and taxation \cite{Bogdanov2025ZKLocation}. Our relation
+instead binds a sequence of receiver-sealed acquisition records to tariff
+membership, integer billing, a period ledger, and month-close accounting. The
+comparison is about scope, not superiority: a predicate proof and a billing
+settlement solve different tasks.
 
-\paragraph{Authenticated GNSS and signal-layer attacks.}
-\TODO{Use OSNMA and Smart Tachograph 2 as deployment opportunity; use
-relay/meaconing literature as the reason for E3 residual analysis.}
+\section{Limitations}
 
-\paragraph{Verifiable metered billing.}
-\TODO{Compare with privacy-preserving smart metering and zone-based energy
-billing. RUC adds spatial feasibility, tariff topology, odometer reconciliation,
-and dispute handling.}
+The independent signer is a process boundary, not a remotely attested hardware
+implementation. Separate acquisition and prover tokens reduce privilege, but a
+compromised acquisition component can still falsify a status label or fix; the
+derivation rule does not turn software input into hardware truth. Token and key
+management require rotation, hardware protection, and audit. Online Charger
+anchoring detects local database rollback, but it does not protect a stolen
+receiver private key or a host already compromised under the signer UID; a
+production deployment should move signing and monotonic state into attested
+hardware. The PostgreSQL charger path has transaction/restart/concurrency tests,
+but the paper does not claim multi-host failover or multi-worker throughput
+before target-host stress evidence exists. The canonical proof uses a test-only
+Groth16 setup. The 25-fix profile is an artifact-scale configuration, not
+evidence of month-scale client throughput. The current theorem assumes a
+correct odometer and a completed month attestation; administrative handling of
+missing month close remains a governance problem. Finally, the public
+settlement tuple is linkable and potentially identifying, and we provide an
+empirical leakage analysis rather than a composable privacy proof.
 
-\paragraph{TEE-based metering.}
-\TODO{TEE billing can hide routes and avoid roadside infrastructure, but puts
-pricing policy and billing code in the TCB. \system\ makes the opposite split.}
+\section{Ethics, Recourse, and Availability}
 
-\paragraph{Modern proof systems.}
-\TODO{Explain Groth16 choice as artifact pragmatism; folding/IVC is future work,
-not the paper's contribution.}
+\paragraph{Billing errors and recourse.}
+A private bill is not automatically a fair bill. Receiver faults, tariff-map
+errors, or conservative fallback can overcharge an honest driver. A deployment
+therefore needs notice, bounded retention, an appeal deadline, and staged
+dispute openings: disclose accounting tuples first and raw endpoints only when
+necessary. Administrative handling of a missing month attestation must be
+defined by public policy and cannot be silently interpreted as evidence of
+fraud. Neither the prototype nor Theorem~\ref{thm:withholding} authorizes an
+automatic penalty.
 
-\section{Discussion and Limitations}
-\label{sec:discussion}
+\paragraph{Availability.}
+The rollback defense deliberately makes the Charger an online dependency for
+new seals. A network, TLS, or database outage pauses sealing rather than falling
+back to an unanchored local signature. Acquisition may retry the exact period
+after recovery; a timeout after remote commit is recoverable only when the same
+bytes reproduce the one-link-ahead head. This fail-closed choice prevents silent
+forking but creates an operational availability and denial-of-service risk.
 
-\paragraph{Trusted sensing remains necessary.}
-\system\ does not remove the need for an enrolled, tamper-evident sensing layer.
-It reduces what that layer is trusted to do. Device compromise and undetectable
-odometer tampering remain outside the cryptographic settlement guarantee.
+\paragraph{Data governance.}
+Mobility traces are sensitive even when pseudonymized. The four-dataset formal
+protocol records provenance and hashes, but restricted raw records are not
+distributed with the repository. Published aggregates must satisfy provider
+terms and exclude row-level trajectories, device keys, receiver logs, and
+selective-disclosure payloads. An operational charger should minimize retention
+of linkable public statements after billing and appeal obligations expire.
 
-\paragraph{Public metadata leakage is real.}
-The proof-only statement intentionally exposes a small billing tuple. This is
-enough for useful side-channel analysis in small pools. Deferred-disclosure
-running-total commitments are a natural v6 branch, but they are not part of the
-sealed artifact.
-
-\paragraph{Cross-domain linkability.}
-The charger must link a device within a billing month to collect payment.
-Cross-charger or cross-domain linkability can be reduced with per-domain
-pseudonymous attestation keys, which we leave to deployment work.
+\paragraph{Artifact availability.}
+The repository includes the V6 circuit and wrapper, Python reference,
+receiver-signer and charger services, policy/tariff artifacts, verification
+key, tests, formal orchestrator, V2 receipts, and the small canonical proof
+bundle. Large R1CS/WASM/zkey files, the test PTAU, and restricted datasets are
+referenced by immutable hashes and distributed or mounted separately. The
+direct Groth16 setup is marked test-only and is insufficient evidence of a
+production ceremony. The artifact guide gives focused and full verification
+commands and distinguishes the cryptographic receipt from unavailable formal
+dataset stages.
 
 \section{Conclusion}
-\label{sec:conclusion}
 
-\system\ shows that private zone-based road usage charging can separate
-trusted sensing from trusted pricing. Settlement proofs handle arithmetic and
-physical feasibility; monthly odometer reconciliation handles completeness; and
-the charger learns a bounded public statement rather than a route. The resulting
-design replaces roadside observation with proof verification while making its
-residual assumptions and leakage explicit.
+\system\ demonstrates a precise separation between receiver-owned acquisition
+validity and publicly verified pricing. Binding validity into the sealed root
+removes the prover's ability to self-declare an outage, while odometer-backed
+fallback and month close give a conditional no-discount result for
+receiver-authenticated labels. The result can reduce raw trajectory disclosure
+and some roadside dependence, but only under explicit sensing and odometry
+assumptions. Version-pinned artifacts, independent-signer receipts, and
+fail-closed experiment manifests make those boundaries auditable.
 
-% Bibliography is intentionally disabled in this skeleton until the WayBill
-% citation set is manually verified. Candidate source file:
-%   ../TSIP/reference.bib
-% Suggested later commands:
-%   \bibliographystyle{IEEEtran}
-%   \bibliography{../TSIP/reference}
+\IEEEtriggeratref{1}
+\bibliographystyle{IEEEtran}
+\bibliography{references}
 
 \end{document}

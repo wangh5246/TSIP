@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from common.settlement import (
+    SETTLEMENT_POSITION_VALIDITY_RULE,
+    SETTLEMENT_ROOT_ATTESTATION_SCHEMA,
     TariffTable,
     canonical_json,
     field_from_text,
@@ -56,6 +58,8 @@ class PolicyProfile:
     fallback_semantics_version: str
     verification_key_path: str = ""
     tariff_artifact_path: str = ""
+    receiver_attestation_schema: str = ""
+    position_validity_rule: str = ""
 
     def __post_init__(self) -> None:
         if not self.authority_id:
@@ -109,6 +113,16 @@ class PolicyProfile:
             raise ValueError("verification_key_hash must be hexadecimal") from exc
         if self.verification_key_hash.lower() != self.verification_key_hash:
             raise ValueError("verification_key_hash must be lowercase")
+        active_v6 = str(self.circuit_id).startswith("settlement-period-v6-")
+        if active_v6:
+            if self.receiver_attestation_schema != SETTLEMENT_ROOT_ATTESTATION_SCHEMA:
+                raise ValueError("V6 profile must pin the active receiver attestation schema")
+            if self.position_validity_rule != SETTLEMENT_POSITION_VALIDITY_RULE:
+                raise ValueError("V6 profile must pin the active position-validity rule")
+        elif bool(self.receiver_attestation_schema) != bool(self.position_validity_rule):
+            raise ValueError(
+                "receiver attestation schema and position-validity rule must be set together"
+            )
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> "PolicyProfile":
@@ -128,6 +142,9 @@ class PolicyProfile:
         data = asdict(self)
         data.pop("verification_key_path", None)
         data.pop("tariff_artifact_path", None)
+        if not data.get("receiver_attestation_schema"):
+            data.pop("receiver_attestation_schema", None)
+            data.pop("position_validity_rule", None)
         return {
             "domain_sep": POLICY_PROFILE_DOMAIN,
             "commitment_version": POLICY_PROFILE_COMMITMENT_VERSION,
@@ -176,6 +193,13 @@ class PolicyProfile:
             int(self.monthly_reconciliation_rate_cents_per_m),
             field_from_text(self.fallback_semantics_version),
         ]
+        if self.receiver_attestation_schema:
+            values.extend(
+                [
+                    field_from_text(self.receiver_attestation_schema),
+                    field_from_text(self.position_validity_rule),
+                ]
+            )
         return poseidon_chain(values)
 
     def to_dict(self, *, include_local_paths: bool = True) -> dict[str, Any]:
@@ -188,7 +212,7 @@ class PolicyProfile:
         return data
 
     def public_statement_fields(self) -> dict[str, Any]:
-        return {
+        fields: dict[str, Any] = {
             "authority_id": self.authority_id,
             "jurisdiction_id": self.jurisdiction_id,
             "profile_version": int(self.profile_version),
@@ -216,6 +240,10 @@ class PolicyProfile:
             ),
             "fallback_semantics_version": self.fallback_semantics_version,
         }
+        if self.receiver_attestation_schema:
+            fields["receiver_attestation_schema"] = self.receiver_attestation_schema
+            fields["position_validity_rule"] = self.position_validity_rule
+        return fields
 
     def assert_active_for(self, *, jurisdiction_id: str, period_start_time: int) -> None:
         if str(jurisdiction_id) != self.jurisdiction_id:
@@ -232,6 +260,8 @@ class PolicyProfile:
             got = public_statement.get(key)
             if isinstance(expected, int):
                 try:
+                    if got is None:
+                        raise TypeError
                     got = int(got)
                 except (TypeError, ValueError) as exc:
                     raise ValueError(f"policy field missing or malformed: {key}") from exc

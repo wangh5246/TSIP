@@ -13,11 +13,17 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from common.policy_profile import PolicyProfile, sha256_file  # noqa: E402
-from common.settlement import SETTLEMENT_CAP_POLICY_SQ, TariffTable, canonical_json  # noqa: E402
+from common.settlement import (  # noqa: E402
+    SETTLEMENT_CAP_POLICY_SQ,
+    SETTLEMENT_POSITION_VALIDITY_RULE,
+    SETTLEMENT_ROOT_ATTESTATION_SCHEMA,
+    TariffTable,
+    canonical_json,
+)
 
 
 DEFAULT_OUTPUT_DIR = ROOT_DIR / "configs" / "settlement_policy_profiles"
-DEFAULT_VKEY = ROOT_DIR / "zk" / "settlement_period_v5_k6" / "verification_key.json"
+DEFAULT_VKEY = ROOT_DIR / "zk" / "settlement_period_v6_k6" / "verification_key.json"
 
 
 def _write_json(path: Path, payload: object) -> None:
@@ -25,9 +31,9 @@ def _write_json(path: Path, payload: object) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def build_v5_tariff() -> TariffTable:
+def build_v6_tariff() -> TariffTable:
     return TariffTable(
-        tariff_version=7,
+        tariff_version=9,
         grid_w=100,
         cell_zones={idx: (10 if idx < 128 else 20) for idx in range(1 << 8)},
         zone_rates_cents_per_m={10: 1, 20: 5},
@@ -64,6 +70,8 @@ def profile_schema() -> dict[str, object]:
         "rounding_mode",
         "overflow_policy",
         "fallback_semantics_version",
+        "receiver_attestation_schema",
+        "position_validity_rule",
         "verification_key_path",
         "tariff_artifact_path",
     ]
@@ -76,14 +84,36 @@ def profile_schema() -> dict[str, object]:
     }
     properties.update({name: {"type": "integer", "minimum": 1} for name in integer_fields})
     properties.update({name: {"type": "string", "minLength": 1} for name in string_fields})
+    v6_only = {"receiver_attestation_schema", "position_validity_rule"}
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "https://waybill.example/schema/policy-profile-v1.json",
         "title": "WayBill Canonical PolicyProfile v1",
         "type": "object",
         "additionalProperties": False,
-        "required": sorted(properties),
+        "required": sorted(set(properties) - v6_only),
         "properties": properties,
+        "allOf": [
+            {
+                "if": {
+                    "properties": {
+                        "circuit_id": {"pattern": "^settlement-period-v6-"}
+                    },
+                    "required": ["circuit_id"],
+                },
+                "then": {
+                    "required": sorted(v6_only),
+                    "properties": {
+                        "receiver_attestation_schema": {
+                            "const": SETTLEMENT_ROOT_ATTESTATION_SCHEMA
+                        },
+                        "position_validity_rule": {
+                            "const": SETTLEMENT_POSITION_VALIDITY_RULE
+                        },
+                    },
+                },
+            }
+        ],
     }
 
 
@@ -92,8 +122,8 @@ def generate(output_dir: Path, vkey_path: Path) -> dict[str, str]:
         raise FileNotFoundError(f"verification key not found: {vkey_path}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    tariff = build_v5_tariff()
-    tariff_name = "ruc-demo-tariff-v7-d8.json"
+    tariff = build_v6_tariff()
+    tariff_name = "ruc-demo-tariff-v9-d8.json"
     tariff_payload = {
         "type": "tariff-artifact",
         "artifact_version": 1,
@@ -102,7 +132,7 @@ def generate(output_dir: Path, vkey_path: Path) -> dict[str, str]:
         "tree_depth": 8,
         "leaf_ordering": "ascending-cell-index",
         "padding_rule": "repeat-last-leaf",
-        "hash_domain": "poseidon2-tariff-leaf-v5",
+        "hash_domain": "poseidon2-tariff-leaf-v6",
         "cell_zones": {str(key): value for key, value in sorted(tariff.cell_zones.items())},
         "zone_rates_cents_per_m": {
             str(key): value for key, value in sorted(tariff.zone_rates_cents_per_m.items())
@@ -129,12 +159,12 @@ def generate(output_dir: Path, vkey_path: Path) -> dict[str, str]:
     profile = PolicyProfile(
         authority_id="ruc-demo-authority",
         jurisdiction_id="ruc-demo",
-        profile_version=7,
+        profile_version=9,
         valid_from=1_777_593_600,
         valid_to=1_798_761_600,
         revoked_at=None,
-        min_accepted_version=7,
-        tariff_version=7,
+        min_accepted_version=9,
+        tariff_version=9,
         tariff_root=tariff.root(8),
         tariff_tree_depth=8,
         max_fixes=25,
@@ -146,18 +176,20 @@ def generate(output_dir: Path, vkey_path: Path) -> dict[str, str]:
         mode_vmax_sq=33 * 33,
         cap_policy_sq=SETTLEMENT_CAP_POLICY_SQ,
         cap_policy_hash=cap_policy_hash,
-        circuit_id="settlement-period-v5-k6",
+        circuit_id="settlement-period-v6-validity-bound-k25-d8",
         verification_key_hash=sha256_file(vkey_path),
         currency="EUR",
         fixed_point_scale=1,
         rounding_mode="exact-integer",
         overflow_policy="reject-u96",
         monthly_reconciliation_rate_cents_per_m=tariff.max_zone_rate_cents_per_m,
-        fallback_semantics_version="time-speed-max-rate-v5",
+        fallback_semantics_version="odometer-max-rate-v6",
+        receiver_attestation_schema=SETTLEMENT_ROOT_ATTESTATION_SCHEMA,
+        position_validity_rule=SETTLEMENT_POSITION_VALIDITY_RULE,
         verification_key_path=relative_vkey,
         tariff_artifact_path=tariff_name,
     )
-    profile_path = output_dir / "ruc-demo-v7.json"
+    profile_path = output_dir / "ruc-demo-v9.json"
     _write_json(profile_path, profile.to_dict())
     _write_json(output_dir / "policy-profile-v1.schema.json", profile_schema())
     _write_json(
@@ -166,7 +198,7 @@ def generate(output_dir: Path, vkey_path: Path) -> dict[str, str]:
             "domain_sep": "waybill_policy_profile_test_vectors_v1",
             "vectors": [
                 {
-                    "name": "ruc-demo-v7",
+                    "name": "ruc-demo-v9",
                     "canonical_serialization": profile.canonical_serialization,
                     "profile_sha256": profile.profile_sha256,
                     "policy_profile_commitment": str(profile.commitment),
