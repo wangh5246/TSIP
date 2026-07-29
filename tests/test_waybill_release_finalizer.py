@@ -96,6 +96,7 @@ def _write_image_tar(
     bindings: dict[str, str],
     *,
     formal_source: bytes = b"VALUE = 'tagged'\n",
+    repeat_layer: bool = False,
 ) -> dict[str, str]:
     layer_buffer = io.BytesIO()
     with tarfile.open(fileobj=layer_buffer, mode="w") as layer_archive:
@@ -128,11 +129,16 @@ def _write_image_tar(
         label: bindings[binding_key]
         for label, binding_key in MODULE.CONTAINER_BINDING_LABELS.items()
     }
+    layer_diff_id = "sha256:" + hashlib.sha256(layer).hexdigest()
+    layer_paths = ["layer.tar", *(["layer.tar"] if repeat_layer else [])]
     config = {
         "architecture": "amd64",
         "os": "linux",
         "config": {"Labels": labels, "User": users[role]},
-        "rootfs": {"type": "layers", "diff_ids": ["sha256:" + hashlib.sha256(layer).hexdigest()]},
+        "rootfs": {
+            "type": "layers",
+            "diff_ids": [layer_diff_id, *([layer_diff_id] if repeat_layer else [])],
+        },
     }
     config_blob = json.dumps(config, sort_keys=True, separators=(",", ":")).encode()
     config_digest = hashlib.sha256(config_blob).hexdigest()
@@ -144,7 +150,7 @@ def _write_image_tar(
                 {
                     "Config": config_name,
                     "RepoTags": [image_ref],
-                    "Layers": ["layer.tar"],
+                    "Layers": layer_paths,
                 }
             ]
         ).encode(),
@@ -166,7 +172,11 @@ def _write_image_tar(
 
 
 def _write_oci_docker_save_tar(
-    path: Path, role: str, bindings: dict[str, str]
+    path: Path,
+    role: str,
+    bindings: dict[str, str],
+    *,
+    repeat_layer: bool = False,
 ) -> dict[str, str]:
     users = {
         "formal-runner": "10003:10003",
@@ -181,11 +191,15 @@ def _write_oci_docker_save_tar(
         label: bindings[binding_key]
         for label, binding_key in MODULE.CONTAINER_BINDING_LABELS.items()
     }
+    diff_id = "sha256:" + layer_hash
     config = {
         "architecture": "amd64",
         "os": "linux",
         "config": {"Labels": labels, "User": users[role]},
-        "rootfs": {"type": "layers", "diff_ids": ["sha256:" + layer_hash]},
+        "rootfs": {
+            "type": "layers",
+            "diff_ids": [diff_id, *([diff_id] if repeat_layer else [])],
+        },
     }
     config_blob = json.dumps(config, sort_keys=True, separators=(",", ":")).encode()
     config_hash = hashlib.sha256(config_blob).hexdigest()
@@ -202,7 +216,18 @@ def _write_oci_docker_save_tar(
                 "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
                 "digest": "sha256:" + layer_hash,
                 "size": len(layer),
-            }
+            },
+            *(
+                [
+                    {
+                        "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+                        "digest": "sha256:" + layer_hash,
+                        "size": len(layer),
+                    }
+                ]
+                if repeat_layer
+                else []
+            ),
         ],
     }
     manifest_blob = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
@@ -226,7 +251,10 @@ def _write_oci_docker_save_tar(
         {
             "Config": f"blobs/sha256/{config_hash}",
             "RepoTags": [image_ref],
-            "Layers": [f"blobs/sha256/{layer_hash}"],
+            "Layers": [
+                f"blobs/sha256/{layer_hash}",
+                *([f"blobs/sha256/{layer_hash}"] if repeat_layer else []),
+            ],
         }
     ]
     records = {
@@ -924,6 +952,16 @@ def test_formal_runner_layers_must_embed_exact_tagged_source(tmp_path: Path) -> 
     )
     assert receipt["file_count"] == 1
 
+    repeated = tmp_path / "formal-image-repeated-layer.tar"
+    _write_image_tar(repeated, "formal-runner", bindings, repeat_layer=True)
+    repeated_receipt = verify_formal_runner_embedded_source(
+        repeated,
+        code_manifest=code_manifest,
+        config=config,
+        bindings=bindings,
+    )
+    assert repeated_receipt == receipt
+
     tampered = tmp_path / "tampered-formal-image.tar"
     _write_image_tar(
         tampered,
@@ -958,7 +996,12 @@ def test_image_metadata_accepts_modern_docker_save_oci_layout(tmp_path: Path) ->
         "protocol": {"canonical_sha256": bindings["protocol_sha256"]},
     }
     image = tmp_path / "modern-docker-save.tar"
-    derived = _write_oci_docker_save_tar(image, "formal-runner", bindings)
+    derived = _write_oci_docker_save_tar(
+        image,
+        "formal-runner",
+        bindings,
+        repeat_layer=True,
+    )
     metadata = create_image_metadata(
         image_tar=image,
         role="formal-runner",

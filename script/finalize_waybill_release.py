@@ -1204,8 +1204,6 @@ def _verify_container_image_archive(path: Path) -> dict[str, Any]:
             layer_paths = [
                 _safe_relative(item, label="Docker layer path") for item in layers
             ]
-            if len(set(layer_paths)) != len(layer_paths):
-                raise ReleaseError("Docker image manifest contains duplicate layers")
             rootfs = config.get("rootfs")
             diff_ids = rootfs.get("diff_ids") if isinstance(rootfs, dict) else None
             if not isinstance(diff_ids, list) or len(diff_ids) != len(layer_paths):
@@ -1276,13 +1274,9 @@ def _verify_container_image_archive(path: Path) -> dict[str, Any]:
             layers = image_manifest.get("layers")
             if not isinstance(layers, list) or not layers:
                 raise ReleaseError("OCI image manifest contains no layers")
-            seen_layer_digests: set[str] = set()
             oci_layer_paths: list[str] = []
             for index_number, layer in enumerate(layers):
                 layer_digest, _ = descriptor_blob(layer, label=f"layer {index_number}")
-                if layer_digest in seen_layer_digests:
-                    raise ReleaseError("OCI image manifest contains duplicate layers")
-                seen_layer_digests.add(layer_digest)
                 oci_layer_paths.append(
                     f"blobs/sha256/{layer_digest.removeprefix('sha256:')}"
                 )
