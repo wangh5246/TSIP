@@ -15,6 +15,6 @@ From: waybill-formal:local
 
 %test
     python --version | grep '3.12'
-    node --version | grep 'v26.5.0'
+    node --version | grep 'v26.5.1'
     circom --version | grep '2.1.9'
     snarkjs --version | grep '0.7.6'

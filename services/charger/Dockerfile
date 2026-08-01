@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
-FROM node:26.5.0-alpine3.23@sha256:0473b6671ff22c8eeb570c0e1e51408595d3171e73f8002c269b763f0a943149 AS node
+FROM node:26.5.1-alpine3.23@sha256:2a633e101381371ba148c7c212bf447c00cd267d814b708a9fe52c4984204729 AS node
 WORKDIR /opt/waybill-node
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
@@ -17,7 +17,7 @@ LABEL org.opencontainers.image.revision="${WAYBILL_GIT_COMMIT}" \
       io.waybill.git.tree="${WAYBILL_GIT_TREE}" \
       io.waybill.code-manifest.sha256="${WAYBILL_CODE_MANIFEST_SHA256}" \
       io.waybill.protocol.sha256="${WAYBILL_PROTOCOL_SHA256}" \
-      io.waybill.build.node.version="26.5.0" \
+      io.waybill.build.node.version="26.5.1" \
       io.waybill.build.npm.version="11.17.0"
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /opt/waybill-node /opt/waybill-node

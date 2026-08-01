@@ -207,7 +207,7 @@
   },
   "release_name": "waybill-formal-v2",
   "release_blockers": [
-    "Node.js July 2026 security release for the 26.x line is still pending; update the pinned Node image and rerun all image scans before tagging."
+    "Node.js 26.5.1 base images are pinned, but all four release roles must be rebuilt and rescanned before tagging."
   ],
   "receipt_requirements": {
     "circuit": {

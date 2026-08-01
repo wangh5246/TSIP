@@ -15,7 +15,7 @@
   },
   "toolchain": {
     "python": "3.12",
-    "node": "26.5.0",
+    "node": "26.5.1",
     "npm": "11.17.0",
     "circom": "2.1.9",
     "circom_git_commit": "2eaaa6dface934356972b34cab64b25d382e59de",

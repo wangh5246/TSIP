@@ -219,7 +219,7 @@ def validate_protocol(protocol: Mapping[str, Any]) -> dict[str, Any]:
     toolchain = protocol.get("toolchain", {})
     expected_toolchain = {
         "python": "3.12",
-        "node": "26.5.0",
+        "node": "26.5.1",
         "npm": "11.17.0",
         "circom": "2.1.9",
         "snarkjs": "0.7.6",
@@ -2260,7 +2260,7 @@ def host_preflight(
         "container_python_3_12": bool(
             container_versions["python"] and "3.12" in container_versions["python"]
         ),
-        "container_node_26_5_0": container_versions["node"] == "v26.5.0",
+        "container_node_26_5_1": container_versions["node"] == "v26.5.1",
         "container_npm_absent": container_versions["npm"] == "absent",
         "container_circom_2_1_9": container_versions["circom"]
         == "circom compiler 2.1.9",

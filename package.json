@@ -4,7 +4,7 @@
   "private": true,
   "description": "Pinned JavaScript dependencies for WayBill formal experiments",
   "engines": {
-    "node": "26.5.0",
+    "node": "26.5.1",
     "npm": "11.17.0"
   },
   "dependencies": {
