@@ -206,9 +206,7 @@
     }
   },
   "release_name": "waybill-formal-v2",
-  "release_blockers": [
-    "Node.js 26.5.1 base images are pinned, but all four release roles must be rebuilt and rescanned before tagging."
-  ],
+  "release_blockers": [],
   "receipt_requirements": {
     "circuit": {
       "canonical_profile_bound": true,
