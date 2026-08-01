@@ -38,6 +38,7 @@ baselines/
 # Agent scratch
 .agents/
 .claude/worktrees/
+.superpowers/
 
 # LaTeX build artifacts
 *.aux
