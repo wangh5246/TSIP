@@ -425,13 +425,14 @@ def test_rendered_slurm_array_binds_and_isolates_apptainer_runtime(
     workspace = tmp_path / "workspace"
     run_root = workspace / "runs/run-01"
     runtime_image = tmp_path / "runtime/waybill-formal.sif"
-    prepared_root = tmp_path / "prepared"
-    corpus_root = tmp_path / "corpus"
-    ptau = tmp_path / "ptau/powers.ptau"
+    shared_data_root = tmp_path / "shared-data"
+    prepared_root = shared_data_root / "prepared"
+    corpus_root = shared_data_root / "corpus"
+    ptau = shared_data_root / "ptau/powers.ptau"
     workspace.mkdir()
     runtime_image.parent.mkdir()
     runtime_image.write_bytes(b"fixture-sif")
-    prepared_root.mkdir()
+    prepared_root.mkdir(parents=True)
     corpus_root.mkdir()
     ptau.parent.mkdir()
     ptau.touch()
@@ -507,6 +508,7 @@ def test_rendered_slurm_array_binds_and_isolates_apptainer_runtime(
         corpus_root=corpus_root,
         ptau=ptau,
         workspace_root=workspace,
+        shared_data_root=shared_data_root,
         stage="S1",
     )
     script = output.read_text(encoding="utf-8")
@@ -517,9 +519,11 @@ def test_rendered_slurm_array_binds_and_isolates_apptainer_runtime(
     assert "SOURCE_ROOT=" not in script
     assert ":/work:ro" not in script
     assert '--bind "$RUN_ROOT:$RUN_ROOT:rw"' in script
-    assert '--bind "$PREPARED_ROOT:$PREPARED_ROOT:ro"' in script
-    assert '--bind "$CORPUS_ROOT:$CORPUS_ROOT:ro"' in script
-    assert '--bind "$PTAU_PATH:$PTAU_PATH:ro"' in script
+    assert '--bind "$SHARED_DATA_ROOT:$SHARED_DATA_ROOT:ro"' in script
+    assert '--bind "$PREPARED_ROOT:$PREPARED_ROOT:ro"' not in script
+    assert '--bind "$CORPUS_ROOT:$CORPUS_ROOT:ro"' not in script
+    assert '--bind "$PTAU_PATH:$PTAU_PATH:ro"' not in script
+    assert execution["shared_data_root"] == str(shared_data_root.resolve())
     assert execution["runtime_image_sha256"] == _sha(runtime_image)
     assert execution["release_image_digest"] == "sha256:" + "e" * 64
 

@@ -412,6 +412,26 @@ must not be committed or published.
 
 ## 3. Materialize the full prepared and canonical corpus
 
+Use one canonical, versioned data root. It is the only materialized copy used
+by every local worker or target execution node; it contains no writable run
+directory and no raw provider data. The Charger and independent receiver signer
+do not mount it at all.
+
+```bash
+export WAYBILL_SHARED_DATA_ROOT=/srv/waybill-data/waybill-formal-v1
+export WAYBILL_PREPARED_ROOT="$WAYBILL_SHARED_DATA_ROOT/prepared"
+export WAYBILL_CORPUS_ROOT="$WAYBILL_SHARED_DATA_ROOT/corpus"
+export WAYBILL_PTAU="$WAYBILL_SHARED_DATA_ROOT/ptau/powersOfTau28_hez_final_22.ptau"
+```
+
+Prepare once into `prepared/`, materialize once into `corpus/`, then make the
+root immutable and mount the same absolute path read-only on each of the three
+local test workers (or on every Slurm node). The frozen
+`corpus/prepared_manifest.json` hashes every prepared and canonical input; it
+is sealed again in each run. On the rented server, transfer this single root
+once, verify its manifest and PTAU hash, and use the same layout rather than
+regenerating per server.
+
 Run preprocessing with no caps:
 
 ```bash
@@ -495,7 +515,8 @@ python script/waybill_formal.py init-run \
   --prepared-root "$WAYBILL_PREPARED_ROOT" \
   --corpus-root "$WAYBILL_CORPUS_ROOT" \
   --ptau "$WAYBILL_PTAU" \
-  --workspace-root "$WAYBILL_WORKSPACE"
+  --workspace-root "$WAYBILL_WORKSPACE" \
+  --shared-data-root "$WAYBILL_SHARED_DATA_ROOT"
 ```
 
 Render separate arrays so S2 main setup/proof jobs finish before S2
@@ -508,6 +529,7 @@ SLURM_CONTAINER_ARGS=(
   --corpus-root "$WAYBILL_CORPUS_ROOT"
   --ptau "$WAYBILL_PTAU"
   --workspace-root "$WAYBILL_WORKSPACE"
+  --shared-data-root "$WAYBILL_SHARED_DATA_ROOT"
 )
 python script/waybill_formal.py render-slurm \
   --run-root "$RUN_ROOT" --stage S2 --kind main \
@@ -529,8 +551,9 @@ python script/waybill_formal.py render-slurm \
 The generated arrays refuse host-Python execution. They verify the SIF hash,
 launch with `--containall --cleanenv --no-home --no-mount hostfs`, disable the
 network namespace, execute the image-embedded source at `/work`, and expose
-only the sealed run directory read-write. Prepared datasets, canonical S3
-instances, and the exact PTAU are separate read-only mounts. The runtime also
+only the sealed run directory read-write. When `--shared-data-root` is used,
+the prepared datasets, canonical S3 instances, and exact PTAU are one
+read-only mount; otherwise they remain separate read-only mounts. The runtime also
 compares the embedded
 Git/tree/code-manifest/protocol binding file with `execution-container.json`.
 Each attempt receipt includes the OCI image digest, SIF hash, source bindings,

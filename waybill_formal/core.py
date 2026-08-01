@@ -1279,6 +1279,7 @@ def _build_execution_container_binding(
     corpus_root: Path,
     ptau: Path,
     workspace_root: Path,
+    shared_data_root: Path | None = None,
 ) -> dict[str, Any]:
     run_root = run_root.resolve()
     _require(not container_image.is_symlink(), "Apptainer image must not be a symlink")
@@ -1290,11 +1291,30 @@ def _build_execution_container_binding(
     corpus_root = corpus_root.resolve()
     ptau = ptau.resolve()
     workspace_root = workspace_root.resolve()
+    if shared_data_root is not None:
+        _require(not shared_data_root.is_symlink(), "shared data root must not be a symlink")
+        shared_data_root = shared_data_root.resolve()
     _require(container_image.is_file(), f"Apptainer image is missing: {container_image}")
     _require(workspace_root.is_dir(), f"formal workspace root is missing: {workspace_root}")
     _require(prepared_root.is_dir(), f"prepared dataset root is missing: {prepared_root}")
     _require(corpus_root.is_dir(), f"formal corpus root is missing: {corpus_root}")
     _require(ptau.is_file(), f"PTAU is missing: {ptau}")
+    if shared_data_root is not None:
+        _require(shared_data_root.is_dir(), f"shared data root is missing: {shared_data_root}")
+        for path, label in (
+            (prepared_root, "prepared dataset root"),
+            (corpus_root, "formal corpus root"),
+            (ptau, "PTAU"),
+        ):
+            _require(
+                path.is_relative_to(shared_data_root),
+                f"{label} must be contained by the shared data root",
+            )
+        _require(
+            not workspace_root.is_relative_to(shared_data_root)
+            and not shared_data_root.is_relative_to(workspace_root),
+            "shared data root must be disjoint from the writable formal workspace",
+        )
     _require(
         run_root.is_relative_to(workspace_root),
         "run root must be contained by the formal workspace root",
@@ -1356,7 +1376,7 @@ def _build_execution_container_binding(
         rg6.get("embedded_release_binding") == release_bindings,
         "formal-runner embedded source binding does not match the release manifest",
     )
-    return {
+    binding = {
         "schema": "waybill.formal.execution-container/v2",
         "container_source_root": "/work",
         "launcher": "apptainer",
@@ -1372,6 +1392,9 @@ def _build_execution_container_binding(
         "ptau_blake2b": rg6_ptau["blake2b"],
         "workspace_root": str(workspace_root),
     }
+    if shared_data_root is not None:
+        binding["shared_data_root"] = str(shared_data_root)
+    return binding
 
 
 def _sealed_run_input_hashes(run_root: Path) -> dict[str, str]:
@@ -1489,6 +1512,7 @@ def initialize_run(
     corpus_root: Path,
     ptau: Path,
     workspace_root: Path,
+    shared_data_root: Path | None = None,
 ) -> Path:
     validate_protocol(protocol)
     validate_gate_receipts(gate_receipts)
@@ -1575,6 +1599,7 @@ def initialize_run(
         corpus_root=corpus_root,
         ptau=ptau,
         workspace_root=workspace_root,
+        shared_data_root=shared_data_root,
     )
     run_root.parent.mkdir(parents=True, exist_ok=True)
     staging_root = run_root.parent / f".{run_id}.initializing-{os.getpid()}"
@@ -1643,6 +1668,7 @@ def configure_execution_container(
     corpus_root: Path,
     ptau: Path,
     workspace_root: Path,
+    shared_data_root: Path | None = None,
 ) -> dict[str, Any]:
     run_root = run_root.resolve()
     gate_receipts = read_json(run_root / "gate_receipts.json")
@@ -1656,6 +1682,7 @@ def configure_execution_container(
         corpus_root=corpus_root,
         ptau=ptau,
         workspace_root=workspace_root,
+        shared_data_root=shared_data_root,
     )
     path = run_root / "execution-container.json"
     if path.exists():
@@ -2027,6 +2054,7 @@ def render_slurm_array(
     corpus_root: Path,
     ptau: Path,
     workspace_root: Path,
+    shared_data_root: Path | None = None,
     stage: str | None = None,
     kind: str | None = None,
 ) -> None:
@@ -2037,6 +2065,7 @@ def render_slurm_array(
         corpus_root=corpus_root,
         ptau=ptau,
         workspace_root=workspace_root,
+        shared_data_root=shared_data_root,
     )
     jobs = read_jsonl(run_root / "jobs" / "expected.jsonl")
     if stage is not None:
@@ -2055,6 +2084,17 @@ def render_slurm_array(
     memory_gib = max(int(job.get("resource", {}).get("memory_gib", 1)) for job in jobs)
     timeout_sec = max(int(job.get("timeout_sec", 3600)) for job in jobs)
     hours = max(1, (timeout_sec + 3599) // 3600)
+    shared_root = binding.get("shared_data_root")
+    if shared_root is not None:
+        mount_variables = f"SHARED_DATA_ROOT={json.dumps(str(shared_root))}\n"
+        read_only_binds = '  --bind "$SHARED_DATA_ROOT:$SHARED_DATA_ROOT:ro" \\\n'
+    else:
+        mount_variables = ""
+        read_only_binds = (
+            '  --bind "$PREPARED_ROOT:$PREPARED_ROOT:ro" \\\n'
+            '  --bind "$CORPUS_ROOT:$CORPUS_ROOT:ro" \\\n'
+            '  --bind "$PTAU_PATH:$PTAU_PATH:ro" \\\n'
+        )
     script = f"""#!/usr/bin/env bash
 set -euo pipefail
 #SBATCH --array=0-{count - 1}
@@ -2070,7 +2110,7 @@ CONTAINER_IMAGE_DIGEST={json.dumps(str(binding["release_image_digest"]))}
 PREPARED_ROOT={json.dumps(str(binding["prepared_root"]))}
 CORPUS_ROOT={json.dumps(str(binding["corpus_root"]))}
 PTAU_PATH={json.dumps(str(binding["ptau_path"]))}
-JOB_ID=$(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" "$JOB_LEDGER")
+{mount_variables}JOB_ID=$(sed -n "$((SLURM_ARRAY_TASK_ID + 1))p" "$JOB_LEDGER")
 test -n "$JOB_ID"
 test "$(sha256sum "$CONTAINER_IMAGE" | awk '{{print $1}}')" = "$CONTAINER_RUNTIME_SHA256"
 command -v apptainer >/dev/null
@@ -2078,10 +2118,7 @@ exec apptainer exec \
   --containall --cleanenv --no-home --no-mount hostfs \
   --net --network none \
   --bind "$RUN_ROOT:$RUN_ROOT:rw" \
-  --bind "$PREPARED_ROOT:$PREPARED_ROOT:ro" \
-  --bind "$CORPUS_ROOT:$CORPUS_ROOT:ro" \
-  --bind "$PTAU_PATH:$PTAU_PATH:ro" \
-  --pwd /work \
+{read_only_binds}  --pwd /work \
   --env WAYBILL_CONTAINER=1 \
   --env WAYBILL_EXECUTION_LAUNCHER=apptainer \
   --env "WAYBILL_EXECUTION_IMAGE_DIGEST=$CONTAINER_IMAGE_DIGEST" \

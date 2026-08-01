@@ -115,6 +115,11 @@ def parse_args() -> argparse.Namespace:
     init_run.add_argument("--corpus-root", type=Path, required=True)
     init_run.add_argument("--ptau", type=Path, required=True)
     init_run.add_argument("--workspace-root", type=Path, required=True)
+    init_run.add_argument(
+        "--shared-data-root",
+        type=Path,
+        help="single read-only root containing prepared, corpus, and PTAU inputs",
+    )
 
     code = sub.add_parser("code-manifest")
     code.add_argument("--output", type=Path, required=True)
@@ -163,6 +168,11 @@ def parse_args() -> argparse.Namespace:
     slurm.add_argument("--corpus-root", type=Path, required=True)
     slurm.add_argument("--ptau", type=Path, required=True)
     slurm.add_argument("--workspace-root", type=Path, required=True)
+    slurm.add_argument(
+        "--shared-data-root",
+        type=Path,
+        help="single read-only root containing prepared, corpus, and PTAU inputs",
+    )
     slurm.add_argument("--stage", choices=["S1", "S2", "S3", "S4", "S5"])
     slurm.add_argument("--kind")
     return parser.parse_args()
@@ -229,6 +239,7 @@ def main() -> int:
             corpus_root=args.corpus_root,
             ptau=args.ptau,
             workspace_root=args.workspace_root,
+            shared_data_root=args.shared_data_root,
         )
         print(run_root)
         return 0
@@ -298,6 +309,7 @@ def main() -> int:
             corpus_root=args.corpus_root,
             ptau=args.ptau,
             workspace_root=args.workspace_root,
+            shared_data_root=args.shared_data_root,
             stage=args.stage,
             kind=args.kind,
         )
