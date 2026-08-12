@@ -1,0 +1,32 @@
+{
+  "project": "risefl_mvp",
+  "migration_version": "1.0",
+  "generated_at": "2026-08-11T13:24:53.209895+00:00",
+  "git_remote": "https://github.com/wangh5246/TSIP.git",
+  "git_commit": "5895ba47c77b37664485ced939093d9a333d6a68",
+  "source_of_truth": "Git/GitHub",
+  "r2_policy": "append-only immutable experiment archives",
+  "experiments": [
+    "e0_billing_accuracy",
+    "e1_objective_fix",
+    "e1_other_datasets",
+    "e1_receipts",
+    "e1_rome_real_tariff_ratio_fix",
+    "e1_rome_real_tariff_smoke",
+    "e1_sweeps",
+    "e1_tariff_spread",
+    "e2_fallback_frontier",
+    "e2_fallback_frontier_all4",
+    "e3_bucket_sensitivity",
+    "e3_relay_residual",
+    "e3_relay_residual_all4",
+    "e3_relay_residual_full",
+    "e4_e5_ruc",
+    "e6_rapidsnark",
+    "gap_protocol_recheck_20260617",
+    "waybill_m0",
+    "waybill_m1",
+    "waybill_m2",
+    "waybill_m3"
+  ]
+}

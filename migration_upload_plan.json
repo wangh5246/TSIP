@@ -1,0 +1,2178 @@
+{
+  "bucket": "waybill",
+  "prefix": "projects/risefl_mvp",
+  "files": [
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/project-manifest.json",
+      "key": "projects/risefl_mvp/project-manifest.json",
+      "size_bytes": 877,
+      "sha256": "eb772e0c6216177e6a45967db6e3ace48f6d49c7e154c23e8256a3795e025058"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/source-snapshots/5895ba47c77b37664485ced939093d9a333d6a68.tar.gz",
+      "key": "projects/risefl_mvp/source-snapshots/5895ba47c77b37664485ced939093d9a333d6a68.tar.gz",
+      "size_bytes": 302821775,
+      "sha256": "5f99730931781e3299820808884b89376a04c55ae7c0fb3946053da638389c7e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e0_billing_accuracy/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e0_billing_accuracy/manifest.json",
+      "size_bytes": 1112,
+      "sha256": "968a5b03863925951fa8b8f311edabab06175fb61b01a4336e0a5b16efd3beb7"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e0_billing_accuracy/e0_billing_accuracy.csv",
+      "key": "projects/risefl_mvp/experiments/e0_billing_accuracy/metrics/e0_billing_accuracy.csv",
+      "size_bytes": 258,
+      "sha256": "de5546700428298e56b95b6898d23da8d2555f8a61100b5c3b134b7c8c4c504d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e0_billing_accuracy/e0_period_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e0_billing_accuracy/metrics/e0_period_rows.csv",
+      "size_bytes": 46056,
+      "sha256": "2c3f06a59a9405a9c49c09084c7895ca97f76742a30e84be317adbf315870e9a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e0_billing_accuracy/receipt.json",
+      "key": "projects/risefl_mvp/experiments/e0_billing_accuracy/artifacts/receipt.json",
+      "size_bytes": 516,
+      "sha256": "b1a7a36355e2aa74bf0b344c52e9714326906a61a00cf9db6264be4242b3d790"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e1_objective_fix/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e1_objective_fix/manifest.json",
+      "size_bytes": 2731,
+      "sha256": "ddda8d08719f225a6236cd6fcf096945db92436cd9cefc29317a3afcf570ab09"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_objective_fix/geolife_receipt.json",
+      "key": "projects/risefl_mvp/experiments/e1_objective_fix/artifacts/geolife_receipt.json",
+      "size_bytes": 686680,
+      "sha256": "bb23300bf5dc9ea11e883b99e4b9bd91128f4ab69811933f4f69b06760a2e8ab"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_objective_fix/geolife_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e1_objective_fix/metrics/geolife_rows.csv",
+      "size_bytes": 6576,
+      "sha256": "045c0709b0e4ba9495efce32ac002c3de10c3127662556739ee5ed2f3b41533e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_objective_fix/geolife_summary.csv",
+      "key": "projects/risefl_mvp/experiments/e1_objective_fix/metrics/geolife_summary.csv",
+      "size_bytes": 558,
+      "sha256": "b4336b48d69c45ab175f7570c91283bf9b7d0296eae7ab857189318effeca8ff"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_objective_fix/porto_receipt.json",
+      "key": "projects/risefl_mvp/experiments/e1_objective_fix/artifacts/porto_receipt.json",
+      "size_bytes": 499716,
+      "sha256": "c75aa305369bb86fb817a136d1e5976e0c606e51e3bdbb6d765b7f7e460585f3"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_objective_fix/porto_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e1_objective_fix/metrics/porto_rows.csv",
+      "size_bytes": 3983,
+      "sha256": "6fd54cea7ab778ec9983f95369d58e82f782cea45a91909eac2e189d5979a177"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_objective_fix/porto_summary.csv",
+      "key": "projects/risefl_mvp/experiments/e1_objective_fix/metrics/porto_summary.csv",
+      "size_bytes": 499,
+      "sha256": "132a6c80bc5b4cf727fb8f96fe19a01865dfad5b7612e99a9d55391cd73cb2b0"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_objective_fix/rome_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e1_objective_fix/metrics/rome_rows.csv",
+      "size_bytes": 45620,
+      "sha256": "1390f77bbedea0cfeccc090dddf870b977040ffd8d6d662f8a72add6c3b705d3"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_objective_fix/rome_summary.csv",
+      "key": "projects/risefl_mvp/experiments/e1_objective_fix/metrics/rome_summary.csv",
+      "size_bytes": 427,
+      "sha256": "d6e903e047c44d154bc6b8cb43ffb74cb920997bbcbfdeefec142cef332d4a6a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_objective_fix/tdrive_receipt.json",
+      "key": "projects/risefl_mvp/experiments/e1_objective_fix/artifacts/tdrive_receipt.json",
+      "size_bytes": 64903,
+      "sha256": "259c9527069868cc4fe87cc777dc62897ebbde870abd89dc1ecfdf56d656f3ab"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_objective_fix/tdrive_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e1_objective_fix/metrics/tdrive_rows.csv",
+      "size_bytes": 426,
+      "sha256": "cefcce0d92605f611795c3a0d0451a05b6a510a1f0a87007df39ccfbb01b84b0"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_objective_fix/tdrive_summary.csv",
+      "key": "projects/risefl_mvp/experiments/e1_objective_fix/metrics/tdrive_summary.csv",
+      "size_bytes": 405,
+      "sha256": "cb194ffa80b5a5608cdb2844e99cbb10819665dd56d30ab3dc7fcd4b433aaf4c"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e1_other_datasets/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e1_other_datasets/manifest.json",
+      "size_bytes": 2445,
+      "sha256": "60e4bbdabbd76c2ee65565e84e2d62e013a9e006a42d06650d1785a21eb9742e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_other_datasets/README.md",
+      "key": "projects/risefl_mvp/experiments/e1_other_datasets/artifacts/README.md",
+      "size_bytes": 3175,
+      "sha256": "fac60db97eb78eb8a17dcd8b0759020bf43383a281a659d3fee1473e0f33dd49"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_other_datasets/e1_other_datasets_pinned_receipt_check.csv",
+      "key": "projects/risefl_mvp/experiments/e1_other_datasets/metrics/e1_other_datasets_pinned_receipt_check.csv",
+      "size_bytes": 167,
+      "sha256": "f697d6d41628f187bddcfbe4187150bdf9c8eb3cb601e0f3fb786561a2dad9ab"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_other_datasets/e1_other_datasets_summary.csv",
+      "key": "projects/risefl_mvp/experiments/e1_other_datasets/metrics/e1_other_datasets_summary.csv",
+      "size_bytes": 909,
+      "sha256": "0aea58e94f49eb3fb8f0eb1b3633e9d8384efcb206b5d09f1b8159fa8beeb005"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_other_datasets/porto_e1_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e1_other_datasets/metrics/porto_e1_rows.csv",
+      "size_bytes": 2828,
+      "sha256": "6b59ada3aa6744e0594e7426f8fec89b1c96fb483909e4565a20021fdee74c42"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_other_datasets/porto_e1_summary.csv",
+      "key": "projects/risefl_mvp/experiments/e1_other_datasets/metrics/porto_e1_summary.csv",
+      "size_bytes": 324,
+      "sha256": "1a7e75f0694c5dd91f3cd5206ee52bdab31aabb4ac8990ee7c7a52ef103d402c"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_other_datasets/rome_e1_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e1_other_datasets/metrics/rome_e1_rows.csv",
+      "size_bytes": 42169,
+      "sha256": "0340c5804fd0177654544509c781547ed17e4baf59f7931737438fa45cf1a1d9"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_other_datasets/rome_e1_summary.csv",
+      "key": "projects/risefl_mvp/experiments/e1_other_datasets/metrics/rome_e1_summary.csv",
+      "size_bytes": 366,
+      "sha256": "d19d00178413ab8a256afd8eb683d219317d1b2c6b27e7b356d56be4d7f274e1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_other_datasets/tdrive_e1_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e1_other_datasets/metrics/tdrive_e1_rows.csv",
+      "size_bytes": 355,
+      "sha256": "09bca8b87f6b73f103ac11d70ab73496709fe36a0051ce08ee40ebb175a93c79"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_other_datasets/tdrive_e1_summary.csv",
+      "key": "projects/risefl_mvp/experiments/e1_other_datasets/metrics/tdrive_e1_summary.csv",
+      "size_bytes": 381,
+      "sha256": "2b91d1ca00b64dfb6ab8d4f2ad8a946b8b754dde66928cee8e68037b200e0201"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e1_receipts/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e1_receipts/manifest.json",
+      "size_bytes": 1470,
+      "sha256": "aa7c5827317c424501023601a0f1ca2e24840845117b4de428f129464b50c2a1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_receipts/README.md",
+      "key": "projects/risefl_mvp/experiments/e1_receipts/artifacts/README.md",
+      "size_bytes": 942,
+      "sha256": "6987c1e5a875e1ca5c0dc10aa9153e485a711ac71f72dc37407708f718ccd2a6"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_receipts/e1_geolife_14period_pinned_receipt.json",
+      "key": "projects/risefl_mvp/experiments/e1_receipts/artifacts/e1_geolife_14period_pinned_receipt.json",
+      "size_bytes": 682845,
+      "sha256": "0d040ea57f56d2119242aa1113974af8633e6353c1c92032f8c1c9b2d6ce529b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_receipts/e1_porto_pinned_receipt.json",
+      "key": "projects/risefl_mvp/experiments/e1_receipts/artifacts/e1_porto_pinned_receipt.json",
+      "size_bytes": 495332,
+      "sha256": "c9415ab1b6a270a60aa35d1676442e603259ba44c5d65ec5998b2dd68ba236b2"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_receipts/e1_rome_pinned_receipt.json",
+      "key": "projects/risefl_mvp/experiments/e1_receipts/artifacts/e1_rome_pinned_receipt.json",
+      "size_bytes": 6514728,
+      "sha256": "d2a08ac2e0c836e1c719da3ea4b6938d900924bcc0b726089905e03bd3a8bb9d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_receipts/e1_tdrive_pinned_receipt.json",
+      "key": "projects/risefl_mvp/experiments/e1_receipts/artifacts/e1_tdrive_pinned_receipt.json",
+      "size_bytes": 64578,
+      "sha256": "03f4844d87d8b3c2d9bd30498f73dfbd467453c075662714c4e787807182627d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e1_rome_real_tariff_ratio_fix/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/manifest.json",
+      "size_bytes": 1938,
+      "sha256": "88fa0476b02a5a8668696cfde95cc64cd6f49b4e44b8eb1e390734819b170b52"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/periods_60s.jsonl",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/metrics/periods_60s.jsonl",
+      "size_bytes": 1892440,
+      "sha256": "f9eebaa75fa5d6e070c50a971ea7cffe8248af3611c772ac1d2d1c58cbc2567d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/receipt_1p.json",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/artifacts/receipt_1p.json",
+      "size_bytes": 65537,
+      "sha256": "bfb610b80f6e72060a4ed8f39cca14479f5e75a57f4c57b53f3030991eb1e8ab"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/rows_162.csv",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/metrics/rows_162.csv",
+      "size_bytes": 62378,
+      "sha256": "407fa773ebb795e9540791bee565a1fc2683f9e254bb13d94ba501e2242f9407"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/rows_1p.csv",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/metrics/rows_1p.csv",
+      "size_bytes": 395,
+      "sha256": "cbe3851d4c627af6158d70bec923f11e9d3bac690dcf23da5ba0b0b30bb52a30"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/summary_162.csv",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/metrics/summary_162.csv",
+      "size_bytes": 592,
+      "sha256": "dce2e575e72b31f4948e2ecff13d3a3c5c92ff65e6f3b77dffefe02881f2cd33"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/summary_1p.csv",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/metrics/summary_1p.csv",
+      "size_bytes": 433,
+      "sha256": "359216c182e4cc6ec808a88858c220bab2ec725774e7e527677ace2c2de66260"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/tariff_block.json",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_ratio_fix/config/tariff_block.json",
+      "size_bytes": 5355,
+      "sha256": "7a2acdfad402faa6cc1993014df265ba9ed9be2c714636f9c840957ffb2fbe4f"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e1_rome_real_tariff_smoke/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_smoke/manifest.json",
+      "size_bytes": 1930,
+      "sha256": "ffbab3154c62043eb69ba639e63d25a86d5fdbdfccb64e25e9e32f369be833f9"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_smoke/periods_60s.jsonl",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_smoke/metrics/periods_60s.jsonl",
+      "size_bytes": 1892440,
+      "sha256": "f9eebaa75fa5d6e070c50a971ea7cffe8248af3611c772ac1d2d1c58cbc2567d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_smoke/receipt_1p.json",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_smoke/artifacts/receipt_1p.json",
+      "size_bytes": 65193,
+      "sha256": "4f54021aa0518cd2660e64f52381e7735aac2d313864b6d843eab6e8e2dfb807"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_smoke/rows_162.csv",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_smoke/metrics/rows_162.csv",
+      "size_bytes": 47569,
+      "sha256": "f46456d75f3a4f1878cefb2c19849da172ec8ea10429488e742390f5fddd5c89"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_smoke/rows_1p.csv",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_smoke/metrics/rows_1p.csv",
+      "size_bytes": 395,
+      "sha256": "cbe3851d4c627af6158d70bec923f11e9d3bac690dcf23da5ba0b0b30bb52a30"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_smoke/summary_162.csv",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_smoke/metrics/summary_162.csv",
+      "size_bytes": 479,
+      "sha256": "85c06a8a67effff19820d7a0513b309c40de17c0459bd397964cfc09de37c2d9"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_smoke/summary_1p.csv",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_smoke/metrics/summary_1p.csv",
+      "size_bytes": 433,
+      "sha256": "359216c182e4cc6ec808a88858c220bab2ec725774e7e527677ace2c2de66260"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_rome_real_tariff_smoke/tariff_block.json",
+      "key": "projects/risefl_mvp/experiments/e1_rome_real_tariff_smoke/config/tariff_block.json",
+      "size_bytes": 5036,
+      "sha256": "4bba345a655427f56381e1a1eb5195f8d5f12c8e48f44ba95e95fe5aed2b9230"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e1_sweeps/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e1_sweeps/manifest.json",
+      "size_bytes": 2005,
+      "sha256": "80d448c66f1d3ad0acca61c7060a63b525a5d318d88b587a8e652c907dbdbc16"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_sweeps/rome_bucket_25_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e1_sweeps/metrics/rome_bucket_25_rows.csv",
+      "size_bytes": 21543,
+      "sha256": "b92c484a4835ebf1766168bb16a96978e856b9f5837c9e852b59bed462c187d8"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_sweeps/rome_bucket_25_summary.csv",
+      "key": "projects/risefl_mvp/experiments/e1_sweeps/metrics/rome_bucket_25_summary.csv",
+      "size_bytes": 288,
+      "sha256": "97b11431f1dde09c5125a2c48814cd2600797995cf145f6a8304706581daf567"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_sweeps/rome_bucket_receipt.json",
+      "key": "projects/risefl_mvp/experiments/e1_sweeps/artifacts/rome_bucket_receipt.json",
+      "size_bytes": 26292349,
+      "sha256": "76bc3132e2beec1b3ab8ef7d47704a0ad4de833025d2af3246bf4eed99f9a760"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_sweeps/rome_bucket_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e1_sweeps/metrics/rome_bucket_rows.csv",
+      "size_bytes": 85606,
+      "sha256": "4889b2cdaae802ad897b3a458e4fa923e5bc579b4e86ff94048349ebd1621257"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_sweeps/rome_bucket_summary.csv",
+      "key": "projects/risefl_mvp/experiments/e1_sweeps/metrics/rome_bucket_summary.csv",
+      "size_bytes": 777,
+      "sha256": "71e37995fd5544e4e7505fc07a0247ef2b6fe371277e7216e6fcfc435986583d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_sweeps/rome_radius_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e1_sweeps/metrics/rome_radius_rows.csv",
+      "size_bytes": 86269,
+      "sha256": "e4c9600825042ce4f5fe0747d2a6af588cd63aaf3776e8a8c629101b05164553"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_sweeps/rome_radius_summary.csv",
+      "key": "projects/risefl_mvp/experiments/e1_sweeps/metrics/rome_radius_summary.csv",
+      "size_bytes": 789,
+      "sha256": "8e64cc27d80cbd886520dad2071603e719f73c77a21a02e60e1e8e3781c772f4"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e1_tariff_spread/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e1_tariff_spread/manifest.json",
+      "size_bytes": 886,
+      "sha256": "a66fa19934806080aaf65cad53226864c4ac4948d40020a90ced460beeb95e60"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_tariff_spread/e1_tariff_spread.csv",
+      "key": "projects/risefl_mvp/experiments/e1_tariff_spread/metrics/e1_tariff_spread.csv",
+      "size_bytes": 322,
+      "sha256": "2a6e6a9f8ae3be5ebd156eae2a1dba633acd3b5e26671f4590d7b3ae438e9287"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e1_tariff_spread/receipt.json",
+      "key": "projects/risefl_mvp/experiments/e1_tariff_spread/artifacts/receipt.json",
+      "size_bytes": 563,
+      "sha256": "8ea6c8529e732208e10ae7a90c18d8478d477d02bcb8b6590500a4ab6aed61e7"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e2_fallback_frontier/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/manifest.json",
+      "size_bytes": 5019,
+      "sha256": "ae3e7c1d22ec9553dbd79b90112276e50292729d09ba357822447ba760d814d7"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/alpha_frontier_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/alpha_frontier_by_dataset.csv",
+      "size_bytes": 4523,
+      "sha256": "bfb55d627803e7f28202771024e89ac9abc28fed0ec240a758d23e2961da67ac"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/alpha_period_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/alpha_period_rows.csv",
+      "size_bytes": 395700,
+      "sha256": "92db38520c63c311efed593527d245a4b9f328b15cdebb64de8e1163955891bd"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/break_even_intervals.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/break_even_intervals.csv",
+      "size_bytes": 532910,
+      "sha256": "e11c24ca86c1ed0aeaa2c44db477b6ec0bd71c640f40b9f98f68170223139da9"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/controlled_frontier_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/controlled_frontier_by_dataset.csv",
+      "size_bytes": 8415,
+      "sha256": "daecf9faec5ef0ed0b3fa770b6cef55f39c185840e268d59a4c5642130b6b5ff"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/controlled_outage_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/controlled_outage_rows.csv",
+      "size_bytes": 3032531,
+      "sha256": "2f3c29ff05a08e8feb2685d8ed8da551c60dcdb9040d630045bfeaa56054e4a5"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/fig_e2_break_even_cdf.png",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/figures/fig_e2_break_even_cdf.png",
+      "size_bytes": 57679,
+      "sha256": "2e4ba256a67db1d6554ccd0486cb6de1fcedb92d07b90744ba4e68abedbb78f1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/fig_e2_fallback_frontier.png",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/figures/fig_e2_fallback_frontier.png",
+      "size_bytes": 68790,
+      "sha256": "50e19ebf679b7c7107bdcc74a8c89ef27b208b14de0d1df4838d481f934cc9c9"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/fig_e2_fallback_frontier_moving.png",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/figures/fig_e2_fallback_frontier_moving.png",
+      "size_bytes": 70236,
+      "sha256": "85ecd691e6e56ad2ab0f5db401773f00ae67a5b3a7560e5e90a5b3fb05373c69"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/fig_e2_pareto_alpha.png",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/figures/fig_e2_pareto_alpha.png",
+      "size_bytes": 81260,
+      "sha256": "c9234690c50af1ce7f7c5941fe29b50b345e00bab207d7277825fc68cc07195c"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/forensic_edges.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/forensic_edges.csv",
+      "size_bytes": 4744957,
+      "sha256": "bba02f313db8287a549e4f0988e790cb5432005079f9ac64adcc5d6015df6be6"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/frontier.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/frontier.csv",
+      "size_bytes": 4276,
+      "sha256": "579290ec343a8e2028c0401a1759b23676cbbe7cf07af6de0469a6dbd87d9ae1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/frontier_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/frontier_by_dataset.csv",
+      "size_bytes": 4276,
+      "sha256": "579290ec343a8e2028c0401a1759b23676cbbe7cf07af6de0469a6dbd87d9ae1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/frontier_combined.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/frontier_combined.csv",
+      "size_bytes": 2631,
+      "sha256": "3193e690fea2bf144c486eaa161c19fdf601d6bfcf868c7735f82098c349382e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/frontier_moving_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/frontier_moving_by_dataset.csv",
+      "size_bytes": 4044,
+      "sha256": "1d320f19349313d7748ff08767bf666d094b37e3bb3bfeeab35935f2ccf699af"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/frontier_moving_combined.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/frontier_moving_combined.csv",
+      "size_bytes": 2399,
+      "sha256": "b4c003792199bcfd4bfaec2564c41ee04c2224df911fc93fd864a708d7158876"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/period_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/period_rows.csv",
+      "size_bytes": 502014,
+      "sha256": "b1992aa0885e107d34c379a39ad32dd2d52c9913c20f44d90a18a673f9dc3d77"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/receipt.json",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/artifacts/receipt.json",
+      "size_bytes": 2431,
+      "sha256": "2fb0990a6544ec07b40cf458259f08261415687cb0521aa1eaac1fcf62aa5ae5"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/summary_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/summary_by_dataset.csv",
+      "size_bytes": 4276,
+      "sha256": "579290ec343a8e2028c0401a1759b23676cbbe7cf07af6de0469a6dbd87d9ae1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/summary_moving_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/metrics/summary_moving_by_dataset.csv",
+      "size_bytes": 4044,
+      "sha256": "1d320f19349313d7748ff08767bf666d094b37e3bb3bfeeab35935f2ccf699af"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/tab_e2_incentive_thresholds.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/tables/tab_e2_incentive_thresholds.csv",
+      "size_bytes": 3001,
+      "sha256": "e84cbc8087a7d9f70e629f27ade33f1de477fd24b70b7328af23b239aadace91"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier/tab_e2_outage_diagnostic.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier/tables/tab_e2_outage_diagnostic.csv",
+      "size_bytes": 1199,
+      "sha256": "365bbe86e448137f02fc282c2027908fe47dc8b49eacda2f915ce3854f5ee74d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e2_fallback_frontier_all4/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/manifest.json",
+      "size_bytes": 5031,
+      "sha256": "d72cbb4f9ab17c7076e8d340482c7b9b0a128869ccb253c34ecc776d7f4f96e1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/alpha_frontier_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/alpha_frontier_by_dataset.csv",
+      "size_bytes": 9007,
+      "sha256": "00ccd35d353b20d10ed7f9666eb4860ac27c558e3c22891737a227c8cac037cf"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/alpha_period_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/alpha_period_rows.csv",
+      "size_bytes": 410447,
+      "sha256": "19d3478b596df9629c950290399afd4736b306f977634f99d726764f9520050d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/break_even_intervals.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/break_even_intervals.csv",
+      "size_bytes": 570338,
+      "sha256": "e1c93f3141eeb347bfce35c057b604da25a1239e9dade16e8d49d475c59fbd5c"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/controlled_frontier_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/controlled_frontier_by_dataset.csv",
+      "size_bytes": 13381,
+      "sha256": "153b2a338540c20ccb0038f256be98d7311f963a65934963872760f97323fb8a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/controlled_outage_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/controlled_outage_rows.csv",
+      "size_bytes": 3209962,
+      "sha256": "3c0edb6047961a9e7f5eeebc6595a6e7ced950ec6b4938f2d3e8c0bc4ad89695"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/fig_e2_break_even_cdf.png",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/figures/fig_e2_break_even_cdf.png",
+      "size_bytes": 66259,
+      "sha256": "0b0e2b243ac8d94e8e7fd9152d0cbce7025122cfa52decfc0106cdb22d6e6bb3"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/fig_e2_fallback_frontier.png",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/figures/fig_e2_fallback_frontier.png",
+      "size_bytes": 77746,
+      "sha256": "d0f95ef9705ae264839491b7478a717ac6557ecac85535ea837ddb477fb84d73"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/fig_e2_fallback_frontier_moving.png",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/figures/fig_e2_fallback_frontier_moving.png",
+      "size_bytes": 81630,
+      "sha256": "0db5e2d5173029f52a1a65874b8db5f18ff7579a30d59fabb788fcf737de96ae"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/fig_e2_pareto_alpha.png",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/figures/fig_e2_pareto_alpha.png",
+      "size_bytes": 103658,
+      "sha256": "6b711e091e88a4ef79f27688dbe9815b245eddf9052ea0d5a9057b6063832ef0"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/forensic_edges.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/forensic_edges.csv",
+      "size_bytes": 5054301,
+      "sha256": "864a2d7ff0236e569345415f5564dd3c329c3f9b49ec6c7e1c8cdaab7c172a61"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/frontier.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/frontier.csv",
+      "size_bytes": 8853,
+      "sha256": "b6a256824117cf8175660de6b748439839bcb79380737233779ae13b708d5994"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/frontier_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/frontier_by_dataset.csv",
+      "size_bytes": 8853,
+      "sha256": "b6a256824117cf8175660de6b748439839bcb79380737233779ae13b708d5994"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/frontier_combined.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/frontier_combined.csv",
+      "size_bytes": 2620,
+      "sha256": "1d1c837aff180fc35cca8e9f98aaa9a0e01586852dcb8353e462bfc7b28ebc81"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/frontier_moving_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/frontier_moving_by_dataset.csv",
+      "size_bytes": 8380,
+      "sha256": "61766ea5150012cac05aa9a267462c98a985c0836d07dfbe976da66b4de5b4af"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/frontier_moving_combined.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/frontier_moving_combined.csv",
+      "size_bytes": 2399,
+      "sha256": "c45ab322f4e10a33557a90ac19fc48b864caec0bb26b1f9af3816d099fdc71a1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/period_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/period_rows.csv",
+      "size_bytes": 521143,
+      "sha256": "0ee5793b073aef2ca63383b7a3fd0fd2d76124fe903f8e337d2fb363323b29b2"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/receipt.json",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/artifacts/receipt.json",
+      "size_bytes": 2610,
+      "sha256": "cf69d1de06539f1734f8e4a9387bfd65958d4e0df62caaf4fa217112c68c640a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/summary_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/summary_by_dataset.csv",
+      "size_bytes": 8853,
+      "sha256": "b6a256824117cf8175660de6b748439839bcb79380737233779ae13b708d5994"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/summary_moving_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/metrics/summary_moving_by_dataset.csv",
+      "size_bytes": 8380,
+      "sha256": "61766ea5150012cac05aa9a267462c98a985c0836d07dfbe976da66b4de5b4af"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/tab_e2_incentive_thresholds.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/tables/tab_e2_incentive_thresholds.csv",
+      "size_bytes": 5235,
+      "sha256": "6195de5e86a1d77447abb6bb3575bb7e6f40a4fa4c06eba3d8b4501bdbce7764"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e2_fallback_frontier_all4/tab_e2_outage_diagnostic.csv",
+      "key": "projects/risefl_mvp/experiments/e2_fallback_frontier_all4/tables/tab_e2_outage_diagnostic.csv",
+      "size_bytes": 1976,
+      "sha256": "d14c7a0e8ea9e6f3d31fddfab08f8356e6dcaacc69f752fd72831da5e9b36f84"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e3_bucket_sensitivity/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e3_bucket_sensitivity/manifest.json",
+      "size_bytes": 1511,
+      "sha256": "7c8f06eab3d198ed61994d910e69d670d40e3994821509655409e77d9ce0ccf3"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_bucket_sensitivity/e3_forensic_paths.csv",
+      "key": "projects/risefl_mvp/experiments/e3_bucket_sensitivity/metrics/e3_forensic_paths.csv",
+      "size_bytes": 18083,
+      "sha256": "6f87dabe4e3fc1c161169418ac4794625ad180d55d7c9d605ef7459f4dc99178"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_bucket_sensitivity/e3_period_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e3_bucket_sensitivity/metrics/e3_period_rows.csv",
+      "size_bytes": 10890,
+      "sha256": "47bab3290b042aa3eb79d0af0d9af11a06a9791d266f28dd2b5244a0850fe47e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_bucket_sensitivity/fig_e3_relay_residual.png",
+      "key": "projects/risefl_mvp/experiments/e3_bucket_sensitivity/figures/fig_e3_relay_residual.png",
+      "size_bytes": 65928,
+      "sha256": "4febba0f316db66321faff84dfac8e82813da8d4eb26de4dcbce0be17d9c342d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_bucket_sensitivity/receipt.json",
+      "key": "projects/risefl_mvp/experiments/e3_bucket_sensitivity/artifacts/receipt.json",
+      "size_bytes": 1208,
+      "sha256": "c1365717a1eb8f59d9f3c204e1e30013cad06c34c005d079e1146b9e5764cbf5"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_bucket_sensitivity/tab_e3_residual_by_granularity.csv",
+      "key": "projects/risefl_mvp/experiments/e3_bucket_sensitivity/tables/tab_e3_residual_by_granularity.csv",
+      "size_bytes": 389,
+      "sha256": "5d4896b88112b3977dd1bbd44c8de913797cd51cdb48c0ad399a7d61b5be41ae"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e3_relay_residual/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual/manifest.json",
+      "size_bytes": 1505,
+      "sha256": "b243544b718d73b551cdc36286f860f180ee168185c26f5e1c027418aa8146d9"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual/e3_forensic_paths.csv",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual/metrics/e3_forensic_paths.csv",
+      "size_bytes": 18891,
+      "sha256": "bbac047b9c60ff4b1b33266756caff8fba6f289448a38fb0cd9e8dc620b555e8"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual/e3_period_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual/metrics/e3_period_rows.csv",
+      "size_bytes": 114024,
+      "sha256": "6ad6b42d3e8e405b44f7a75f2ba5a0c63715de6d7bd6054b442b9e247b02c31a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual/fig_e3_relay_residual.png",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual/figures/fig_e3_relay_residual.png",
+      "size_bytes": 96912,
+      "sha256": "2da098a79957c31aa18beef4b17b0cfb173935a6fd1f1c299e9e214e5e579ddf"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual/receipt.json",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual/artifacts/receipt.json",
+      "size_bytes": 1255,
+      "sha256": "86c23d1ab88913f1de8dc487162a6544000138cd73fb0cfea0cd05f0599c4f07"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual/tab_e3_residual_by_granularity.csv",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual/tables/tab_e3_residual_by_granularity.csv",
+      "size_bytes": 8752,
+      "sha256": "ab08f5a74edb5653ff7e0ab919ae82dea8fb7319d1147446870cef861e2b810a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e3_relay_residual_all4/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual_all4/manifest.json",
+      "size_bytes": 1517,
+      "sha256": "1e8453de6e9409c24d524c253ab69e1c1075f1e5ecb9bffc5199ba973cec846b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual_all4/e3_forensic_paths.csv",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual_all4/metrics/e3_forensic_paths.csv",
+      "size_bytes": 17857,
+      "sha256": "9a66f92220eb0662db315b854a078157b4906047f785d43a17c3a76157095cc2"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual_all4/e3_period_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual_all4/metrics/e3_period_rows.csv",
+      "size_bytes": 808722,
+      "sha256": "c0fbe467c30df3c0d28af44bc48ff77f7277b2f7bc16fa3709edbbde8ad82668"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual_all4/fig_e3_relay_residual.png",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual_all4/figures/fig_e3_relay_residual.png",
+      "size_bytes": 147447,
+      "sha256": "2c5f4511273c97f62ba719d69245db792d68dd29982f204cb94cf366f5f9d0a6"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual_all4/receipt.json",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual_all4/artifacts/receipt.json",
+      "size_bytes": 1359,
+      "sha256": "7ea898f7912a545716064f4b9edbb7111e776b7d9b0f6e3fff77da8910388fff"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual_all4/tab_e3_residual_by_granularity.csv",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual_all4/tables/tab_e3_residual_by_granularity.csv",
+      "size_bytes": 25056,
+      "sha256": "57fcd6d4c2ce5dcfab27e9bb74c2cfd3a7ef3c696b2361adb3d20f56688d242a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e3_relay_residual_full/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual_full/manifest.json",
+      "size_bytes": 1517,
+      "sha256": "cc966bc7e4936ccb289a1f543afd4ef41603f46774dc8af6dfa0be90286eff20"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual_full/e3_forensic_paths.csv",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual_full/metrics/e3_forensic_paths.csv",
+      "size_bytes": 17857,
+      "sha256": "9a66f92220eb0662db315b854a078157b4906047f785d43a17c3a76157095cc2"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual_full/e3_period_rows.csv",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual_full/metrics/e3_period_rows.csv",
+      "size_bytes": 731682,
+      "sha256": "c44cfa8b21b31522e242e4fbe8c5d833eebffe6cb07d75a2eabd652edb178488"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual_full/fig_e3_relay_residual.png",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual_full/figures/fig_e3_relay_residual.png",
+      "size_bytes": 120061,
+      "sha256": "c9fe4e63ec1358ffe782fd8233ec740ba4fd8f2f476e69cf4d120dcc4021806f"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual_full/receipt.json",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual_full/artifacts/receipt.json",
+      "size_bytes": 1293,
+      "sha256": "645bee380253111b009d2894bfd2ce50a32916eca4e8b35eba0f9196f8283c3f"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e3_relay_residual_full/tab_e3_residual_by_granularity.csv",
+      "key": "projects/risefl_mvp/experiments/e3_relay_residual_full/tables/tab_e3_residual_by_granularity.csv",
+      "size_bytes": 17352,
+      "sha256": "ad8ad631c91b985fe03d76dc13788104509f53d51caef949eb42a8e14914eb07"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e4_e5_ruc/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/manifest.json",
+      "size_bytes": 5530,
+      "sha256": "566a20c6498e3427b8746649adca8dd166b66442c755739702b07873b71b1817"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/baseline_r_detection_empirical.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/baseline_r_detection_empirical.csv",
+      "size_bytes": 61698,
+      "sha256": "45f53e974ece6ce05cc88e0038b642caa543c197224693e5bdb26b189213eec3"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/baseline_r_privacy_leakage.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/baseline_r_privacy_leakage.csv",
+      "size_bytes": 6493,
+      "sha256": "cde03a91685a4c249974d8e959c74455301c42759c08b556400c77c0deb2192a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/baseline_r_receipt.json",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/artifacts/baseline_r_receipt.json",
+      "size_bytes": 1836,
+      "sha256": "7b68574ec0c1b0ba61380103f617c865e73cc90f3bae8adae089ba086d2af976"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/cross_system_anonymity.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/cross_system_anonymity.csv",
+      "size_bytes": 1466,
+      "sha256": "505ef2064d7d7d572e50d913f11d5e49f7d221215789cd6293fe8433baffebc1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/cross_system_omission_vs_tsip.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/cross_system_omission_vs_tsip.csv",
+      "size_bytes": 2155,
+      "sha256": "74a6af44f43c3ca34fc76ff7b47031b9229d08937b9f8615703b918255815d1a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/cross_system_receipt.json",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/artifacts/cross_system_receipt.json",
+      "size_bytes": 849,
+      "sha256": "e66a1da46162c5c03a4666bf55de2cd29c02e7108c2db4af5b16d67173daea35"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/e4_baseline_comparison_receipt.json",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/artifacts/e4_baseline_comparison_receipt.json",
+      "size_bytes": 1590,
+      "sha256": "8dea7b050efbb82389387db316e90c31c95b2a79007a77ec6825a7328454a344"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/e4_baseline_head_to_head.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/e4_baseline_head_to_head.csv",
+      "size_bytes": 2534,
+      "sha256": "145732d57cbf90d414751f8bb8cacd03616f9028c36d26dda4eb64f163b37320"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/e4_detection_curve.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/e4_detection_curve.csv",
+      "size_bytes": 8289,
+      "sha256": "5d82ca362fef2dd9dcf80d7c63d3b2cde43de7decd53fba96d0c7ca23a59aa96"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/e4_deterrence.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/e4_deterrence.csv",
+      "size_bytes": 1419,
+      "sha256": "775495bf3b847cf18352b9336e626943f78ab81ae645fc9ba7ab4293636a0891"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/e4_drivable_graph_summary.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/e4_drivable_graph_summary.csv",
+      "size_bytes": 1749,
+      "sha256": "2547dc100e459727a1b3c21942a4a8b9a16606926506557810531485663cb8c0"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/e4_drivable_receipt.json",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/artifacts/e4_drivable_receipt.json",
+      "size_bytes": 2144,
+      "sha256": "ee839b1639f190d1254ecb8c8aec0f5ef81cde180078f3d88dc633f14b997555"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/e4_equal_detection_workpoints.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/e4_equal_detection_workpoints.csv",
+      "size_bytes": 3255,
+      "sha256": "ce498e268a2414b363b387d056ccd98c916fc76f1357ee39dfed7e10a26f45cc"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/e4_spotcheck_summary.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/e4_spotcheck_summary.csv",
+      "size_bytes": 3503,
+      "sha256": "1aa9eaa21c6d894025c66ae3cf99f73eb51eb22fe58f28c9e92ba511cbd64546"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/e5_dispute_leakage.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/e5_dispute_leakage.csv",
+      "size_bytes": 452,
+      "sha256": "341653bbdf0ee6bcd72090d93cf8b8553f784d720a5ecaf5dcaf61d00618058d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/e5_empirical_anonymity.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/e5_empirical_anonymity.csv",
+      "size_bytes": 46335,
+      "sha256": "d0d38dd63f3360249631323b1f8f7177ce2182ff2d7e775254fd073133e1e3dd"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/e5_graph_privacy_counts.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/e5_graph_privacy_counts.csv",
+      "size_bytes": 13498,
+      "sha256": "0f3023b0e6602a8bb4460ba151d2f5e9f73ffba914fca9c21503d142b4c49195"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/e5_leakage_spectrum.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/e5_leakage_spectrum.csv",
+      "size_bytes": 1676,
+      "sha256": "bd0c6217b4fec9ed913ade9a52a9afce779ecc180346ea3619da8bef6d53f9d3"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/e5_statement_bucketing.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/e5_statement_bucketing.csv",
+      "size_bytes": 580,
+      "sha256": "e90d260930ef16ef6f6962707af903f57a8178cdaa2d010971415865800535cf"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/fig_baseline_r_empirical_detection.png",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/figures/fig_baseline_r_empirical_detection.png",
+      "size_bytes": 100181,
+      "sha256": "6159167d02298141e1b078f27eacf6c9c1333faa4481725582d4c3fafb132b61"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/fig_e4_enforcement_exchange_rate.png",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/figures/fig_e4_enforcement_exchange_rate.png",
+      "size_bytes": 118034,
+      "sha256": "becd8b86ee9f857c3b90ccb335b18ac1d1365eb75ce4e93c38e76fe453512bc3"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/fraud_metrics.csv",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/metrics/fraud_metrics.csv",
+      "size_bytes": 3397,
+      "sha256": "1e0ceeb77713044bae27b43062d1962ab136af7cc7293be78345301dc3acfbf3"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e4_e5_ruc/receipt.json",
+      "key": "projects/risefl_mvp/experiments/e4_e5_ruc/artifacts/receipt.json",
+      "size_bytes": 2216,
+      "sha256": "5dd97b801e30314e353812c6ee80e3d5c122d44d610f2380aa885ea7e84ab178"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/e6_rapidsnark/manifest.json",
+      "key": "projects/risefl_mvp/experiments/e6_rapidsnark/manifest.json",
+      "size_bytes": 662,
+      "sha256": "870032c9e89701a43fb74e5067cf869570c9dbab935950606cd7ae9038086683"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/e6_rapidsnark/receipt.json",
+      "key": "projects/risefl_mvp/experiments/e6_rapidsnark/artifacts/receipt.json",
+      "size_bytes": 426,
+      "sha256": "17b91cc3e6e9849e65f5b1cda21f63025b2db1a8207838e2664848b98c1dcffb"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/gap_protocol_recheck_20260617/manifest.json",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/manifest.json",
+      "size_bytes": 7419,
+      "sha256": "fb80b03a7640b39ecff56f6f264344e77312834bb26e3f59d18512b7383cbbf0"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/alpha_frontier_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/alpha_frontier_by_dataset.csv",
+      "size_bytes": 4471,
+      "sha256": "86bf9f49f340cb21c9c795dae6b7344beba9d3aaa80b8f95085959a6e428d526"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/alpha_period_rows.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/alpha_period_rows.csv",
+      "size_bytes": 87445,
+      "sha256": "bfcf81111c6d7a8bc412fdce1ba467fcf33055eeaad9c4260d295eb6abf3d693"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/break_even_intervals.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/break_even_intervals.csv",
+      "size_bytes": 140891,
+      "sha256": "dbde6d6f34503990f976267d697c91d75f4be1c44b328d5e8ac5ebf506113ec2"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/controlled_frontier_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/controlled_frontier_by_dataset.csv",
+      "size_bytes": 8299,
+      "sha256": "cde8d89072ac0bbef743d25b9c9cec1f2c67f5ff10b34984db2ec29714fefef6"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/controlled_outage_rows.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/controlled_outage_rows.csv",
+      "size_bytes": 762367,
+      "sha256": "e5e319f172ff8c0f48992d6cb19f71a32fb27b019cbdd24b2db69b1ffd867712"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/fig_e2_break_even_cdf.png",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/figures/e2_fallback_frontier/fig_e2_break_even_cdf.png",
+      "size_bytes": 57024,
+      "sha256": "453d534b186de8b0ab598a4bf676e0461fcee2e6e4b3b37d96d57eaa438c5fa4"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/fig_e2_fallback_frontier.png",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/figures/e2_fallback_frontier/fig_e2_fallback_frontier.png",
+      "size_bytes": 65953,
+      "sha256": "5875a633ddca4e0c55715dca7871b9be7b9d1984711e544f5e72acb7a4205d58"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/fig_e2_fallback_frontier_moving.png",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/figures/e2_fallback_frontier/fig_e2_fallback_frontier_moving.png",
+      "size_bytes": 64444,
+      "sha256": "85afddd0f6b6e6c7c3cefcc393f707236504813da8d22ddfd260f46aa82fda71"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/fig_e2_pareto_alpha.png",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/figures/e2_fallback_frontier/fig_e2_pareto_alpha.png",
+      "size_bytes": 82997,
+      "sha256": "13016d8662fe71c3f5a12f542e1e087fe1d528e1a4b86198c1d48dfa5d1b1e39"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/forensic_edges.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/forensic_edges.csv",
+      "size_bytes": 1218385,
+      "sha256": "85b0676d67cf3d9a64fb1a5de6f2ca996ddeabad09ed6f04b4e61b1495c14868"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/frontier.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/frontier.csv",
+      "size_bytes": 4078,
+      "sha256": "9f9468288e5f1c4d44f966e86d4f3f0cba3618de7f20dae85ff9ebaed3a8925b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/frontier_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/frontier_by_dataset.csv",
+      "size_bytes": 4078,
+      "sha256": "9f9468288e5f1c4d44f966e86d4f3f0cba3618de7f20dae85ff9ebaed3a8925b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/frontier_combined.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/frontier_combined.csv",
+      "size_bytes": 2634,
+      "sha256": "fb6e703976a84ea29a6bd0a042060640d8dc64ac6cd419b714734ca5b253b618"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/frontier_moving_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/frontier_moving_by_dataset.csv",
+      "size_bytes": 3873,
+      "sha256": "886a1179eb10a8b6aace29ffcbe2e9d2ad90499ab6948bf514b9bd1a70f10b0d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/frontier_moving_combined.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/frontier_moving_combined.csv",
+      "size_bytes": 2429,
+      "sha256": "62b57eca113c48ac2897b20a4dd51f36a2813559c97092a7854c6e519f5c7e0b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/period_rows.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/period_rows.csv",
+      "size_bytes": 111530,
+      "sha256": "9277e83cb91c783ea383297bfe8ca823946d9b0c59209604dd354c3bdbe2fc05"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/receipt.json",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/artifacts/e2_fallback_frontier/receipt.json",
+      "size_bytes": 2999,
+      "sha256": "66310ffcb7d90d0e0e2e95eed4d606f09cb5257cece0a31f75ebc00f4c1bb910"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/summary_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/summary_by_dataset.csv",
+      "size_bytes": 4078,
+      "sha256": "9f9468288e5f1c4d44f966e86d4f3f0cba3618de7f20dae85ff9ebaed3a8925b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/summary_moving_by_dataset.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e2_fallback_frontier/summary_moving_by_dataset.csv",
+      "size_bytes": 3873,
+      "sha256": "886a1179eb10a8b6aace29ffcbe2e9d2ad90499ab6948bf514b9bd1a70f10b0d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/tab_e2_incentive_thresholds.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/tables/e2_fallback_frontier/tab_e2_incentive_thresholds.csv",
+      "size_bytes": 2965,
+      "sha256": "e00c7150571e77d7151eba93f1c1640163fec60af88e9c7ee0bbc1bc6c0cf514"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e2_fallback_frontier/tab_e2_outage_diagnostic.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/tables/e2_fallback_frontier/tab_e2_outage_diagnostic.csv",
+      "size_bytes": 1161,
+      "sha256": "ea6e281c24aade8c539ba3a111c7f874ec8df3930f66fee8c33b83fb5d097acb"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e4_e5_ruc/e4_deterrence.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e4_e5_ruc/e4_deterrence.csv",
+      "size_bytes": 1419,
+      "sha256": "775495bf3b847cf18352b9336e626943f78ab81ae645fc9ba7ab4293636a0891"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e4_e5_ruc/e4_spotcheck_summary.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e4_e5_ruc/e4_spotcheck_summary.csv",
+      "size_bytes": 3478,
+      "sha256": "215c7812467d5acd8e00249b63483741c8f38a02d1706f7c00b9b740bc6fbd33"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e4_e5_ruc/e5_empirical_anonymity.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e4_e5_ruc/e5_empirical_anonymity.csv",
+      "size_bytes": 45656,
+      "sha256": "66932aea8ffd11dde0faee75f7a33f8c02cdb8f928082730c9dad8dcc04d09c4"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e4_e5_ruc/e5_graph_privacy_counts.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e4_e5_ruc/e5_graph_privacy_counts.csv",
+      "size_bytes": 8018,
+      "sha256": "e6b9daab9495f5b55bfaa069fb77308d5697c0fca66bc1a43d759b8ce33a008f"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e4_e5_ruc/e5_statement_bucketing.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e4_e5_ruc/e5_statement_bucketing.csv",
+      "size_bytes": 561,
+      "sha256": "6cd24ad1ebca1009d9e5c6bf076ef9beba2e249207f68220ffca6762c3feb6bb"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e4_e5_ruc/fraud_metrics.csv",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/metrics/e4_e5_ruc/fraud_metrics.csv",
+      "size_bytes": 3397,
+      "sha256": "1e0ceeb77713044bae27b43062d1962ab136af7cc7293be78345301dc3acfbf3"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/gap_protocol_recheck_20260617/e4_e5_ruc/receipt.json",
+      "key": "projects/risefl_mvp/experiments/gap_protocol_recheck_20260617/artifacts/e4_e5_ruc/receipt.json",
+      "size_bytes": 2348,
+      "sha256": "824c6ace405aa997f88ca45b887b2b644093e4d2bafaae4f6baefb3b0e0001ac"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/waybill_m0/manifest.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/manifest.json",
+      "size_bytes": 5485,
+      "sha256": "1a13b78771c735d4d05ec2385407eca3811fc6d9fcf59e540132a2aea23fabe0"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/acceptance_receipts.jsonl",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/metrics/v1/acceptance_receipts.jsonl",
+      "size_bytes": 8316,
+      "sha256": "cb083eaf56efbbd8e0c06bb9cce70e490e34bc668be028d3808da62019222bbd"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/alternative_verification_key.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/alternative_verification_key.json",
+      "size_bytes": 6588,
+      "sha256": "0274de38441092017fdbfb83bbdfc891d981cebcc9681e7b4738614deb62778b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/environment_manifest.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/environment_manifest.json",
+      "size_bytes": 8030,
+      "sha256": "5c4689d73958488bd1e69f0e2f445733c55b10064ce675ddfb80752b70a934a6"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/canonical/input.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/canonical/input.json",
+      "size_bytes": 26606,
+      "sha256": "a24814d857f3169162943c63c77f250ab0f061ed162d7090faf2ebe814f52321"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/canonical/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/canonical/proof.json",
+      "size_bytes": 806,
+      "sha256": "c03e031a66775c586e8eec2cd36d11ff4e5a32c74651873774e38a64d3f03b68"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/canonical/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/canonical/public.json",
+      "size_bytes": 574,
+      "sha256": "bf5df9ec26d8dd26f9b472f1d18bfe45804d6ed25d91ea3ac15e395a9fb3227b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-cad/input.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-cad/input.json",
+      "size_bytes": 26606,
+      "sha256": "197b8549afb2f5f08c9b56d8f64e5cc779f3730f0626939123b9f2b88bdb08a5"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-cad/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-cad/proof.json",
+      "size_bytes": 806,
+      "sha256": "9bc3bb436399aa136601b8f2c0de5be5ea300cec1cd99c1ad7a79edf418e6a59"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-cad/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-cad/public.json",
+      "size_bytes": 574,
+      "sha256": "fb49e8281ebc6430dc048c441d7a077b87d759a323d1edea150ba13d2ec9e1bd"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-cap/input.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-cap/input.json",
+      "size_bytes": 26606,
+      "sha256": "d47c34e5eb52682a945c8f504775fc60fb989d0553532d66a5cd20a0610ab731"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-cap/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-cap/proof.json",
+      "size_bytes": 805,
+      "sha256": "b4d3d4577c638376ba5fe08276037b423bdf67554fb8821b63f22274c10aef4c"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-cap/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-cap/public.json",
+      "size_bytes": 574,
+      "sha256": "c391743eab3f0b0af36e7dcc1eeffa44ea0fa97734a3400a7bfaf28218627ba5"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-rmax/input.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-rmax/input.json",
+      "size_bytes": 26606,
+      "sha256": "01f578ff2f84338ea67a39963ced075c06c18303456a0523ca151d5d98e44913"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-rmax/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-rmax/proof.json",
+      "size_bytes": 805,
+      "sha256": "6568e898c5a86fc998400e64b2f07015b779128f38176f97f6d8ef0468bd5e06"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-rmax/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-rmax/public.json",
+      "size_bytes": 574,
+      "sha256": "3210b76e5852e604187eda2ed07630ded37657d2a7d4acee64fdd8e7ed35b55e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-root/input.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-root/input.json",
+      "size_bytes": 26599,
+      "sha256": "09bbfbc8fcaa6939a7b081aefd1746e48dc6cd1cba9c3a986ce98b68800b88c1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-root/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-root/proof.json",
+      "size_bytes": 805,
+      "sha256": "6f6fdc76b69857a4bfade9a91d40c10b3c5b9e545cc9bf511b412fd700ae6c2b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-root/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-root/public.json",
+      "size_bytes": 573,
+      "sha256": "f217df69dd6b22e922381ca6d4d161f2710c0b37efb38fd04a22912bd7f862ae"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-speed/input.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-speed/input.json",
+      "size_bytes": 26606,
+      "sha256": "5dbc99ee60b1bf70700b5d1f4e82edf6fd33a92c124f10bfe6bf53ec472d5b67"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-speed/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-speed/proof.json",
+      "size_bytes": 802,
+      "sha256": "99ed63be0273b587e55227356be8428de40187942c7d4c6e3cda33464d989ceb"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-speed/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-speed/public.json",
+      "size_bytes": 574,
+      "sha256": "f3fbf7413d37ff1465d9a0ee83435c19014e8848a3e5f7dc1788f036cee9f5a7"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-vkey/input.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-vkey/input.json",
+      "size_bytes": 26606,
+      "sha256": "a24814d857f3169162943c63c77f250ab0f061ed162d7090faf2ebe814f52321"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-vkey/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-vkey/proof.json",
+      "size_bytes": 805,
+      "sha256": "744c5d4affb3e494adfc437e83649423dd5fcf2d21411da33ac8fb86f5e9945f"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/proofs/p-vkey/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/artifacts/v1/proofs/p-vkey/public.json",
+      "size_bytes": 574,
+      "sha256": "bf5df9ec26d8dd26f9b472f1d18bfe45804d6ed25d91ea3ac15e395a9fb3227b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m0/v1/summary.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m0/metrics/v1/summary.json",
+      "size_bytes": 577,
+      "sha256": "a9acb5779607db0b824f9bc66f59464e27c55ad8d9fcb79042ab9185f9f7546e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/waybill_m1/manifest.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/manifest.json",
+      "size_bytes": 5791,
+      "sha256": "3db1f09dae07636b89f3c787c9e6fe5e5c5bd1edcfd4a95b28af25aa58b7fddd"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/.DS_Store",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/.DS_Store",
+      "size_bytes": 6148,
+      "sha256": "f0e09a2cc2b48af7c2b4db2356d139e9fe19b5808088df58c00dc623bb8f7b58"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/.DS_Store",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/.DS_Store",
+      "size_bytes": 10244,
+      "sha256": "68b2b292312090e0dd9f8423edbcb610e2dde93d7a36136b02b137822b16ac28"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit/settlement_period_v6_k6_final.zkey",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/circuit/settlement_period_v6_k6_final.zkey",
+      "size_bytes": 137336760,
+      "sha256": "09e866ca023523e891cde17ae7da735663526d1b6dd02e455909113f648ff9f9"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit/settlement_period_v6_k6_js/generate_witness.js",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/circuit/settlement_period_v6_k6_js/generate_witness.js",
+      "size_bytes": 698,
+      "sha256": "e9f90211859797466368231b5f02afeb84afa497c3ccd04129e0a57a5c5a3eff"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit/settlement_period_v6_k6_js/settlement_period_v6_k6.wasm",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/circuit/settlement_period_v6_k6_js/settlement_period_v6_k6.wasm",
+      "size_bytes": 2793843,
+      "sha256": "a419b92efa7892f1eae6b861d3532dc238ba33e8ea2311522adcc6fdaf36873a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit/settlement_period_v6_k6_js/witness_calculator.js",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/circuit/settlement_period_v6_k6_js/witness_calculator.js",
+      "size_bytes": 9181,
+      "sha256": "2bf018b05cb6dc399e72f57721d0f7b236b1a4a2d438d8b1c6763e9cd38ac8a8"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit/verification_key.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/circuit/verification_key.json",
+      "size_bytes": 6771,
+      "sha256": "f1e73b4e91fff595adff551b13466f15351b587231877f45e9d7b0d473b4569d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit_differential/charger_endpoint_receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/circuit_differential/charger_endpoint_receipt.json",
+      "size_bytes": 2546,
+      "sha256": "4de0d6aeab485c841f01314db2cd8dcadcadb8d490beb4517eab6c4f3053d146"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit_differential/input.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/circuit_differential/input.json",
+      "size_bytes": 22307,
+      "sha256": "735294e1a669434586d6bc24c5d798e7aaba98c19cf0b03a73db3b554bf3feb1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit_differential/policy-profile-v6-k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/config/v1/circuit_differential/policy-profile-v6-k6.json",
+      "size_bytes": 1381,
+      "sha256": "e2df733bb518634af043a64e143e0e3e542645cc3ab46d0706fe09c156ade1f1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit_differential/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/circuit_differential/proof.json",
+      "size_bytes": 805,
+      "sha256": "41f2bbbf72dba6bf37a2d265c3d52357eb2d1995e8c05f1a13efca941356b091"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit_differential/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/circuit_differential/public.json",
+      "size_bytes": 654,
+      "sha256": "6940a7fb3ab76aea3b5e73d8ef6d0bb21178b8f37d6fb31de6c30843f8a3db02"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit_differential/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/circuit_differential/receipt.json",
+      "size_bytes": 3396,
+      "sha256": "6341e4a216478bb90431588e94f4e5b8cac81d89241c0d37bdbb25f5bd4d3b39"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit_differential/submission.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/circuit_differential/submission.json",
+      "size_bytes": 19645,
+      "sha256": "d7f7d48ac3cd909db9f104ec5c9eea2baec3d47ce862ea3e3a0ad3d29abec20f"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit_differential/tariff-v8-d8.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/config/v1/circuit_differential/tariff-v8-d8.json",
+      "size_bytes": 4185,
+      "sha256": "17a7b90cb4f3559e5002d6eada92fb1093e111632a5d119c5043c3f018eeeafd"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/circuit_differential/verification_key.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/circuit_differential/verification_key.json",
+      "size_bytes": 6771,
+      "sha256": "f1e73b4e91fff595adff551b13466f15351b587231877f45e9d7b0d473b4569d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/dataset_summary.csv",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/metrics/v1/dataset_summary.csv",
+      "size_bytes": 809,
+      "sha256": "9eceb58ab20b7accec8a81c3d79e7383d92982de3b6a0bbf6444efe72c304619"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/formal_properties.md",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/artifacts/v1/formal_properties.md",
+      "size_bytes": 1979,
+      "sha256": "f623186ba169a4a796cfcd36162dc2591fd89404875d92e359ad8de4573d6b0f"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/gate_summary.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/metrics/v1/gate_summary.json",
+      "size_bytes": 679,
+      "sha256": "7451c39c923e1efc3610ab2df14541759b60642d731a9c4bf518311e1584bead"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/odometer_sensitivity.csv",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/metrics/v1/odometer_sensitivity.csv",
+      "size_bytes": 110313,
+      "sha256": "e39ed0d7dd253c1ff153cee19a6f128b2af00cd62b296ac1ab855097f2c7b600"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/paired_period_rows.csv",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/metrics/v1/paired_period_rows.csv",
+      "size_bytes": 653029,
+      "sha256": "4a0011c100455952e42d1300042862116ce44962be7288b48e90ff80a864c4c8"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/profile_registry/policy-profile-v6-k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/config/v1/profile_registry/policy-profile-v6-k6.json",
+      "size_bytes": 1381,
+      "sha256": "e2df733bb518634af043a64e143e0e3e542645cc3ab46d0706fe09c156ade1f1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/profile_registry/tariff-v8-d8.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/config/v1/profile_registry/tariff-v8-d8.json",
+      "size_bytes": 4185,
+      "sha256": "17a7b90cb4f3559e5002d6eada92fb1093e111632a5d119c5043c3f018eeeafd"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m1/v1/summary.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m1/metrics/v1/summary.json",
+      "size_bytes": 7489,
+      "sha256": "187024465b0b795be806bf42cba206c6dd9e48ed35912d590f8b11735ab1f4ed"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/waybill_m2/manifest.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/manifest.json",
+      "size_bytes": 30853,
+      "sha256": "15b037cbd1f0ff8c4f293f91002808c687af3f70a74df616bdb605117c1c40c7"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/.DS_Store",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/.DS_Store",
+      "size_bytes": 6148,
+      "sha256": "a9b5f2b0fbcb5d39ec42930e6ea781d465f0b807c84bcbe83b9cb4548d17e17d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/.DS_Store",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/.DS_Store",
+      "size_bytes": 6148,
+      "sha256": "4081d77bc8a81828e81db184602d49594961a40d56ccdae049e9b282d624a8ea"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/aggregate/compile_setup_matrix.csv",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/metrics/circuit_matrix/aggregate/compile_setup_matrix.csv",
+      "size_bytes": 2759,
+      "sha256": "b85f66ad5a61acfe4c2d24a1ee4c1ea82eec58c10ec4744d7a1d8a50dc3c963d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/aggregate/constraints_scaling.svg",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/figures/circuit_matrix/aggregate/constraints_scaling.svg",
+      "size_bytes": 39175,
+      "sha256": "4f13418edca86ed71e870ed0494924457461ed8aac05b6084085c998bf52d52c"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/aggregate/depth14_proof_latency.svg",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/figures/circuit_matrix/aggregate/depth14_proof_latency.svg",
+      "size_bytes": 42800,
+      "sha256": "8d089a8e93810ac06c388da1c6bf06576266350f40ffcd2269c30fdcf6ecf6ec"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/aggregate/depth14_proof_metrics.csv",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/metrics/circuit_matrix/aggregate/depth14_proof_metrics.csv",
+      "size_bytes": 1786,
+      "sha256": "6c1504ff07a1823a356a1ab87d1ea388079161570709b3e8cc0fe6eb2633b6ef"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/environment_manifest.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/environment_manifest.json",
+      "size_bytes": 2973,
+      "sha256": "1bd66e9692746552910ef056594cd1ca6fe44a6e292910af4e8e4ef10167ccf4"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/environment_manifest_d14_setup_start.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/environment_manifest_d14_setup_start.json",
+      "size_bytes": 2628,
+      "sha256": "8f0d92c31f6e233ece2aaf010e5a2e60e92b4f94b444be5c8660943e0ba5ccd0"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/inputs/settlement_period_v6_d14_n100_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/inputs/settlement_period_v6_d14_n100_k6.json",
+      "size_bytes": 163435,
+      "sha256": "34c65072402a08c84b82596a8d2bf215f0d9b04cf678dd4d2b0f77fafa49d690"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/inputs/settlement_period_v6_d14_n200_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/inputs/settlement_period_v6_d14_n200_k6.json",
+      "size_bytes": 327236,
+      "sha256": "5f9647e15657d8e2f64b6f405d253d1787a248b7be067966cfa39cff05c522c3"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/inputs/settlement_period_v6_d14_n25_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/inputs/settlement_period_v6_d14_n25_k6.json",
+      "size_bytes": 40902,
+      "sha256": "ef8a9b9af1456bd4f658d049bd7833b60aa934a25bfba784696e4a72dafad2bc"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/inputs/settlement_period_v6_d14_n50_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/inputs/settlement_period_v6_d14_n50_k6.json",
+      "size_bytes": 81744,
+      "sha256": "2b31010e9ca227d8254d1a9c09fa966b568a53ccbb5f243753c8137df7f17f6e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n100_k6/input-tampered-merkle-path.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/negative_gates/settlement_period_v6_d14_n100_k6/input-tampered-merkle-path.json",
+      "size_bytes": 163435,
+      "sha256": "a063c193d6b5a4354d1d500ff8e5a97917f8d7de70285aa70d5f18562b0c0079"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n100_k6/public-policy_profile_commitment.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/config/circuit_matrix/negative_gates/settlement_period_v6_d14_n100_k6/public-policy_profile_commitment.json",
+      "size_bytes": 679,
+      "sha256": "c5670e9ee31e51add39ce9986242bfe4a1c742443220b6d485ae811c2e6aed77"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n100_k6/public-tariff_root.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/config/circuit_matrix/negative_gates/settlement_period_v6_d14_n100_k6/public-tariff_root.json",
+      "size_bytes": 679,
+      "sha256": "dd36a69fab447b4cfb05760e0bfba2bd7943c9cd94ce797248f5e275178de162"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n100_k6/public-total_fee_cents.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/negative_gates/settlement_period_v6_d14_n100_k6/public-total_fee_cents.json",
+      "size_bytes": 679,
+      "sha256": "bfdf028af314b81e08223b31ab936ca624cfc9a969d80dbab3bf7268017d1a55"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n100_k6/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/negative_gates/settlement_period_v6_d14_n100_k6/receipt.json",
+      "size_bytes": 8786,
+      "sha256": "9cd1f0d212f540784c4a2c61c9196389c5ecef993f4bdb653e9a955af98864e5"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n200_k6/input-tampered-merkle-path.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/negative_gates/settlement_period_v6_d14_n200_k6/input-tampered-merkle-path.json",
+      "size_bytes": 327236,
+      "sha256": "fb00d07b1e7555088983b646160327a3ffad964ab8b65271cdec6105443a21b4"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n200_k6/public-policy_profile_commitment.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/config/circuit_matrix/negative_gates/settlement_period_v6_d14_n200_k6/public-policy_profile_commitment.json",
+      "size_bytes": 682,
+      "sha256": "a573bc28bab64496d3c533fb49d123cc9cf3f4a421c91a9cb2349085698b3424"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n200_k6/public-tariff_root.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/config/circuit_matrix/negative_gates/settlement_period_v6_d14_n200_k6/public-tariff_root.json",
+      "size_bytes": 682,
+      "sha256": "04d69758474183b906ce2bea6fb4f8b9fb87dd6fec51cb548f263a1380744f87"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n200_k6/public-total_fee_cents.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/negative_gates/settlement_period_v6_d14_n200_k6/public-total_fee_cents.json",
+      "size_bytes": 682,
+      "sha256": "6887946f66f8fc52b7c0c0f8970e2735a547156af1a917af741a0681760f37de"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n200_k6/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/negative_gates/settlement_period_v6_d14_n200_k6/receipt.json",
+      "size_bytes": 8786,
+      "sha256": "b67b83eebd1612f264bf570c7bcf152488c6b47f7d813105ce3eb87f3c78ccc4"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n25_k6/input-tampered-merkle-path.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/negative_gates/settlement_period_v6_d14_n25_k6/input-tampered-merkle-path.json",
+      "size_bytes": 40902,
+      "sha256": "3eee87893e7b89212a8d8843655aed4af6098a50f5a1a68400dd448759ca971e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n25_k6/public-policy_profile_commitment.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/config/circuit_matrix/negative_gates/settlement_period_v6_d14_n25_k6/public-policy_profile_commitment.json",
+      "size_bytes": 679,
+      "sha256": "66dd461122ebd223727994ce4678cdf1884d9a5d2f597bc199fe3c9cad130152"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n25_k6/public-tariff_root.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/config/circuit_matrix/negative_gates/settlement_period_v6_d14_n25_k6/public-tariff_root.json",
+      "size_bytes": 679,
+      "sha256": "aab00ac27c89ae2755e6e399decb422c4505bc857603a99f4cd0def19003404d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n25_k6/public-total_fee_cents.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/negative_gates/settlement_period_v6_d14_n25_k6/public-total_fee_cents.json",
+      "size_bytes": 679,
+      "sha256": "d04c1c9e2025e871f2aea38b2293eda8906b228d1792ffd900ad615253c794f8"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n25_k6/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/negative_gates/settlement_period_v6_d14_n25_k6/receipt.json",
+      "size_bytes": 9190,
+      "sha256": "d37875fe7bab5e8d14d8211b9a0e4e67965bf04251fcceca1701856abda88ca3"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n50_k6/input-tampered-merkle-path.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/negative_gates/settlement_period_v6_d14_n50_k6/input-tampered-merkle-path.json",
+      "size_bytes": 81744,
+      "sha256": "5018fe63b2dd3b137da5c0463d2aa761a3980f8e6c5308ddf0c09fa3f24d2670"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n50_k6/public-policy_profile_commitment.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/config/circuit_matrix/negative_gates/settlement_period_v6_d14_n50_k6/public-policy_profile_commitment.json",
+      "size_bytes": 679,
+      "sha256": "00930c868501684c018ec552d5c8226aec03163ac935e4ee16b739fd9160526e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n50_k6/public-tariff_root.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/config/circuit_matrix/negative_gates/settlement_period_v6_d14_n50_k6/public-tariff_root.json",
+      "size_bytes": 679,
+      "sha256": "bc6e888d8f396f57e332ae00c2d528d52683528795c650b15979a85f09b1f891"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n50_k6/public-total_fee_cents.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/negative_gates/settlement_period_v6_d14_n50_k6/public-total_fee_cents.json",
+      "size_bytes": 679,
+      "sha256": "4e27474758f03866be0e4b41c95c64b51707b9b9c42860399e262123fbd28d3b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/negative_gates/settlement_period_v6_d14_n50_k6/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/negative_gates/settlement_period_v6_d14_n50_k6/receipt.json",
+      "size_bytes": 9191,
+      "sha256": "9cbec9d3ac98cc9b5ed886d2277372821c02d6781bb55dd13bc0be0582555a2a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/policy_profiles/settlement_period_v6_d14_n100_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/policy_profiles/settlement_period_v6_d14_n100_k6.json",
+      "size_bytes": 1548,
+      "sha256": "c3dc6d8b9127eb1fd4545620f59cc820de9022b8238629fb9f695ec20d769bd2"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/policy_profiles/settlement_period_v6_d14_n200_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/policy_profiles/settlement_period_v6_d14_n200_k6.json",
+      "size_bytes": 1548,
+      "sha256": "e2a218d4475a70c625caa97ea50ce4ad10d1cf9e047535c825d25f35394241ef"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/policy_profiles/settlement_period_v6_d14_n25_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/policy_profiles/settlement_period_v6_d14_n25_k6.json",
+      "size_bytes": 1545,
+      "sha256": "3a28bad36a7be10afc5c426771cc1cf5dc9972973b225337de3b89e872081f74"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/policy_profiles/settlement_period_v6_d14_n50_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/policy_profiles/settlement_period_v6_d14_n50_k6.json",
+      "size_bytes": 1544,
+      "sha256": "bd0c0ef285e82d9621a1a16f65b1f6525017bbecc38370f2dc0accbeeedff876"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/ptau/powersOfTau28_hez_final_22.ptau",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/ptau/powersOfTau28_hez_final_22.ptau",
+      "size_bytes": 4831921304,
+      "sha256": "68a21bef870d5d4a9de39c8f35ebcf04e18ef97e14b2cd3f4c3e39876821d362"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/ptau_receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/ptau_receipt.json",
+      "size_bytes": 747,
+      "sha256": "849c61ad1fe8fc0de8075b1f498566db7e23c9d93ee9652ee42e61751f96c784"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d12_n100_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d12_n100_k6.json",
+      "size_bytes": 13197,
+      "sha256": "aedb19c690b1ccc2250e59091ad25bb2bc5afda3410aa3cc7006f6513a828470"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d12_n200_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d12_n200_k6.json",
+      "size_bytes": 13288,
+      "sha256": "4498f9edb93c5e08f3ac1ee27d2986347c90e0b6415df320e7a29c752a6f715a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d12_n25_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d12_n25_k6.json",
+      "size_bytes": 6472,
+      "sha256": "85fa66478924146c31ddd092afbe1ac8e45babfa12aa7de043118a596a1e76f9"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d12_n50_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d12_n50_k6.json",
+      "size_bytes": 6481,
+      "sha256": "b36d6501aa05b40b5db03ed0e2f0c4f7362e352fdee118aa9142d6549b348809"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d14_n100_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d14_n100_k6.json",
+      "size_bytes": 13304,
+      "sha256": "1ccfc3fe271768f4e571431ca4079d2a59595b8373f7dcfff526b9559a40f707"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d14_n200_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d14_n200_k6.json",
+      "size_bytes": 13287,
+      "sha256": "8934daf0988578e37a95d5327f1f5ef3775c564a7a3b5d89e413003a70540ce2"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d14_n25_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d14_n25_k6.json",
+      "size_bytes": 6476,
+      "sha256": "34bab290c8cd92c1fd037c6e4e9c9e40663c8b1dbc4265ea246fc913fe4f1503"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d14_n50_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d14_n50_k6.json",
+      "size_bytes": 6480,
+      "sha256": "3a15b831e49bc798837f196cecb04b0ebcb9f56f0d9cf9c0f58e54722d179f9f"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d16_n100_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d16_n100_k6.json",
+      "size_bytes": 13285,
+      "sha256": "684901818a6ba0282d846daec021170b2bfa4a75ca197e0b9581f3e9b0856962"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d16_n200_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d16_n200_k6.json",
+      "size_bytes": 13306,
+      "sha256": "9dfb7d3273830fad1cf8e96f658316879f66957c82ea6e06139b7f798085813a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d16_n25_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d16_n25_k6.json",
+      "size_bytes": 6477,
+      "sha256": "311329f4d8508e5b7ac64f3de8fc5ed725a02c9e7d69089f3cc3add443b8ea90"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d16_n50_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d16_n50_k6.json",
+      "size_bytes": 6481,
+      "sha256": "784ae535e8de953d8e03c1565c0054b0e67a24f0507e6aeccf8cb79d56e5baa3"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d8_n100_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d8_n100_k6.json",
+      "size_bytes": 6483,
+      "sha256": "078e4951c6b4760a7ff7c3cee8c4dc402de9da3e78e965e52d1e3edce2885e4d"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d8_n200_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d8_n200_k6.json",
+      "size_bytes": 13263,
+      "sha256": "c47ffd6885668295d7c61e1a59b4a5ac6e50a933cc5d10eaba31d73e00a59af4"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d8_n25_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d8_n25_k6.json",
+      "size_bytes": 6448,
+      "sha256": "cb3d2e6991aec79cd6c7744ff71959b5a7bce94d15fdd92e6eaa1d2615460da1"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/compile/settlement_period_v6_d8_n50_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/compile/settlement_period_v6_d8_n50_k6.json",
+      "size_bytes": 6459,
+      "sha256": "dc3c8c620af144d3cf61ef5b2fcfdb02b0d983c3262537d1882334285f8750c6"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/download/ptau-attempt-1-tls-failure.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/download/ptau-attempt-1-tls-failure.json",
+      "size_bytes": 2805,
+      "sha256": "4c2778a80d8a86dd5c5c5105f59b7179c1057c8e8096bfb61df1fd0d48744a5f"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/external_failures/d14n100-warmup-icloud-path-relocation.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/external_failures/d14n100-warmup-icloud-path-relocation.json",
+      "size_bytes": 4582,
+      "sha256": "48d759f14db61721a2d30d6792b77fc54273cfe2591f9322ec38a1c75ba59fa9"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/final_validation.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/final_validation.json",
+      "size_bytes": 35106,
+      "sha256": "aad8180f75179f5907662aa55bc9e253efd23f14c7553773e44fa7c94b1e3a54"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/proof/settlement_period_v6_d14_n100_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/proof/settlement_period_v6_d14_n100_k6.json",
+      "size_bytes": 15338,
+      "sha256": "d37163649e6ebff054fe2d64246c08d8e95821b9632328f8dbf2ca109fec5084"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/proof/settlement_period_v6_d14_n200_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/proof/settlement_period_v6_d14_n200_k6.json",
+      "size_bytes": 16446,
+      "sha256": "623f6f3331d9e3ab694a3a736578ceab68eb2daa04d0274b4e8dcfa76500c335"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/proof/settlement_period_v6_d14_n25_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/proof/settlement_period_v6_d14_n25_k6.json",
+      "size_bytes": 14981,
+      "sha256": "bfb90fe4f98defe3df711f04e0c3768d81f120a95bab25a2687a7fe628627221"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/proof/settlement_period_v6_d14_n50_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/proof/settlement_period_v6_d14_n50_k6.json",
+      "size_bytes": 15222,
+      "sha256": "77cbba22f75d577313460a75ba6f49e4c22f86a83bfaf639d947776c9570249a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/prune/compile_symbols.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/prune/compile_symbols.json",
+      "size_bytes": 7683,
+      "sha256": "877050234df3b7fd88060c9bdc7ad159fcd9a1f49e6c165a482fd894e52c3201"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d12_n100_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d12_n100_k6.json",
+      "size_bytes": 5821,
+      "sha256": "ec2998d4827103f0a86081bee89e9743f3aa8a39ef8f7dc2825bf9d0ae02aaa4"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d12_n200_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d12_n200_k6.json",
+      "size_bytes": 5823,
+      "sha256": "4a6ac94fb606fac48da2a2011f59c3c6f0314422e7d71f26402eb024a3ce7ff9"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d12_n25_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d12_n25_k6.json",
+      "size_bytes": 5808,
+      "sha256": "bfa5bb69c224ed9fbfd096853f19572e1f8889c95385b99ba07b50862df1865e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d12_n50_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d12_n50_k6.json",
+      "size_bytes": 5809,
+      "sha256": "3f9158e0978845bd779dddabb57d22f169c50d566a03643f0d259dbcbb18568c"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d14_n100_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d14_n100_k6.json",
+      "size_bytes": 9065,
+      "sha256": "7ac1966a9f4e2fa197d73e860b2d3c8ec95d6d99b4f5df667c9fd69ed16d7492"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d14_n200_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d14_n200_k6.json",
+      "size_bytes": 9068,
+      "sha256": "e51c65bfdd8a1d2203cafaca2d50d47114cf5bb25770379e394ad9fa6fce3e7b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d14_n25_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d14_n25_k6.json",
+      "size_bytes": 9047,
+      "sha256": "04dcfbd9727a169814e595624b0bfa95b7a913c88fe0d2c1d270bbde161f8329"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d14_n50_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d14_n50_k6.json",
+      "size_bytes": 9048,
+      "sha256": "bd52765c803bd4363ec1b3c335c50efb17d52063c6385d55a598831567a7fc85"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d16_n100_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d16_n100_k6.json",
+      "size_bytes": 5821,
+      "sha256": "ae8cfcfeb818ae3c632768d2f840f65f432607e6d43957a1a49ac4659de24119"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d16_n200_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d16_n200_k6.json",
+      "size_bytes": 5823,
+      "sha256": "24e5c22b02d8061cfea89d17b7f78048c8013edac7619091412cf8f571181787"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d16_n25_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d16_n25_k6.json",
+      "size_bytes": 5809,
+      "sha256": "543ac5465ed15ab28e99690afdc0e5722cc4688e37ad60ff6e69a462d7d07b15"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d16_n50_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d16_n50_k6.json",
+      "size_bytes": 5809,
+      "sha256": "5f3e1edeb626ef97707a29a639b5538f852065af3fd3c214fff79fda0b286ad4"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d8_n100_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d8_n100_k6.json",
+      "size_bytes": 5808,
+      "sha256": "4835c37383de4b193e80668fc555004a956f737da3adf11bf0e58da766f4b10e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d8_n200_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d8_n200_k6.json",
+      "size_bytes": 5811,
+      "sha256": "0d06f78b83e667e280a90cadf52981d392c55e3bc52e06a81aa8a0053a479bc0"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d8_n25_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d8_n25_k6.json",
+      "size_bytes": 5797,
+      "sha256": "6b1d6519fcfaaae13437d2e62722064f807a014ba7859b4fbdc740b4317ea4ef"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/receipts/setup/settlement_period_v6_d8_n50_k6.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/receipts/setup/settlement_period_v6_d8_n50_k6.json",
+      "size_bytes": 5797,
+      "sha256": "a3f1958c9d8e6798b7e7e4bb9f04c7ec5188fc1c13b96ed38f9d6b55824b1e61"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/summary.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/metrics/circuit_matrix/summary.json",
+      "size_bytes": 22968,
+      "sha256": "b5b996c9f54a4ba9dd93bed805390f11e615e412e130109ee183cb100dc78f2e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-1/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-1/proof.json",
+      "size_bytes": 805,
+      "sha256": "f6a538fb167d669f3eccfee154ff10384c3e3828722b66a1eeeb99b0c9197f9b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-1/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-1/public.json",
+      "size_bytes": 656,
+      "sha256": "6943201fdcb1dee1db71d1fec0baa8b0931d7f103fcadff267ae86ac0e085c43"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-1/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-1/receipt.json",
+      "size_bytes": 6088,
+      "sha256": "1ffba8eef050ad87eb9d2ce3b9170c6e631a4e8e9615fbba8497ea0e5129e8f2"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-2/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-2/proof.json",
+      "size_bytes": 807,
+      "sha256": "936ec3272b0420fa024b95bbbc83b7ce6e41199d78237acd16935e0654ba8a7a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-2/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-2/public.json",
+      "size_bytes": 656,
+      "sha256": "6943201fdcb1dee1db71d1fec0baa8b0931d7f103fcadff267ae86ac0e085c43"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-2/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-2/receipt.json",
+      "size_bytes": 6088,
+      "sha256": "491d24175a8e404e083c1543c231739972265879afae62d528c1c387d1544115"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-3/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-3/proof.json",
+      "size_bytes": 804,
+      "sha256": "44f2ea0889471e2e45eae8a7aac87bea063cbf4caf9860e404510e7cdeac6da8"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-3/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-3/public.json",
+      "size_bytes": 656,
+      "sha256": "6943201fdcb1dee1db71d1fec0baa8b0931d7f103fcadff267ae86ac0e085c43"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-3/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/measured-3/receipt.json",
+      "size_bytes": 6088,
+      "sha256": "5f2d72720e8b63a3f0ac0520e549d975675c39cf5513b7dab25becd0ae904856"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/warmup/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n100_k6/warmup/receipt.json",
+      "size_bytes": 6060,
+      "sha256": "e8694c23fa30b81e1cb50f030081249055cc07da181e83ce8e67706978cb63d9"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-1/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-1/proof.json",
+      "size_bytes": 804,
+      "sha256": "229f825ff424d79590ee124251aa3288204c0ace38b2cae07a229dbef67055f4"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-1/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-1/public.json",
+      "size_bytes": 659,
+      "sha256": "aec45cd462d2496223a659f188c9ac2c4d73d6d04e4f6f16cc64b9c987ed2566"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-1/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-1/receipt.json",
+      "size_bytes": 6088,
+      "sha256": "4a79910d13fb8ce965d750448e5c9e772eb818ad636c204cdc8bc8dcaa91ac5f"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-2/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-2/proof.json",
+      "size_bytes": 804,
+      "sha256": "3f54fa99ef1598edd6b8ba6b69a7995117f1677331d5a97a86e4c39173edc7b0"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-2/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-2/public.json",
+      "size_bytes": 659,
+      "sha256": "aec45cd462d2496223a659f188c9ac2c4d73d6d04e4f6f16cc64b9c987ed2566"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-2/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-2/receipt.json",
+      "size_bytes": 6089,
+      "sha256": "c051e267fd7390ea485f94e3be596ce2f039b042afaae0bce65bef44d7911f47"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-3/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-3/proof.json",
+      "size_bytes": 805,
+      "sha256": "25e959e1b5f20d4c84a32e1c960d525c902dbf83e8b12b8f3ebbc28303800492"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-3/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-3/public.json",
+      "size_bytes": 659,
+      "sha256": "aec45cd462d2496223a659f188c9ac2c4d73d6d04e4f6f16cc64b9c987ed2566"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-3/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/measured-3/receipt.json",
+      "size_bytes": 6089,
+      "sha256": "5619748e197608219f815606f981d70345030f521f7629a9fcedef14fd1eb691"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/warmup/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n200_k6/warmup/receipt.json",
+      "size_bytes": 6061,
+      "sha256": "3991b2c164c898ba96877d4c371b8b609597afced0d02a22aebe123fd132b809"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-1/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-1/proof.json",
+      "size_bytes": 805,
+      "sha256": "9925876ec2d4c9e5fc1dc339d5e6077e0480c9d25e2c2672647752380c801bcb"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-1/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-1/public.json",
+      "size_bytes": 656,
+      "sha256": "b40c4bdc1436d818776c82087b8dd2838147dcf1dc490312c60208748ee2ed46"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-1/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-1/receipt.json",
+      "size_bytes": 6421,
+      "sha256": "edab7ee187d9d29e6d0748b6c1562725ae55285899dcd52fc5a7e4b9c0dc7c44"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-2/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-2/proof.json",
+      "size_bytes": 807,
+      "sha256": "95256df707a15615fe683b1356571711f5be179be95f02dcdd24e86d6edf2efb"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-2/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-2/public.json",
+      "size_bytes": 656,
+      "sha256": "b40c4bdc1436d818776c82087b8dd2838147dcf1dc490312c60208748ee2ed46"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-2/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-2/receipt.json",
+      "size_bytes": 6422,
+      "sha256": "8db10c4db575ecce3a92fbf71803cab951f17860819c7205721d072e362de508"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-3/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-3/proof.json",
+      "size_bytes": 806,
+      "sha256": "448109cf85b49d737db621456cdc5bac102cc3c60e043ea01a45342ba39cbdc8"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-3/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-3/public.json",
+      "size_bytes": 656,
+      "sha256": "b40c4bdc1436d818776c82087b8dd2838147dcf1dc490312c60208748ee2ed46"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-3/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/measured-3/receipt.json",
+      "size_bytes": 6423,
+      "sha256": "cab0663a7d375d38557b9eb11528ff9f37d50dc4ada3897b4790ac7bbeaa9581"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/warmup/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n25_k6/warmup/receipt.json",
+      "size_bytes": 6393,
+      "sha256": "2cc4755c3e3403a3042583e62e2651ba564312e54014985d2839bf921e500fea"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-1/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-1/proof.json",
+      "size_bytes": 803,
+      "sha256": "753a548b8776cb039dc787ac0ff0a489a5fe53c0acfe9c79ea64f2a3e8a6286a"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-1/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-1/public.json",
+      "size_bytes": 656,
+      "sha256": "8b94ddc6ef2afed31a63b59ae9b48d83967c9dc34310586fa32fa6e277657c36"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-1/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-1/receipt.json",
+      "size_bytes": 6421,
+      "sha256": "c5463003c77882c8a13f4195d24abbdb863c70a7dc3964bb4a3c7496c6bbe6ab"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-2/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-2/proof.json",
+      "size_bytes": 805,
+      "sha256": "16b88f6d408de1c676b50a6c10c9b58381c44ffddf2b8764e7f98130e2b7f990"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-2/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-2/public.json",
+      "size_bytes": 656,
+      "sha256": "8b94ddc6ef2afed31a63b59ae9b48d83967c9dc34310586fa32fa6e277657c36"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-2/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-2/receipt.json",
+      "size_bytes": 6422,
+      "sha256": "8e2efa544c9ddd3b709a6741cba67b1de36ac06da1fc6c7ecd3999d1b6f19569"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-3/proof.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-3/proof.json",
+      "size_bytes": 805,
+      "sha256": "aa9a6cc62244e54dbe3ed6acc86ade9abe3f3b392590875772e319479eee4192"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-3/public.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-3/public.json",
+      "size_bytes": 656,
+      "sha256": "8b94ddc6ef2afed31a63b59ae9b48d83967c9dc34310586fa32fa6e277657c36"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-3/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/measured-3/receipt.json",
+      "size_bytes": 6421,
+      "sha256": "710f1fc71be77668ca08be4e7ec077d623e567a9ffe011151ca3bdd861f37040"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/warmup/receipt.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/circuit_matrix/trials/settlement_period_v6_d14_n50_k6/warmup/receipt.json",
+      "size_bytes": 6394,
+      "sha256": "fb2d499543e4e3a338b712cadbd9bc09efed849a5414c2bb052c9e1e9f4b2c7e"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/membership_samples_depth14.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/artifacts/membership_samples_depth14.json",
+      "size_bytes": 32590,
+      "sha256": "756a62c4ffd59d17dd0c1b86b2f9d44d4eae96b31a93239010a2c86ce29de345"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/tariff_manifest_depth14.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/config/tariff_manifest_depth14.json",
+      "size_bytes": 5670,
+      "sha256": "4760b1087ce864a7e46cb6ee9576a3e01c715493c0040a6376ec484d00de1365"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m2/tariff_rome_medium_10000_cells.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m2/config/tariff_rome_medium_10000_cells.json",
+      "size_bytes": 169403,
+      "sha256": "bd7ed3f7bbb9669085432e911bd9a11c01a677f48cadf4f9dc25c3abd1c14507"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/.migration_staging/experiments/waybill_m3/manifest.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m3/manifest.json",
+      "size_bytes": 1114,
+      "sha256": "0b755e7ab3f1dd4f9e48e7af298b3f5a775107df74025947481f7367d1708121"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m3/v1/bound_receipts.jsonl",
+      "key": "projects/risefl_mvp/experiments/waybill_m3/metrics/v1/bound_receipts.jsonl",
+      "size_bytes": 300328,
+      "sha256": "efd9756ec55a62fd89309ddab002df23a4ecc6e18d364b2bec26db786b7ad930"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m3/v1/summary.csv",
+      "key": "projects/risefl_mvp/experiments/waybill_m3/metrics/v1/summary.csv",
+      "size_bytes": 7441,
+      "sha256": "404cc2f7bf1d9914d6cdb353ffe4b4e1ff34fc112df8b99c1f8bd1247ebcc31b"
+    },
+    {
+      "local_path": "/Users/wanghao/Desktop/risefl_mvp/experiments/waybill_m3/v1/summary.json",
+      "key": "projects/risefl_mvp/experiments/waybill_m3/metrics/v1/summary.json",
+      "size_bytes": 30862,
+      "sha256": "529ec0f67d1fe9f9e66327ddf4120e90401b1a9e23f0152d1777f80cb6f3fa1c"
+    }
+  ]
+}

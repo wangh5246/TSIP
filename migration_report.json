@@ -1,0 +1,17 @@
+{
+  "local_file_count": 362,
+  "uploaded_file_count": 362,
+  "skipped_file_count": 0,
+  "failed_file_count": 0,
+  "checksum_verification": {
+    "mode": "full local SHA-256 frozen plan + remote object-size verification; large ptau SHA-256 stored/verified in R2 metadata",
+    "verified_object_count": 362,
+    "size_mismatch": []
+  },
+  "missing_files": [],
+  "unexpected_files": [],
+  "r2_bucket": "waybill",
+  "r2_prefix": "projects/risefl_mvp",
+  "status": "complete",
+  "last_completed_index": 362
+}

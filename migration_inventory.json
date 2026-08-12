@@ -1,0 +1,418 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-08-11T12:26:39.040367+00:00",
+  "project": "risefl_mvp",
+  "root": "/Users/wanghao/Desktop/risefl_mvp",
+  "git": {
+    "commit": "5895ba47c77b37664485ced939093d9a333d6a68",
+    "dirty": true,
+    "remote": "https://github.com/wangh5246/TSIP.git"
+  },
+  "policy": {
+    "preserve_first": true,
+    "append_only": true,
+    "r2_not_source_of_truth": true
+  },
+  "sensitive_files": [
+    {
+      "path": ".env",
+      "decision": "excluded",
+      "content_inspected": false
+    },
+    {
+      "path": ".env.example",
+      "decision": "excluded",
+      "content_inspected": false
+    },
+    {
+      "path": ".claude/worktrees/condescending-hypatia/.env.example",
+      "decision": "excluded",
+      "content_inspected": false
+    },
+    {
+      "path": ".claude/worktrees/jolly-euclid-9175f0/.env.example",
+      "decision": "excluded",
+      "content_inspected": false
+    }
+  ],
+  "entries": [
+    {
+      "path": ".agents",
+      "type": "other",
+      "file_count": 14,
+      "total_size_bytes": 75945,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Not automatically in scope; preserve locally and require explicit allow-list."
+    },
+    {
+      "path": ".claude",
+      "type": "other",
+      "file_count": 10513,
+      "total_size_bytes": 863716,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Not automatically in scope; preserve locally and require explicit allow-list."
+    },
+    {
+      "path": ".codex_docx",
+      "type": "other",
+      "file_count": 1,
+      "total_size_bytes": 2073,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Not automatically in scope; preserve locally and require explicit allow-list."
+    },
+    {
+      "path": ".codex_excel",
+      "type": "other",
+      "file_count": 4,
+      "total_size_bytes": 5560,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Not automatically in scope; preserve locally and require explicit allow-list."
+    },
+    {
+      "path": ".env",
+      "type": "secret_or_credential",
+      "file_count": 1,
+      "total_size_bytes": 845,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Excluded: potential secret/credential; filename only is recorded."
+    },
+    {
+      "path": ".env.example",
+      "type": "secret_or_credential",
+      "file_count": 1,
+      "total_size_bytes": 4190,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Excluded: potential secret/credential; filename only is recorded."
+    },
+    {
+      "path": ".git",
+      "type": "cache_or_environment",
+      "file_count": 3947,
+      "total_size_bytes": 12674308400,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Excluded by preserve-first policy: generated environment/cache/temp content."
+    },
+    {
+      "path": ".idea",
+      "type": "other",
+      "file_count": 13,
+      "total_size_bytes": 51364,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Not automatically in scope; preserve locally and require explicit allow-list."
+    },
+    {
+      "path": ".migration_staging",
+      "type": "other",
+      "file_count": 22,
+      "total_size_bytes": 88348,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Not automatically in scope; preserve locally and require explicit allow-list."
+    },
+    {
+      "path": ".pycache-codex",
+      "type": "cache_or_environment",
+      "file_count": 37,
+      "total_size_bytes": 860488,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Excluded by preserve-first policy: generated environment/cache/temp content."
+    },
+    {
+      "path": ".pytest_cache",
+      "type": "cache_or_environment",
+      "file_count": 7,
+      "total_size_bytes": 73631,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Excluded by preserve-first policy: generated environment/cache/temp content."
+    },
+    {
+      "path": ".superpowers",
+      "type": "other",
+      "file_count": 15,
+      "total_size_bytes": 639170,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Not automatically in scope; preserve locally and require explicit allow-list."
+    },
+    {
+      "path": ".venv",
+      "type": "cache_or_environment",
+      "file_count": 6153,
+      "total_size_bytes": 161490461,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Excluded by preserve-first policy: generated environment/cache/temp content."
+    },
+    {
+      "path": "baselines",
+      "type": "source_code",
+      "file_count": 662,
+      "total_size_bytes": 183235049,
+      "migration_destination": "source-snapshots/<git-commit>/",
+      "decision": "exclude",
+      "reason": "Git/GitHub remains source of truth; include only an immutable Git source snapshot per archived commit."
+    },
+    {
+      "path": "build",
+      "type": "other",
+      "file_count": 0,
+      "total_size_bytes": 0,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Not automatically in scope; preserve locally and require explicit allow-list."
+    },
+    {
+      "path": "client",
+      "type": "source_code",
+      "file_count": 4,
+      "total_size_bytes": 91150,
+      "migration_destination": "source-snapshots/<git-commit>/",
+      "decision": "exclude",
+      "reason": "Git/GitHub remains source of truth; include only an immutable Git source snapshot per archived commit."
+    },
+    {
+      "path": "common",
+      "type": "source_code",
+      "file_count": 45,
+      "total_size_bytes": 803709,
+      "migration_destination": "source-snapshots/<git-commit>/",
+      "decision": "exclude",
+      "reason": "Git/GitHub remains source of truth; include only an immutable Git source snapshot per archived commit."
+    },
+    {
+      "path": "configs",
+      "type": "frozen_configs",
+      "file_count": 4,
+      "total_size_bytes": 10600,
+      "migration_destination": "experiments/<experiment-id>/config/",
+      "decision": "include",
+      "reason": "Archive only frozen copies referenced by an experiment."
+    },
+    {
+      "path": "data",
+      "type": "dataset",
+      "file_count": 50,
+      "total_size_bytes": 267647552,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Exclude by default; public/re-downloadable data is not archived unless an experiment freezes a modified subset."
+    },
+    {
+      "path": "dataset",
+      "type": "dataset",
+      "file_count": 18778,
+      "total_size_bytes": 1765538698,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Exclude by default; public/re-downloadable data is not archived unless an experiment freezes a modified subset."
+    },
+    {
+      "path": "docs",
+      "type": "other",
+      "file_count": 16,
+      "total_size_bytes": 167508,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Not automatically in scope; preserve locally and require explicit allow-list."
+    },
+    {
+      "path": "docx_work",
+      "type": "unrelated_or_potentially_sensitive_output",
+      "file_count": 78,
+      "total_size_bytes": 35834174,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Out of WayBill experiment scope and may contain personal or publication material; require explicit allow-list."
+    },
+    {
+      "path": "experiments",
+      "type": "historical_experiments",
+      "file_count": 367,
+      "total_size_bytes": 5047113852,
+      "migration_destination": "experiments/<experiment-id>/",
+      "decision": "include",
+      "reason": "Archive immutable experimental evidence with manifests and SHA-256."
+    },
+    {
+      "path": "figures",
+      "type": "figures_or_tables",
+      "file_count": 68,
+      "total_size_bytes": 13631694,
+      "migration_destination": "experiments/<experiment-id>/figures|tables/",
+      "decision": "include",
+      "reason": "Archive research figures/tables as reproducibility artifacts."
+    },
+    {
+      "path": "heatmap-version",
+      "type": "source_code",
+      "file_count": 32,
+      "total_size_bytes": 12255285,
+      "migration_destination": "source-snapshots/<git-commit>/",
+      "decision": "exclude",
+      "reason": "Git/GitHub remains source of truth; include only an immutable Git source snapshot per archived commit."
+    },
+    {
+      "path": "memory",
+      "type": "unrelated_or_potentially_sensitive_output",
+      "file_count": 190,
+      "total_size_bytes": 1935252,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Out of WayBill experiment scope and may contain personal or publication material; require explicit allow-list."
+    },
+    {
+      "path": "outputs",
+      "type": "unrelated_or_potentially_sensitive_output",
+      "file_count": 147,
+      "total_size_bytes": 44838731,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Out of WayBill experiment scope and may contain personal or publication material; require explicit allow-list."
+    },
+    {
+      "path": "paper",
+      "type": "unrelated_or_potentially_sensitive_output",
+      "file_count": 3,
+      "total_size_bytes": 6142029,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Out of WayBill experiment scope and may contain personal or publication material; require explicit allow-list."
+    },
+    {
+      "path": "ppt-master-projects",
+      "type": "unrelated_or_potentially_sensitive_output",
+      "file_count": 150,
+      "total_size_bytes": 18988343,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Out of WayBill experiment scope and may contain personal or publication material; require explicit allow-list."
+    },
+    {
+      "path": "projects",
+      "type": "unrelated_or_potentially_sensitive_output",
+      "file_count": 35,
+      "total_size_bytes": 9378860,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Out of WayBill experiment scope and may contain personal or publication material; require explicit allow-list."
+    },
+    {
+      "path": "release",
+      "type": "dataset",
+      "file_count": 10360,
+      "total_size_bytes": 803611033,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Exclude by default; public/re-downloadable data is not archived unless an experiment freezes a modified subset."
+    },
+    {
+      "path": "research_runs",
+      "type": "other",
+      "file_count": 7,
+      "total_size_bytes": 6070,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Not automatically in scope; preserve locally and require explicit allow-list."
+    },
+    {
+      "path": "script",
+      "type": "source_code",
+      "file_count": 95,
+      "total_size_bytes": 1570167,
+      "migration_destination": "source-snapshots/<git-commit>/",
+      "decision": "exclude",
+      "reason": "Git/GitHub remains source of truth; include only an immutable Git source snapshot per archived commit."
+    },
+    {
+      "path": "services",
+      "type": "source_code",
+      "file_count": 23,
+      "total_size_bytes": 330996,
+      "migration_destination": "source-snapshots/<git-commit>/",
+      "decision": "exclude",
+      "reason": "Git/GitHub remains source of truth; include only an immutable Git source snapshot per archived commit."
+    },
+    {
+      "path": "SHTPC_heatmap_version",
+      "type": "other",
+      "file_count": 30,
+      "total_size_bytes": 12240312,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Not automatically in scope; preserve locally and require explicit allow-list."
+    },
+    {
+      "path": "tables",
+      "type": "figures_or_tables",
+      "file_count": 8,
+      "total_size_bytes": 7443,
+      "migration_destination": "experiments/<experiment-id>/figures|tables/",
+      "decision": "include",
+      "reason": "Archive research figures/tables as reproducibility artifacts."
+    },
+    {
+      "path": "tests",
+      "type": "source_code",
+      "file_count": 110,
+      "total_size_bytes": 1689878,
+      "migration_destination": "source-snapshots/<git-commit>/",
+      "decision": "exclude",
+      "reason": "Git/GitHub remains source of truth; include only an immutable Git source snapshot per archived commit."
+    },
+    {
+      "path": "tmp",
+      "type": "cache_or_environment",
+      "file_count": 364,
+      "total_size_bytes": 136975859,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Excluded by preserve-first policy: generated environment/cache/temp content."
+    },
+    {
+      "path": "tools",
+      "type": "other",
+      "file_count": 4,
+      "total_size_bytes": 28151,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Not automatically in scope; preserve locally and require explicit allow-list."
+    },
+    {
+      "path": "UML期末大报告交付",
+      "type": "unrelated_or_potentially_sensitive_output",
+      "file_count": 37,
+      "total_size_bytes": 6138153,
+      "migration_destination": null,
+      "decision": "exclude",
+      "reason": "Out of WayBill experiment scope and may contain personal or publication material; require explicit allow-list."
+    },
+    {
+      "path": "WayBill",
+      "type": "source_code",
+      "file_count": 6,
+      "total_size_bytes": 526417,
+      "migration_destination": "source-snapshots/<git-commit>/",
+      "decision": "exclude",
+      "reason": "Git/GitHub remains source of truth; include only an immutable Git source snapshot per archived commit."
+    },
+    {
+      "path": "zk",
+      "type": "source_code",
+      "file_count": 13,
+      "total_size_bytes": 43348570,
+      "migration_destination": "source-snapshots/<git-commit>/",
+      "decision": "exclude",
+      "reason": "Git/GitHub remains source of truth; include only an immutable Git source snapshot per archived commit."
+    }
+  ]
+}
