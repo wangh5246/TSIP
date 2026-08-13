@@ -1,20 +1,21 @@
 # WayBill M4 Tomorrow-Night Launch Card
 
-Status on 2026-08-13: **LOCAL RELEASE READY; TARGET NO-GO**. Do not run
-`init-run` until every STOP item below is closed. V3 supersedes the immutable V2
-release for formal execution; V2 may be used only to reproduce its canonical
-receipt.
+Status on 2026-08-13: **V4 RELEASE; TARGET NO-GO**. Do not run
+`init-run` until every STOP item below is closed. V4 supersedes V3 after a real
+Apptainer 1.5.3 target exposed that `snarkjs 0.7.6 --version` prints the correct
+version but exits 99. V4 fixes only that fail-closed RG6 probe contract and pins
+the probe working directory to `/work`; V2/V3 remain immutable audit inputs.
 
-## 1. Verify the frozen V3 release
+## 1. Verify the frozen V4 release
 
-These values come from the clean annotated V3 tag, never from a working tree or
-V2:
+These values come from the clean annotated V4 tag, never from a working tree or
+V2/V3:
 
 ```bash
-export WAYBILL_RELEASE_TAG='waybill-formal-readiness-v3'
-export WAYBILL_RELEASE_DIR='/srv/waybill-release/waybill-formal-readiness-v3'
-export WAYBILL_WORKSPACE='/srv/waybill'
-export WAYBILL_SHARED_DATA_ROOT='/srv/waybill-data/waybill-formal-v1'
+export WAYBILL_RELEASE_TAG='waybill-formal-readiness-v4'
+export WAYBILL_RELEASE_DIR='/home/wang/waybill-release/waybill-formal-readiness-v4'
+export WAYBILL_WORKSPACE='/home/wang/waybill-workspace'
+export WAYBILL_SHARED_DATA_ROOT='/home/wang/waybill-data/waybill-formal-v1'
 export WAYBILL_PREPARED_ROOT="$WAYBILL_SHARED_DATA_ROOT/prepared"
 export WAYBILL_CORPUS_ROOT="$WAYBILL_SHARED_DATA_ROOT/corpus"
 export WAYBILL_PTAU="$WAYBILL_SHARED_DATA_ROOT/ptau/powersOfTau28_hez_final_22.ptau"
@@ -31,7 +32,7 @@ test "$(git describe --tags --exact-match)" = "$WAYBILL_RELEASE_TAG"
 test -z "$(git status --porcelain)"
 ```
 
-Build the SIF from the V3 formal-runner archive, make it read-only, and
+Build the SIF from the V4 formal-runner archive, make it read-only, and
 record its independent byte identity:
 
 ```bash
@@ -77,7 +78,7 @@ test "$(realpath "$WAYBILL_SHARED_DATA_ROOT")" != "$(realpath "$WAYBILL_WORKSPAC
 
 ## 3. Pass target RG6
 
-Run on the actual Linux x86-64 execution node using the exact V3 image and SIF.
+Run on the actual Linux x86-64 execution node using the exact V4 image and SIF.
 A laptop receipt does not count. Derive the OCI digest from the verified
 container manifest instead of transcribing it:
 
@@ -153,7 +154,7 @@ sensitivity; S5 handler results remain in-process FastAPI/SQLite evidence.
 
 ## STOP — any one item forbids `init-run`
 
-- release tag is not `waybill-formal-readiness-v3`, is dirty/unannotated, or
+- release tag is not `waybill-formal-readiness-v4`, is dirty/unannotated, or
   fails self-verification;
 - OCI label, release manifest, SIF SHA-256, protocol, or code manifest differs;
 - any dataset is incomplete or target RG2 fails;

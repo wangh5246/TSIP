@@ -9,6 +9,7 @@ import pytest
 from common.resource_probe import parse_time_evidence
 from script import run_waybill_m2_circuit_matrix as m2
 from script.waybill_formal_cli import DEFAULT_CODE_MANIFEST_PATHS
+from waybill_formal import core as formal_core
 from waybill_formal.core import (
     FORMAL_PTAU_BLAKE2B,
     FORMAL_PTAU_BYTES,
@@ -35,6 +36,7 @@ from waybill_formal.core import (
     write_json,
     write_jsonl,
     write_plan,
+    tool_version,
     _s3_aggregate_gate,
 )
 from waybill_formal.stage import finish_stage
@@ -43,6 +45,85 @@ from waybill_formal.stage import finish_stage
 ROOT = Path(__file__).resolve().parents[1]
 PROTOCOL_PATH = ROOT / "configs/waybill_formal/protocol-v1.json"
 TARIFF_REGISTRY_PATH = ROOT / "configs/waybill_formal/tariff-registry-v1.json"
+
+
+def test_tool_version_accepts_only_explicit_nonzero_cli_contract() -> None:
+    command = ["sh", "-c", "printf 'snarkjs@0.7.6\\n'; exit 99"]
+    assert tool_version(command) is None
+    assert tool_version(command, allowed_returncodes=(0, 99)) == "snarkjs@0.7.6"
+
+
+def test_host_preflight_pins_workdir_and_accepts_snarkjs_cli_contract(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime = tmp_path / "runtime/formal.sif"
+    workspace = tmp_path / "workspace"
+    runtime.parent.mkdir()
+    workspace.mkdir()
+    runtime.write_bytes(b"sif")
+    observed: list[tuple[list[str], tuple[int, ...]]] = []
+
+    def fake_tool_version(
+        command: list[str],
+        *,
+        allowed_returncodes: tuple[int, ...] = (0,),
+    ) -> str | None:
+        observed.append((list(command), tuple(allowed_returncodes)))
+        executable = command[-2] if command[-1] == "--version" else "npm"
+        return {
+            "apptainer": "apptainer version 1.5.3",
+            "python": "Python 3.12.13",
+            "node": "v26.5.1",
+            "npm": "absent",
+            "circom": "circom compiler 2.1.9",
+            "snarkjs": "snarkjs@0.7.6",
+        }.get(executable)
+
+    bindings = {
+        "schema": "waybill.formal.embedded-release-binding/v1",
+        "protocol_sha256": canonical_sha256(read_json(PROTOCOL_PATH)),
+    }
+
+    def fake_command_output(
+        command: list[str],
+        *,
+        timeout_sec: int = 60,
+        allowed_returncodes: tuple[int, ...] = (0,),
+    ) -> tuple[bool, str]:
+        del timeout_sec, allowed_returncodes
+        if "cat" in command:
+            import json
+
+            return True, json.dumps(bindings)
+        return True, "passed"
+
+    monkeypatch.setattr(formal_core, "tool_version", fake_tool_version)
+    monkeypatch.setattr(formal_core, "command_output", fake_command_output)
+    monkeypatch.setattr(
+        formal_core,
+        "collect_host_evidence",
+        lambda _workspace: {
+            "physical_memory_bytes": 64 * 1024**3,
+            "disk": {"free_bytes": 600 * 1024**3},
+        },
+    )
+
+    receipt = formal_core.host_preflight(
+        root=ROOT,
+        protocol=read_json(PROTOCOL_PATH),
+        workspace=workspace,
+        container_digest="sha256:" + "a" * 64,
+        expected_container_digest="sha256:" + "a" * 64,
+        container_runtime_image=runtime,
+        expected_container_runtime_sha256=hashlib.sha256(b"sif").hexdigest(),
+    )
+
+    snarkjs_calls = [item for item in observed if item[0][-2:] == ["snarkjs", "--version"]]
+    assert snarkjs_calls and snarkjs_calls[0][1] == (0, 99)
+    assert "--pwd" in snarkjs_calls[0][0]
+    assert snarkjs_calls[0][0][snarkjs_calls[0][0].index("--pwd") + 1] == "/work"
+    assert receipt["checks"]["container_snarkjs_0_7_6"] is True
 
 
 def _embedded_binding(bindings: dict[str, str]) -> dict[str, str]:

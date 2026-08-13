@@ -5,18 +5,20 @@ The active settlement profile is
 validity-bound V6 circuit and verification key; V5/v7 artifacts are historical
 baselines only.
 
-## Current frozen status: V3 local release, target execution pending
+## Current frozen status: V4 target-probe successor
 
-The annotated `waybill-formal-readiness-v3` release contains the reviewed
+The immutable `waybill-formal-readiness-v3` release contains the reviewed
 S2/S3/S5 runner repairs, the strict scientific aggregate, regression tests, and
-the 2026-08-13 `cryptography==50.0.0` security update. Its local release bundle
-is `artifacts/releases/waybill-formal-readiness-v3`; verify it before any
-transfer or target action.
+the 2026-08-13 `cryptography==50.0.0` security update. A real Ubuntu
+24.04/Apptainer 1.5.3 target then showed that `snarkjs 0.7.6 --version` prints
+the exact version but exits 99. V3's generic version helper therefore reports a
+false RG6 failure. V4 accepts only exit 0/99 for that one probe, still requires
+the exact `snarkjs@0.7.6` output, and runs all probes with `--pwd /work`.
 
 **Do not initialize M4 from V2.** The immutable V2 tag predates fixes for
 attempt-local symbolic links, the S5 receiver-attestation anchor preflight, and
-the registered S3 four-bucket/95% aggregate semantics. V3 supersedes it for
-formal execution. V3 still does not authorize `init-run` by itself: the exact
+the registered S3 four-bucket/95% aggregate semantics. V4 supersedes V3 for
+formal execution. V4 still does not authorize `init-run` by itself: the exact
 release must be installed on the actual Linux x86-64 target, converted to a
 read-only SIF, and pass target RG2/RG6, full materialization, and every
 dependency-class smoke. An empty packaging `release_blockers` list is not a
@@ -338,7 +340,7 @@ worker for the first formal run; PostgreSQL serializes its write transactions,
 but multi-worker throughput is not a paper claim until the target-host stress
 receipt is produced.
 
-The remaining runbook applies to the verified V3 release. It does not define a
+The remaining runbook applies to the verified V4 release. It does not define a
 smoke, reduced, or publication-eligible shortcut. Use
 `WAYBILL_TOMORROW_RUNBOOK.md` as the launch card and stop if any target-derived
 digest, path, capacity, corpus, or receipt value remains unresolved.

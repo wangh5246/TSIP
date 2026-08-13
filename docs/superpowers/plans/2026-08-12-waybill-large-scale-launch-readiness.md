@@ -67,13 +67,15 @@ data-dependent plan. No old static plan or uncommitted worktree may execute.
 - [x] Rebuild all bound `linux/amd64` OCI roles.
 - [x] Produce role-bound SPDX SBOMs and Trivy reports; satisfy policy.
 - [x] Finalize and independently verify the successor release bundle.
-- [ ] Transfer the bundle to the target and build an immutable SIF; record its
-      SHA-256 separately from the OCI digest.
+- [x] Transfer V3 to the target and build root-owned immutable SIF SHA-256
+      `156450284f60daf89c65c91b93e062d6e95bb1fdb1b561107111334963ecb607`.
+- [ ] Freeze V4 for the target-discovered `snarkjs --version` exit-99 probe
+      contract, transfer it, and replace V3 only for formal execution.
 
 ## Task 5 — Materialize and qualify the actual target
 
 - [ ] Use Linux x86-64 with the frozen CPU/RAM/workspace thresholds.
-- [ ] Transfer and validate the four authorized raw datasets and exact PTAU.
+- [x] Transfer and validate the four authorized raw datasets and exact PTAU.
 - [ ] Run uncapped preprocessing once into the read-only shared data root.
 - [ ] Materialize all canonical S3 instances without silently dropped periods.
 - [ ] Generate a materialized plan with non-null `expected_job_count`.

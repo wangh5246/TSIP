@@ -2640,7 +2640,12 @@ exec apptainer exec \
     output_path.chmod(0o755)
 
 
-def command_output(command: Sequence[str], *, timeout_sec: int = 60) -> tuple[bool, str]:
+def command_output(
+    command: Sequence[str],
+    *,
+    timeout_sec: int = 60,
+    allowed_returncodes: Iterable[int] = (0,),
+) -> tuple[bool, str]:
     try:
         proc = subprocess.run(
             list(command),
@@ -2652,11 +2657,18 @@ def command_output(command: Sequence[str], *, timeout_sec: int = 60) -> tuple[bo
         )
     except (OSError, subprocess.TimeoutExpired):
         return False, ""
-    return proc.returncode == 0, proc.stdout.strip()
+    return proc.returncode in frozenset(allowed_returncodes), proc.stdout.strip()
 
 
-def tool_version(command: Sequence[str]) -> str | None:
-    succeeded, output = command_output(command)
+def tool_version(
+    command: Sequence[str],
+    *,
+    allowed_returncodes: Iterable[int] = (0,),
+) -> str | None:
+    succeeded, output = command_output(
+        command,
+        allowed_returncodes=allowed_returncodes,
+    )
     return output.splitlines()[0].strip() if succeeded and output else None
 
 
@@ -2717,6 +2729,8 @@ def host_preflight(
             "--net",
             "--network",
             "none",
+            "--pwd",
+            "/work",
             str(runtime_path),
         ]
         container_versions = {
@@ -2731,7 +2745,13 @@ def host_preflight(
                 ]
             ),
             "circom": tool_version([*prefix, "circom", "--version"]),
-            "snarkjs": tool_version([*prefix, "snarkjs", "--version"]),
+            # snarkjs 0.7.6 prints its exact version and usage, then exits 99.
+            # Accept only that documented CLI outcome here; the version string
+            # is still checked exactly below.
+            "snarkjs": tool_version(
+                [*prefix, "snarkjs", "--version"],
+                allowed_returncodes=(0, 99),
+            ),
         }
         binding_ok, binding_output = command_output(
             [*prefix, "cat", str(EMBEDDED_RELEASE_BINDING_PATH)]

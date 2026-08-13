@@ -6,8 +6,8 @@
 
 > **Formal-run release (2026-08-13):** the immutable
 > `waybill-formal-readiness-v2` bundle remains useful only for reproducing its
-> canonical receipt. M4 execution uses the repaired
-> `waybill-formal-readiness-v3` release and must still pass target RG2/RG6,
+> canonical receipt. M4 execution uses the V4 successor to the repaired V3
+> release and must still pass target RG2/RG6,
 > corpus materialization, and all dependency-class smokes before `init-run`.
 
 ## 1. Default verification
@@ -174,11 +174,13 @@ The release finalizer reconstructs `/work` from the ordered OCI layers,
 applies whiteout semantics, rejects links and extra files, and compares every
 embedded byte, mode, and path with the tagged code manifest.
 
-The V3 config closes the reviewed S2/S3/S5 runner defects and pins
+The V4 config retains the V3 S2/S3/S5 repairs and pins
 `cryptography==50.0.0` after the 2026-08-13 vulnerability refresh. Its four
 Linux/amd64 image archives, bound SBOMs, and bound vulnerability reports belong
-to the annotated `waybill-formal-readiness-v3` tag. The self-verifying release
-is stored at `artifacts/releases/waybill-formal-readiness-v3`. Run the
+to the annotated `waybill-formal-readiness-v4` tag. The self-verifying release
+is stored at `artifacts/releases/waybill-formal-readiness-v4`. V4 additionally
+fixes the target-discovered `snarkjs --version` exit-99 RG6 probe contract and
+pins every target probe to `/work`. Run the
 verification command below after transfer and before target-host execution. A
 future dependency or scanner finding must create a new reviewed release rather
 than changing this tagged bundle in place.
@@ -190,44 +192,44 @@ the archive, scan the immutable image ID, and bind both scanner outputs:
 
 ```bash
 python script/finalize_waybill_release.py preflight \
-  --tag waybill-formal-readiness-v3 \
-  --config configs/waybill_formal/release-v3.json \
-  --output-manifest artifacts/release-inputs-v3/preflight.json
+  --tag waybill-formal-readiness-v4 \
+  --config configs/waybill_formal/release-v4.json \
+  --output-manifest artifacts/release-inputs-v4/preflight.json
 
-docker save --output artifacts/release-inputs-v3/formal-runner-image.tar \
-  waybill-formal:readiness-v3
+docker save --output artifacts/release-inputs-v4/formal-runner-image.tar \
+  waybill-formal:readiness-v4
 python script/finalize_waybill_release.py image-metadata \
-  --image artifacts/release-inputs-v3/formal-runner-image.tar \
-  --image-ref waybill-formal:readiness-v3 \
+  --image artifacts/release-inputs-v4/formal-runner-image.tar \
+  --image-ref waybill-formal:readiness-v4 \
   --role formal-runner \
-  --config configs/waybill_formal/release-v3.json \
-  --preflight artifacts/release-inputs-v3/preflight.json \
-  --output artifacts/release-inputs-v3/formal-runner-metadata.json
+  --config configs/waybill_formal/release-v4.json \
+  --preflight artifacts/release-inputs-v4/preflight.json \
+  --output artifacts/release-inputs-v4/formal-runner-metadata.json
 docker run --rm \
-  -v "$PWD/artifacts/release-inputs-v3:/out" \
+  -v "$PWD/artifacts/release-inputs-v4:/out" \
   aquasec/trivy:0.72.0@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f \
   image --format spdx-json \
   --output /out/formal-runner-raw.spdx.json \
   --input /out/formal-runner-image.tar
 python script/finalize_waybill_release.py bind-sbom \
-  --input artifacts/release-inputs-v3/formal-runner-raw.spdx.json \
-  --metadata artifacts/release-inputs-v3/formal-runner-metadata.json \
+  --input artifacts/release-inputs-v4/formal-runner-raw.spdx.json \
+  --metadata artifacts/release-inputs-v4/formal-runner-metadata.json \
   --role formal-runner \
-  --preflight artifacts/release-inputs-v3/preflight.json \
-  --output artifacts/release-inputs-v3/formal-runner-sbom.spdx.json
+  --preflight artifacts/release-inputs-v4/preflight.json \
+  --output artifacts/release-inputs-v4/formal-runner-sbom.spdx.json
 docker run --rm \
-  -v "$PWD/artifacts/release-inputs-v3:/out" \
+  -v "$PWD/artifacts/release-inputs-v4:/out" \
   aquasec/trivy:0.72.0@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f \
   image --scanners vuln --format json \
   --output /out/formal-runner-raw.trivy.json \
   --input /out/formal-runner-image.tar
 python script/finalize_waybill_release.py bind-vulnerability-report \
-  --input artifacts/release-inputs-v3/formal-runner-raw.trivy.json \
-  --metadata artifacts/release-inputs-v3/formal-runner-metadata.json \
+  --input artifacts/release-inputs-v4/formal-runner-raw.trivy.json \
+  --metadata artifacts/release-inputs-v4/formal-runner-metadata.json \
   --role formal-runner \
-  --config configs/waybill_formal/release-v3.json \
-  --preflight artifacts/release-inputs-v3/preflight.json \
-  --output artifacts/release-inputs-v3/formal-runner-vulnerabilities.trivy.json
+  --config configs/waybill_formal/release-v4.json \
+  --preflight artifacts/release-inputs-v4/preflight.json \
+  --output artifacts/release-inputs-v4/formal-runner-vulnerabilities.trivy.json
 ```
 
 Repeat those image/SBOM/vulnerability steps for `charger`, `postgres`, and
@@ -243,7 +245,7 @@ independently reimplement either package scanner.
 
 ```bash
 python script/finalize_waybill_release.py verify \
-  --release artifacts/releases/waybill-formal-readiness-v3
+  --release artifacts/releases/waybill-formal-readiness-v4
 ```
 
 ## 5. Formal experiment receipts

@@ -12,6 +12,15 @@ SBOM/Trivy 报告和自校验 release bundle 已按 V3 重建。安全刷新同�
 实际 Linux x86-64 目标生成只读 SIF、通过 RG2/RG6、完成全量
 prepared/canonical corpus、materialized plan 和逐阶段 smoke。
 
+2026-08-13 目标机跟进：Ubuntu 24.04 x86-64（80 logical CPU、314 GiB RAM、
+约 1.35 TiB 可用）已安装 Apptainer 1.5.3；V3 SIF 已按 root:root/0555 冻结，
+SHA-256 为 `156450284f60daf89c65c91b93e062d6e95bb1fdb1b561107111334963ecb607`。
+目标 RG2 已通过：29,029 files、4,597,898,795 bytes，四个 tree hash 与本地一致，
+PTAU 精确校验通过。真实 RG6 同时发现 V3 探测缺陷：`snarkjs 0.7.6
+--version` 正常打印 `snarkjs@0.7.6` 但返回 99，通用 helper 将其误判为缺失。
+因此 V3 仍不可用于 `init-run`；V4 以精确 exit-99 + version 双重检查修复并
+作为后继发布重新冻结，绝不手改 RG6 receipt。
+
 Go 规则为：
 
 ```text
@@ -79,8 +88,8 @@ Canonical receipt 只支持一次 25-fix V6 reference/circuit 一致、一次 Gr
 
 ## 仍阻塞正式启动的 P0
 
-1. **目标运行时**：从 V3 formal-runner 构建只读 SIF并记录独立 SHA-256。
-2. **目标 RG2/RG6**：实际 Linux x86-64、32 vCPU、128 GiB、1 TiB 起步盘、精确 PTAU/SIF、≥500 GiB 加计划安全余量的 workspace；macOS 不得代签。
+1. **目标运行时**：V3 SIF/RG2/PTAU 已完成；需完成 V4 不可变发布、V4 SIF 和机器 RG6。
+2. **目标 RG6**：实际 Linux x86-64、32 vCPU、128 GiB、1 TiB 起步盘、精确 PTAU/SIF、≥500 GiB 加计划安全余量的 workspace；macOS 不得代签。
 3. **全量物化**：在唯一共享根完成 uncapped preprocessing 和 canonical corpus；生成 `materialized=true`、非空 `expected_job_count` 的最终 plan。
 4. **逐阶段 smoke**：S1、S2-main、S3 group、S4、S2-concurrency、S5-corpus、S5-verifier、S5-handler 各一项通过并验证 receipt。
 5. **严格聚合**：M4 全矩阵及限定重试完成，`aggregate.status=passed` 且 S3 aggregate gate passed，方可回填结果槽。
@@ -91,4 +100,4 @@ Canonical receipt 只支持一次 25-fix V6 reference/circuit 一致、一次 Gr
 
 ## 最终裁决
 
-源代码级已知语义缺陷、本地验证和 V3 不可变发布已闭环；目标 SIF、RG2/RG6、materialized plan 与八类 smoke 尚未闭环。因此当前仍是具有明确关闭路径的 **Conditional No-Go**。这些目标条件全部满足后才可转换为 Go；否则应顺延正式 `init-run`，不能用旧 V2 或缩小实验替代。
+源代码级已知语义缺陷、本地验证和 V3 不可变发布已闭环；目标 SIF/RG2/PTAU 已完成，但真实目标发现的 RG6 probe 缺陷需要 V4 后继发布，materialized plan 与八类 smoke 也尚未闭环。因此当前仍是具有明确关闭路径的 **Conditional No-Go**。这些目标条件全部满足后才可转换为 Go；否则应顺延正式 `init-run`，不能用旧 V2/V3 或缩小实验替代。
