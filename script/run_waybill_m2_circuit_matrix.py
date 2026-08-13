@@ -1136,8 +1136,10 @@ def stage_summary(trials: Sequence[dict[str, Any]], stage: str) -> dict[str, Any
         "samples": len(elapsed),
         "elapsed_ms_p50": nearest_rank(elapsed, 0.50),
         "elapsed_ms_p95_nearest_rank": nearest_rank(elapsed, 0.95),
+        "elapsed_ms_p99_nearest_rank": nearest_rank(elapsed, 0.99),
         "max_rss_bytes_p50": nearest_rank(rss, 0.50),
         "max_rss_bytes_p95_nearest_rank": nearest_rank(rss, 0.95),
+        "max_rss_bytes_p99_nearest_rank": nearest_rank(rss, 0.99),
     }
 
 
@@ -1351,13 +1353,15 @@ def prove_one(
         "metrics": {
             "percentile_method": (
                 f"nearest-rank; measured n={measured_trials}, "
-                "P95 is the nearest-rank order statistic"
+                "P95/P99 are descriptive nearest-rank order statistics; "
+                "with n=10 both resolve to the observed maximum"
             ),
             "witness": stage_summary(trials, "witness"),
             "prove": stage_summary(trials, "prove"),
             "verify": stage_summary(trials, "verify"),
             "end_to_end_ms_p50": p50_total,
             "end_to_end_ms_p95_nearest_rank": nearest_rank(total_ms, 0.95),
+            "end_to_end_ms_p99_nearest_rank": nearest_rank(total_ms, 0.99),
             "proofs_per_hour_at_p50": None if not p50_total else 3_600_000 / p50_total,
             "proof_json_bytes": [trial.get("proof_json_bytes") for trial in verified],
         },
@@ -2147,12 +2151,16 @@ def aggregate_matrix(output_dir: Path) -> dict[str, Any]:
         "verified_trials",
         "witness_p50_ms",
         "witness_p95_ms",
+        "witness_p99_ms",
         "prove_p50_ms",
         "prove_p95_ms",
+        "prove_p99_ms",
         "verify_p50_ms",
         "verify_p95_ms",
+        "verify_p99_ms",
         "end_to_end_p50_ms",
         "end_to_end_p95_ms",
+        "end_to_end_p99_ms",
         "proofs_per_hour_p50",
         "proof_json_bytes",
         "tariff_root",
@@ -2173,12 +2181,16 @@ def aggregate_matrix(output_dir: Path) -> dict[str, Any]:
                     "verified_trials": proof_receipt.get("verified_trials"),
                     "witness_p50_ms": metrics.get("witness", {}).get("elapsed_ms_p50"),
                     "witness_p95_ms": metrics.get("witness", {}).get("elapsed_ms_p95_nearest_rank"),
+                    "witness_p99_ms": metrics.get("witness", {}).get("elapsed_ms_p99_nearest_rank"),
                     "prove_p50_ms": metrics.get("prove", {}).get("elapsed_ms_p50"),
                     "prove_p95_ms": metrics.get("prove", {}).get("elapsed_ms_p95_nearest_rank"),
+                    "prove_p99_ms": metrics.get("prove", {}).get("elapsed_ms_p99_nearest_rank"),
                     "verify_p50_ms": metrics.get("verify", {}).get("elapsed_ms_p50"),
                     "verify_p95_ms": metrics.get("verify", {}).get("elapsed_ms_p95_nearest_rank"),
+                    "verify_p99_ms": metrics.get("verify", {}).get("elapsed_ms_p99_nearest_rank"),
                     "end_to_end_p50_ms": metrics.get("end_to_end_ms_p50"),
                     "end_to_end_p95_ms": metrics.get("end_to_end_ms_p95_nearest_rank"),
+                    "end_to_end_p99_ms": metrics.get("end_to_end_ms_p99_nearest_rank"),
                     "proofs_per_hour_p50": metrics.get("proofs_per_hour_at_p50"),
                     "proof_json_bytes": json.dumps(metrics.get("proof_json_bytes", []), separators=(",", ":")),
                     "tariff_root": binding.get("tariff_root"),

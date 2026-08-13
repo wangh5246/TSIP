@@ -1,7 +1,7 @@
 ---
 type: project-plan
 project: waybill-ruc
-updated: 2026-07-17
+updated: 2026-08-12
 status: active
 tags: [waybill, ruc, plan, v6]
 ---
@@ -29,6 +29,11 @@ data、正式 job matrix 和本地发布门禁已经完成；剩余项只能在�
 RG6、无 cap prepared/canonical materialization 和最终 S3 cardinality/resource plan。
 详情见 [[Results/Reports/服务器租用前就绪收口-2026-07-16]]。
 
+2026-08-12 复核更新：旧 `waybill-formal-readiness-v2` 因 runner 语义缺陷已
+superseded，七月的 `pre-rental-ready` 不再等于可从旧 release 启动。当前修复树本地
+CI 与 RG2 已通过；正式启动新增硬依赖 successor release 与八类 target smoke。
+唯一当前依据为 [[Results/Reports/WayBill全面审阅与大规模实验前置闭环-2026-08-12]]。
+
 完整复审同时确认：研究路线与 M4 正式矩阵在技术和论文价值上可行，适合作为顶会
 论文预备；该 feasibility pass 不改变 RG0–RG8 的 blocked 状态。顶会方法/隐私/写作
 缺口见 [[Results/Reports/顶会与大规模实验预备性复审-2026-07-15]]。
@@ -37,10 +42,10 @@ RG6、无 cap prepared/canonical materialization 和最终 S3 cardinality/resour
 
 正式设计：[[Experiments/M4-服务器正式大规模实验]]。
 
-- [x] RG0：把 WayBill V6 代码、circuits、configs、tests 和 Obsidian 固定到 clean
-  commit/tag；raw/restricted data 与 14 GiB M2 artifact 不进入普通 Git，对外用 hash manifest。
-- [x] RG1：建立 Linux x86_64 OCI/Apptainer 镜像和依赖锁，固定 Python 3.12、Node 26、
-  Circom 2.1.9、snarkjs 0.7.6、circomlib 与 Python 包。
+- [ ] RG0-successor：把 2026-08-12 修复树固定为新的 clean commit/annotated tag；
+  旧 V2 只允许 canonical reproduction，不允许 M4。
+- [ ] RG1-successor：从 successor tag 重建 Linux x86_64 OCI、SIF、SBOM、scan 与
+  self-verifying release；旧镜像不能代表当前修复字节。
 - [x] RG2-raw：完整 T-Drive 与四数据集 provenance/条款/raw hash/完整性计数通过；
   [ ] RG2-prepared：租到服务器后以 cap=0 生成 prepared/canonical hash。
 - [x] RG3：把 normalized capacity tariff 与现实 economic tariff 分开登记，固定单位、
@@ -54,8 +59,9 @@ RG6、无 cap prepared/canonical materialization 和最终 S3 cardinality/resour
   container digest 与 PTAU hash；该项不得在本机代签。
 - [x] RG7-static：S1–S5 组合、seeds、timeout、并发和统计方法已写入 hash 固定的
   protocol JSON；[ ] RG7-materialized：目标机生成全量 S3 cardinality 和最终预算。
-- [x] RG8：全套 tests/static/negative/manifest validator 和 Obsidian lint/link check 通过。
-- [ ] RG0–RG8 全通过后才允许 `--formal`，依次执行 S1 全量公平、S2 16 配置真实证明、
+- [x] RG8-local：548 passed、3 skipped；compileall、flake8、mypy、config、data RG2、
+  PDF 和本地 lint 门通过；[ ] RG8-release：在 successor clean tag 重跑并完成 target smoke。
+- [ ] successor RG0–RG8 与八类 smoke 全通过后才允许 `--formal`，依次执行 S1 全量公平、S2 16 配置真实证明、
   S3 全量 certified bounds、S4 route/linkability；S5 最后作系统补充。
 
 服务器阶段只接受正式矩阵。环境检查不产生论文结果；`max-trips`、`max-raw-points`、

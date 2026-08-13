@@ -1,6 +1,6 @@
 # Registry
 
-Last updated: 2026-07-17T00:00:00Z
+Last updated: 2026-08-12T14:30:00Z
 
 ## Sources
 
@@ -24,7 +24,7 @@ Last updated: 2026-07-17T00:00:00Z
 | exp-002 | M1 三层Fallback与双侧保证 | [[Experiments/M1-三层Fallback与双侧保证]] | verified | [[Results/Reports/V6方法门禁与实验台账-2026-07]] | 2026-07-15T15:19:35Z |
 | exp-003 | M2 Tariff树深度与Fix规模 | [[Experiments/M2-Tariff树深度与Fix规模]] | verified | [[Results/Reports/V6方法门禁与实验台账-2026-07]] | 2026-07-15T15:19:35Z |
 | exp-004 | M3 E3求解器收敛与界 | [[Experiments/M3-E3求解器收敛与界]] | verified | [[Results/Reports/V6方法门禁与实验台账-2026-07]] | 2026-07-15T15:19:35Z |
-| exp-005 | M4 服务器正式大规模实验 | [[Experiments/M4-服务器正式大规模实验]] | pre-rental-ready | [[Results/Reports/服务器租用前就绪收口-2026-07-16]] | 2026-07-17T00:00:00Z |
+| exp-005 | M4 服务器正式大规模实验 | [[Experiments/M4-服务器正式大规模实验]] | conditional-no-go | [[Results/Reports/WayBill全面审阅与大规模实验前置闭环-2026-08-12]] | 2026-08-12T14:30:00Z |
 
 ## Results
 
@@ -34,7 +34,8 @@ Last updated: 2026-07-17T00:00:00Z
 | result-002 | V6方法门禁与实验台账 2026 07 | [[Results/Reports/V6方法门禁与实验台账-2026-07]] | verified | [[Experiments/M0-Canonical-Policy-Binding]] | [[Sources/Docs/WayBill外部审阅报告-2026-07-13]] | 2026-07-15T15:19:35Z |
 | result-003 | 服务器正式实验就绪性审计 2026 07 15 | [[Results/Reports/服务器正式实验就绪性审计-2026-07-15]] | superseded | [[Experiments/M4-服务器正式大规模实验]] | [[Sources/Docs/WayBill当前仓库审计-2026-07-13]] | 2026-07-16T12:00:00Z |
 | result-004 | 顶会与大规模实验预备性复审 2026 07 15 | [[Results/Reports/顶会与大规模实验预备性复审-2026-07-15]] | verified | [[Experiments/M4-服务器正式大规模实验]] | [[Sources/Docs/WayBill当前仓库审计-2026-07-13]] | 2026-07-17T00:00:00Z |
-| result-005 | 服务器租用前就绪收口 2026 07 16 | [[Results/Reports/服务器租用前就绪收口-2026-07-16]] | verified | [[Experiments/M4-服务器正式大规模实验]] | [[Sources/Docs/WayBill当前仓库审计-2026-07-13]] | 2026-07-17T00:00:00Z |
+| result-005 | 服务器租用前就绪收口 2026 07 16 | [[Results/Reports/服务器租用前就绪收口-2026-07-16]] | superseded | [[Experiments/M4-服务器正式大规模实验]] | [[Sources/Docs/WayBill当前仓库审计-2026-07-13]] | 2026-08-12T14:30:00Z |
+| result-006 | WayBill全面审阅与大规模实验前置闭环 2026 08 12 | [[Results/Reports/WayBill全面审阅与大规模实验前置闭环-2026-08-12]] | partial-verified | [[Experiments/M4-服务器正式大规模实验]] | [[Sources/Docs/WayBill当前仓库审计-2026-07-13]] | 2026-08-12T14:30:00Z |
 
 ## Writing
 

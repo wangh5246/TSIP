@@ -9,6 +9,7 @@ import os
 import platform
 import re
 import shutil
+import statistics
 import subprocess
 import time
 from dataclasses import asdict, dataclass
@@ -238,6 +239,16 @@ def validate_protocol(protocol: Mapping[str, Any]) -> dict[str, Any]:
         and statistics_spec.get("percentiles") == [50, 95, 99],
         "S1 cluster-bootstrap statistics differ from the frozen protocol",
     )
+    reporting = protocol.get("reporting", {})
+    _require(
+        reporting.get("cross_seed_rule")
+        == "report every seed and the median/min/max across the five seeds for identical non-seed parameters"
+        and reporting.get("multiplicity")
+        == "descriptive confidence intervals; no familywise confirmatory significance claim"
+        and set(reporting.get("primary_endpoints", {}))
+        == {"S1", "S2", "S3", "S4", "S5"},
+        "formal reporting and cross-seed rules are incomplete",
+    )
     _require(
         stages["S1"].get("methods")
         == [
@@ -302,7 +313,11 @@ def validate_protocol(protocol: Mapping[str, Any]) -> dict[str, Any]:
         "S4 identity-cluster statistics differ from the frozen protocol",
     )
     _require(int(stages["S2"].get("measured_trials", 0)) == 10, "S2 requires 10 measured trials")
-    _require(int(stages["S3"].get("timeout_sec", 0)) == 7200, "S3 timeout must be 7200 seconds")
+    _require(
+        int(stages["S3"].get("instance_timeout_sec", 0)) == 7200
+        and int(stages["S3"].get("timeout_sec", 0)) == 28800,
+        "S3 must allow 7200 seconds per instance and 28800 seconds per four-bucket group",
+    )
     _require(
         stages["S2"].get("depths") == [8, 12, 14, 16]
         and stages["S2"].get("fixes") == [25, 50, 100, 200],
@@ -312,6 +327,12 @@ def validate_protocol(protocol: Mapping[str, Any]) -> dict[str, Any]:
         stages["S3"].get("buckets_m") == [100, 50, 25, 10]
         and stages["S3"].get("attacker_or_relay_radius_m") == [50, 100, 200],
         "S3 matrix differs from M4",
+    )
+    _require(
+        float(stages["S3"].get("main_gap_max", -1)) == 0.01
+        and float(stages["S3"].get("all_instance_certified_share_min", -1)) == 0.95
+        and float(stages["S3"].get("all_instance_gap_max", -1)) == 0.05,
+        "S3 aggregate thresholds differ from M4",
     )
     _require(
         stages["S5"].get("fixes") == [25, 100, 200]
@@ -674,22 +695,55 @@ def _expand_s3(
 ) -> list[dict[str, Any]]:
     spec = protocol["stages"]["S3"]
     instances = _prepared_instance_rows(prepared_manifest)
-    return [
-        _job(
-            "S3",
-            "certified-bound",
-            {
-                "instance_id": instance["instance_id"],
-                "instance_path": instance["path"],
-                "instance_sha256": instance.get("sha256"),
-                "bucket_m": instance["bucket_m"],
-                "radius_m": instance["radius_m"],
-                "oracle_max_fixes": spec["oracle_max_fixes"],
-            },
-            spec,
+    groups: dict[tuple[str, str, int], dict[int, dict[str, Any]]] = {}
+    for instance in instances:
+        dataset = str(instance.get("dataset", ""))
+        period_id = str(instance.get("period_id", ""))
+        radius_m = int(instance["radius_m"])
+        _require(bool(dataset and period_id), "S3 instance lacks dataset or period_id")
+        bucket_m = int(instance["bucket_m"])
+        group = groups.setdefault((dataset, period_id, radius_m), {})
+        _require(bucket_m not in group, "duplicate S3 bucket in one period/radius group")
+        group[bucket_m] = instance
+
+    expected_buckets = [int(value) for value in spec["buckets_m"]]
+    jobs: list[dict[str, Any]] = []
+    for (dataset, period_id, radius_m), by_bucket in sorted(groups.items()):
+        _require(
+            set(by_bucket) == set(expected_buckets),
+            "S3 period/radius group does not contain the frozen four-bucket grid",
         )
-        for instance in instances
-    ]
+        grouped_instances = [
+            {
+                "instance_id": by_bucket[bucket]["instance_id"],
+                "instance_path": by_bucket[bucket]["path"],
+                "instance_sha256": by_bucket[bucket].get("sha256"),
+                "bucket_m": bucket,
+            }
+            for bucket in expected_buckets
+        ]
+        jobs.append(
+            _job(
+                "S3",
+                "certified-bound-group",
+                {
+                    "group_id": f"{dataset}:{period_id}:radius-{radius_m}m",
+                    "dataset": dataset,
+                    "period_id": period_id,
+                    "radius_m": radius_m,
+                    "instances": grouped_instances,
+                    "instance_timeout_sec": spec["instance_timeout_sec"],
+                    "oracle_max_fixes": spec["oracle_max_fixes"],
+                    "main_gap_max": spec["main_gap_max"],
+                    "all_instance_certified_share_min": spec[
+                        "all_instance_certified_share_min"
+                    ],
+                    "all_instance_gap_max": spec["all_instance_gap_max"],
+                },
+                spec,
+            )
+        )
+    return jobs
 
 
 def _expand_s4(protocol: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -755,7 +809,7 @@ def _expand_s5(protocol: Mapping[str, Any]) -> list[dict[str, Any]]:
     jobs.extend(
         _job(
             "S5",
-            "charger",
+            "handler",
             {
                 "fixes": fixes,
                 "concurrency": concurrency,
@@ -827,7 +881,7 @@ def expand_protocol_jobs(
         "canonical_instance_count": instance_count,
         "expected_job_count": len(jobs) if materialized else None,
         "static_job_count_excluding_S3": counts["S1"] + counts["S2"] + counts["S4"] + counts["S5"],
-        "S3_job_count_formula": "12 * canonical_period_count",
+        "S3_job_count_formula": "3 four-bucket groups * canonical_period_count",
         "stage_job_counts": counts,
         "resource_budget": {
             "minimum_target_workspace_gib": 500,
@@ -1764,6 +1818,8 @@ class ExecutionReceipt:
     error: str | None
     execution_container: dict[str, Any]
     job_sha256: str
+    stage_status: str | None
+    stage_outcome_class: str | None
     stage_result_sha256: str | None
     artifact_manifest_sha256: str | None
 
@@ -1827,20 +1883,30 @@ def execute_job(run_root: Path, job_id: str, *, root: Path) -> dict[str, Any]:
     if returncode and error is None:
         error = f"command exited with status {returncode}"
     stage_evidence: dict[str, Any] | None = None
-    if returncode == 0 and not timed_out:
-        stage_path = attempt_dir / "stage-result.json"
+    stage_result: dict[str, Any] | None = None
+    stage_path = attempt_dir / "stage-result.json"
+    if not timed_out and stage_path.is_file():
         try:
-            _require(stage_path.is_file(), "stage-result.json is missing")
-            stage_result = read_json(stage_path)
-            _require(isinstance(stage_result, dict), "stage-result is not an object")
+            raw_stage_result = read_json(stage_path)
+            if not isinstance(raw_stage_result, dict):
+                raise FormalError("stage-result is not an object")
+            stage_result = raw_stage_result
             stage_evidence = validate_stage_result(
-                stage_result,
+                raw_stage_result,
                 job=job,
                 attempt_dir=attempt_dir,
             )
-            _require(stage_evidence["status"] == "passed", "stage semantic status is not passed")
+            if returncode == 0:
+                _require(
+                    stage_evidence["status"] == "passed",
+                    "stage semantic status is not passed",
+                )
         except FormalError as exc:
             error = str(exc)
+            stage_evidence = None
+            stage_result = None
+    elif returncode == 0 and not timed_out:
+        error = "stage-result.json is missing"
     raw_rss = time_evidence["max_rss_bytes"]
     raw_user = time_evidence["user_cpu_sec"]
     raw_system = time_evidence["system_cpu_sec"]
@@ -1867,6 +1933,14 @@ def execute_job(run_root: Path, job_id: str, *, root: Path) -> dict[str, Any]:
         error=error,
         execution_container=execution_container,
         job_sha256=canonical_sha256(job),
+        stage_status=(
+            None if stage_evidence is None else str(stage_evidence["status"])
+        ),
+        stage_outcome_class=(
+            None
+            if stage_evidence is None or stage_result is None
+            else str(stage_result.get("outcome_class") or "") or None
+        ),
         stage_result_sha256=(
             None if stage_evidence is None else str(stage_evidence["stage_result_sha256"])
         ),
@@ -1926,16 +2000,12 @@ def validate_attempt_receipt(
     )
     status = str(receipt.get("status"))
     _require(status in {"passed", "failed"}, "invalid attempt status")
-    if status == "passed":
-        _require(receipt.get("returncode") == 0, "passed attempt has nonzero return code")
-        _require(receipt.get("timed_out") is False, "passed attempt timed out")
-        _require(receipt.get("error") is None, "passed attempt declares an error")
-        stage_path = attempt_dir / "stage-result.json"
-        _require(stage_path.is_file(), "passed attempt lacks stage-result.json")
+    stage_path = attempt_dir / "stage-result.json"
+    if receipt.get("stage_result_sha256") is not None:
+        _require(stage_path.is_file(), "attempt-bound stage-result.json is missing")
         stage_result = read_json(stage_path)
         _require(isinstance(stage_result, dict), "stage-result is not an object")
         evidence = validate_stage_result(stage_result, job=job, attempt_dir=attempt_dir)
-        _require(evidence["status"] == "passed", "passed attempt has failed stage semantics")
         _require(
             receipt.get("stage_result_sha256") == evidence["stage_result_sha256"],
             "attempt/stage result hash mismatch",
@@ -1945,7 +2015,404 @@ def validate_attempt_receipt(
             == evidence["artifact_manifest_sha256"],
             "attempt/stage artifact manifest mismatch",
         )
+        if receipt.get("stage_status") is not None:
+            _require(
+                receipt.get("stage_status") == evidence["status"],
+                "attempt/stage semantic status mismatch",
+            )
+        if receipt.get("stage_outcome_class") is not None:
+            _require(
+                receipt.get("stage_outcome_class") == stage_result.get("outcome_class"),
+                "attempt/stage outcome class mismatch",
+            )
+    if status == "passed":
+        _require(receipt.get("returncode") == 0, "passed attempt has nonzero return code")
+        _require(receipt.get("timed_out") is False, "passed attempt timed out")
+        _require(receipt.get("error") is None, "passed attempt declares an error")
+        _require(stage_path.is_file(), "passed attempt lacks stage-result.json")
+        stage_result = read_json(stage_path)
+        _require(isinstance(stage_result, dict), "stage-result is not an object")
+        evidence = validate_stage_result(stage_result, job=job, attempt_dir=attempt_dir)
+        _require(evidence["status"] == "passed", "passed attempt has failed stage semantics")
+        _require(receipt.get("stage_result_sha256") is not None, "passed attempt lacks stage binding")
     return {"status": status, "receipt_sha256": declared_receipt_sha256}
+
+
+def _s3_aggregate_gate(
+    expected_jobs: Sequence[Mapping[str, Any]],
+    selected_results: Sequence[tuple[Mapping[str, Any], Mapping[str, Any]]],
+) -> dict[str, Any]:
+    """Evaluate the frozen group-aware S3 thresholds across all instances."""
+
+    s3_jobs = [job for job in expected_jobs if job.get("stage") == "S3"]
+    if not s3_jobs:
+        return {"required": False, "status": "not-applicable", "passed": True}
+
+    result_by_job = {str(job["job_id"]): result for job, result in selected_results}
+    thresholds = {
+        (
+            float(job["parameters"]["main_gap_max"]),
+            float(job["parameters"]["all_instance_certified_share_min"]),
+            float(job["parameters"]["all_instance_gap_max"]),
+        )
+        for job in s3_jobs
+    }
+    _require(len(thresholds) == 1, "S3 jobs disagree on aggregate thresholds")
+    main_gap_max, certified_share_min, all_gap_max = next(iter(thresholds))
+    main_gap_ppm = round(main_gap_max * 1_000_000)
+    all_gap_ppm = round(all_gap_max * 1_000_000)
+
+    rows: list[dict[str, Any]] = []
+    missing_groups: list[str] = []
+    malformed_groups: list[str] = []
+    for job in s3_jobs:
+        job_id = str(job["job_id"])
+        parameters = job["parameters"]
+        result = result_by_job.get(job_id)
+        if result is None:
+            missing_groups.append(str(parameters["group_id"]))
+            continue
+        receipts = result.get("bound_receipts")
+        expected_group_instances = list(parameters.get("instances", []))
+        if (
+            not expected_group_instances
+            or not isinstance(receipts, list)
+            or len(receipts) != len(expected_group_instances)
+        ):
+            malformed_groups.append(str(parameters["group_id"]))
+            continue
+        receipt_by_id = {
+            str(receipt.get("instance", {}).get("instance_id", "")): receipt
+            for receipt in receipts
+            if isinstance(receipt, dict)
+        }
+        if len(receipt_by_id) != len(expected_group_instances):
+            malformed_groups.append(str(parameters["group_id"]))
+            continue
+        main_bucket = max(int(record["bucket_m"]) for record in expected_group_instances)
+        for record in expected_group_instances:
+            instance_id = str(record["instance_id"])
+            receipt = receipt_by_id.get(instance_id)
+            if receipt is None:
+                malformed_groups.append(str(parameters["group_id"]))
+                continue
+            certified = receipt.get("status") == "certified"
+            explicit_soundness_failure = (
+                receipt.get("failure_class") == "soundness-failure"
+            )
+            lb = receipt.get("LB_cents")
+            ub = receipt.get("UB_cents")
+            checker_passed = bool(
+                certified
+                and receipt.get("lower_bound", {}).get("checker", {}).get("accepted")
+            )
+            direction_passed = bool(
+                certified
+                and receipt.get("upper_bound", {})
+                .get("independent_cross_check", {})
+                .get("direction_ok")
+            )
+            bound_order_passed = (
+                certified
+                and isinstance(lb, int)
+                and isinstance(ub, int)
+                and lb <= ub
+            )
+            soundness_passed = checker_passed and direction_passed and bound_order_passed
+            relative_gap_ppm = receipt.get("relative_gap_ppm")
+            no_timeout = not bool(receipt.get("timeout"))
+            bucket_m = int(record["bucket_m"])
+            main_representative = bucket_m == main_bucket
+            gap_threshold_ppm = main_gap_ppm if main_representative else all_gap_ppm
+            gap_passed = (
+                isinstance(relative_gap_ppm, int)
+                and relative_gap_ppm <= gap_threshold_ppm
+            )
+            gate_passed = certified and soundness_passed and no_timeout and gap_passed
+            rows.append(
+                {
+                    "group_id": parameters["group_id"],
+                    "instance_id": instance_id,
+                    "bucket_m": bucket_m,
+                    "radius_m": parameters["radius_m"],
+                    "main_representative": main_representative,
+                    "certified": certified,
+                    "soundness_passed": soundness_passed,
+                    "explicit_soundness_failure": explicit_soundness_failure,
+                    "timeout": not no_timeout,
+                    "relative_gap_ppm": relative_gap_ppm,
+                    "gap_threshold_ppm": gap_threshold_ppm,
+                    "gate_passed": gate_passed,
+                }
+            )
+
+    expected_instances = sum(len(job["parameters"].get("instances", [])) for job in s3_jobs)
+    all_receipts_present = (
+        not missing_groups
+        and not malformed_groups
+        and len(rows) == expected_instances
+    )
+    fatal_soundness = [
+        row["instance_id"]
+        for row in rows
+        if row["explicit_soundness_failure"]
+        or (row["certified"] and not row["soundness_passed"])
+    ]
+    main_rows = [row for row in rows if row["main_representative"]]
+    main_gate_passed = (
+        len(main_rows) == len(s3_jobs) and all(row["gate_passed"] for row in main_rows)
+    )
+    certified_and_bounded = sum(row["gate_passed"] for row in rows)
+    certified_share = certified_and_bounded / expected_instances if expected_instances else 0.0
+    share_gate_passed = certified_share >= certified_share_min
+    passed = (
+        all_receipts_present
+        and not fatal_soundness
+        and main_gate_passed
+        and share_gate_passed
+    )
+    return {
+        "required": True,
+        "status": "passed" if passed else "failed",
+        "passed": passed,
+        "expected_groups": len(s3_jobs),
+        "expected_instances": expected_instances,
+        "evaluated_instances": len(rows),
+        "missing_groups": sorted(set(missing_groups)),
+        "malformed_groups": sorted(set(malformed_groups)),
+        "fatal_soundness_instances": sorted(fatal_soundness),
+        "main_gap_max": main_gap_max,
+        "main_gate_passed": main_gate_passed,
+        "all_instance_gap_max": all_gap_max,
+        "certified_share_min": certified_share_min,
+        "certified_and_bounded_instances": certified_and_bounded,
+        "certified_and_bounded_share": certified_share,
+        "share_gate_passed": share_gate_passed,
+        "rows": rows,
+    }
+
+
+def _attempt_failure_class(attempt: Mapping[str, Any]) -> str:
+    if attempt.get("status") == "invalid":
+        return "invalid-receipt"
+    if attempt.get("timed_out") is True:
+        return "timeout"
+    text = " ".join(
+        str(attempt.get(key, ""))
+        for key in (
+            "error",
+            "stderr_tail",
+            "stdout_tail",
+            "validation_error",
+            "stage_outcome_class",
+        )
+    ).lower()
+    if "out of memory" in text or "oom" in text or attempt.get("returncode") == 137:
+        return "out-of-memory"
+    if "resource-rejected" in text or "below" in text and "required" in text:
+        return "resource-rejected"
+    if attempt.get("returncode") not in (None, 0):
+        return "nonzero-exit"
+    if attempt.get("status") == "failed":
+        return "failed"
+    return "passed"
+
+
+def _failure_summary(
+    expected_jobs: Sequence[Mapping[str, Any]], units: Sequence[Mapping[str, Any]]
+) -> dict[str, Any]:
+    jobs = {str(job["job_id"]): job for job in expected_jobs}
+    breakdown: dict[tuple[str, str, str, str], int] = {}
+    failure_receipts: list[dict[str, Any]] = []
+    resource_rows: list[dict[str, Any]] = []
+    for unit in units:
+        job_id = str(unit["job_id"])
+        job = jobs[job_id]
+        parameters = job.get("parameters", {})
+        dataset = str(parameters.get("dataset", "not-applicable"))
+        unit_status = str(unit["status"])
+        key = (str(job["stage"]), str(job["kind"]), dataset, unit_status)
+        breakdown[key] = breakdown.get(key, 0) + 1
+        for attempt in unit.get("attempts", []):
+            failure_class = _attempt_failure_class(attempt)
+            if attempt.get("max_rss_bytes") is not None or attempt.get("elapsed_ms") is not None:
+                resource_rows.append(
+                    {
+                        "job_id": job_id,
+                        "attempt": attempt.get("attempt"),
+                        "elapsed_ms": attempt.get("elapsed_ms"),
+                        "max_rss_bytes": attempt.get("max_rss_bytes"),
+                        "user_cpu_sec": attempt.get("user_cpu_sec"),
+                        "system_cpu_sec": attempt.get("system_cpu_sec"),
+                    }
+                )
+            if failure_class != "passed":
+                failure_receipts.append(
+                    {
+                        "job_id": job_id,
+                        "stage": job["stage"],
+                        "kind": job["kind"],
+                        "dataset": dataset,
+                        "attempt": attempt.get("attempt"),
+                        "class": failure_class,
+                        "returncode": attempt.get("returncode"),
+                        "receipt_sha256": attempt.get("receipt_sha256"),
+                        "stage_result_sha256": attempt.get("stage_result_sha256"),
+                        "stage_outcome_class": attempt.get("stage_outcome_class"),
+                        "reason": attempt.get("error")
+                        or attempt.get("validation_error")
+                        or "unspecified",
+                    }
+                )
+    by_class: dict[str, int] = {}
+    for row in failure_receipts:
+        label = str(row["class"])
+        by_class[label] = by_class.get(label, 0) + 1
+    return {
+        "expected_job_denominator": len(expected_jobs),
+        "passed_jobs": sum(unit.get("status") == "passed" for unit in units),
+        "failed_or_unresolved_jobs": sum(unit.get("status") != "passed" for unit in units),
+        "by_stage_kind_dataset": [
+            {
+                "stage": stage,
+                "kind": kind,
+                "dataset": dataset,
+                "status": status,
+                "jobs": count,
+            }
+            for (stage, kind, dataset, status), count in sorted(breakdown.items())
+        ],
+        "failure_attempts_by_class": dict(sorted(by_class.items())),
+        "failure_receipts": failure_receipts,
+        "attempt_resources": resource_rows,
+    }
+
+
+def _scientific_summary(
+    selected_results: Sequence[
+        tuple[Mapping[str, Any], Mapping[str, Any], Path, Mapping[str, Any]]
+    ],
+) -> dict[str, Any]:
+    """Create paper-fillable, receipt-bound rows without bulky raw artifacts."""
+
+    excluded = {
+        "artifacts",
+        "artifact_manifest_sha256",
+        "bound_receipts",
+        "host",
+        "job_id",
+        "job_sha256",
+        "outcomes",
+        "overlap_checks",
+        "result_sha256",
+        "schema",
+        "stderr_tail",
+        "stdout_tail",
+        "trials",
+    }
+    rows: list[dict[str, Any]] = []
+    for job, result, attempt_dir, attempt_receipt in selected_results:
+        metrics = {
+            key: value
+            for key, value in result.items()
+            if key not in excluded and key != "status"
+        }
+        if job.get("stage") == "S2" and job.get("kind") == "main":
+            raw_path = result.get("proof_receipt")
+            if raw_path:
+                proof_path = Path(str(raw_path))
+                proof_path = (
+                    proof_path if proof_path.is_absolute() else attempt_dir / proof_path
+                ).resolve()
+                _require(
+                    proof_path.is_relative_to(attempt_dir.resolve())
+                    and proof_path.is_file()
+                    and not proof_path.is_symlink(),
+                    "selected S2 proof receipt escapes its validated attempt",
+                )
+                proof_receipt = read_json(proof_path)
+                metrics["proof_metrics"] = proof_receipt.get("metrics", {})
+                metrics["proof_receipt_status"] = proof_receipt.get("status")
+                metrics["proof_receipt_sha256"] = sha256_file(proof_path)
+        rows.append(
+            {
+                "job_id": job["job_id"],
+                "stage": job["stage"],
+                "kind": job["kind"],
+                "parameters": job.get("parameters", {}),
+                "selected_attempt": attempt_receipt.get("attempt"),
+                "attempt_receipt_sha256": attempt_receipt.get("receipt_sha256"),
+                "stage_result_sha256": result.get("result_sha256"),
+                "metrics": metrics,
+            }
+        )
+    by_stage: dict[str, int] = {}
+    by_kind: dict[str, int] = {}
+    for row in rows:
+        by_stage[str(row["stage"])] = by_stage.get(str(row["stage"]), 0) + 1
+        key = f"{row['stage']}/{row['kind']}"
+        by_kind[key] = by_kind.get(key, 0) + 1
+    seed_groups: dict[str, list[dict[str, Any]]] = {}
+    seed_group_metadata: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        parameters = dict(row["parameters"])
+        if "seed" not in parameters:
+            continue
+        seed = int(parameters.pop("seed"))
+        group_metadata = {
+            "stage": row["stage"],
+            "kind": row["kind"],
+            "parameters_without_seed": parameters,
+        }
+        key = canonical_sha256(group_metadata)
+        seed_group_metadata[key] = group_metadata
+        seed_groups.setdefault(key, []).append(
+            {"seed": seed, "metrics": row["metrics"]}
+        )
+    cross_seed: list[dict[str, Any]] = []
+    for key, items in sorted(seed_groups.items()):
+        numeric_keys = set.intersection(
+            *[
+                {
+                    name
+                    for name, value in item["metrics"].items()
+                    if isinstance(value, (int, float)) and not isinstance(value, bool)
+                }
+                for item in items
+            ]
+        )
+        numeric_summary = {}
+        for name in sorted(numeric_keys):
+            values = [float(item["metrics"][name]) for item in items]
+            numeric_summary[name] = {
+                "median": statistics.median(values),
+                "min": min(values),
+                "max": max(values),
+            }
+        cross_seed.append(
+            {
+                **seed_group_metadata[key],
+                "seeds": sorted(item["seed"] for item in items),
+                "seed_count": len(items),
+                "numeric_metrics": numeric_summary,
+            }
+        )
+    return {
+        "schema": "waybill.formal.scientific-aggregate/v1",
+        "claim_boundary": (
+            "Rows are deterministic summaries of selected immutable attempts. "
+            "S1 is formula-level trace mechanism sensitivity; S5 handler is "
+            "in-process FastAPI/SQLite and is not deployed PostgreSQL load."
+        ),
+        "selected_job_count": len(rows),
+        "by_stage": dict(sorted(by_stage.items())),
+        "by_stage_kind": dict(sorted(by_kind.items())),
+        "cross_seed_rule": (
+            "every seed plus median/min/max across identical non-seed parameters"
+        ),
+        "cross_seed_groups": cross_seed,
+        "rows": rows,
+    }
 
 
 def merge_run(run_root: Path) -> dict[str, Any]:
@@ -1954,9 +2421,13 @@ def merge_run(run_root: Path) -> dict[str, Any]:
     units: list[dict[str, Any]] = []
     missing: list[str] = []
     unresolved: list[str] = []
+    selected_results: list[
+        tuple[Mapping[str, Any], Mapping[str, Any], Path, Mapping[str, Any]]
+    ] = []
     for job in expected:
         job_id = str(job["job_id"])
         attempts: list[dict[str, Any]] = []
+        valid_attempts: list[tuple[dict[str, Any], Path]] = []
         for attempt_dir in _attempt_paths(run_root, job_id):
             receipt_path = attempt_dir / "receipt.json"
             if receipt_path.is_file():
@@ -1965,6 +2436,7 @@ def merge_run(run_root: Path) -> dict[str, Any]:
                     _require(isinstance(receipt, dict), "attempt receipt is not an object")
                     validate_attempt_receipt(receipt, job=job, attempt_dir=attempt_dir)
                     attempts.append(receipt)
+                    valid_attempts.append((receipt, attempt_dir))
                 except FormalError as exc:
                     attempts.append(
                         {
@@ -1979,12 +2451,22 @@ def merge_run(run_root: Path) -> dict[str, Any]:
             missing.append(job_id)
             units.append({"job_id": job_id, "status": "missing", "attempts": []})
             continue
-        first_success = next(
-            (attempt for attempt in attempts if attempt.get("status") == "passed"),
+        first_success_pair = next(
+            (pair for pair in valid_attempts if pair[0].get("status") == "passed"),
             None,
         )
+        first_success = first_success_pair[0] if first_success_pair else None
         if first_success is None:
             unresolved.append(job_id)
+        elif first_success_pair is not None:
+            selected_results.append(
+                (
+                    job,
+                    read_json(first_success_pair[1] / "stage-result.json"),
+                    first_success_pair[1],
+                    first_success,
+                )
+            )
         units.append(
             {
                 "job_id": job_id,
@@ -1993,7 +2475,24 @@ def merge_run(run_root: Path) -> dict[str, Any]:
                 "attempts": attempts,
             }
         )
-    passed = not missing and not unresolved and len(units) == len(expected)
+    s3_gate = _s3_aggregate_gate(
+        expected,
+        [
+            (job, result)
+            for job, result, _attempt_dir, _receipt in selected_results
+            if job.get("stage") == "S3"
+        ],
+    )
+    passed = (
+        not missing
+        and not unresolved
+        and len(units) == len(expected)
+        and s3_gate["passed"] is True
+    )
+    failure_summary = _failure_summary(expected, units)
+    scientific_summary = _scientific_summary(selected_results)
+    write_json(run_root / "failure-summary.json", failure_summary)
+    write_json(run_root / "scientific-aggregate.json", scientific_summary)
     aggregate = {
         "schema": "waybill.formal.aggregate/v1",
         "status": "passed" if passed else "failed",
@@ -2001,6 +2500,13 @@ def merge_run(run_root: Path) -> dict[str, Any]:
         "passed_jobs": sum(unit["status"] == "passed" for unit in units),
         "missing_jobs": missing,
         "unresolved_jobs": unresolved,
+        "stage_gates": {"S3": s3_gate},
+        "failure_summary": failure_summary,
+        "failure_summary_sha256": sha256_file(run_root / "failure-summary.json"),
+        "scientific_summary": scientific_summary,
+        "scientific_summary_sha256": sha256_file(
+            run_root / "scientific-aggregate.json"
+        ),
         "units": units,
         "generated_at": utc_now(),
     }

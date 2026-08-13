@@ -148,6 +148,21 @@ def cluster_bootstrap_summary(
     }
 
 
+def _identity_cluster_id(raw: dict[str, Any], *, period_id: str) -> str:
+    """Return the preregistered identity cluster or fail closed.
+
+    Falling back to ``period_id`` would silently turn an identity-cluster
+    bootstrap into a row/period bootstrap and overstate precision.
+    """
+
+    value = raw.get("device_id") or raw.get("vehicle_id")
+    if value is None or not str(value).strip():
+        raise FormalError(
+            f"S1 period {period_id!r} lacks the required device_id/vehicle_id cluster"
+        )
+    return str(value)
+
+
 def _fallback_job(
     *,
     parameters: dict[str, Any],
@@ -160,8 +175,8 @@ def _fallback_job(
     rejected: list[dict[str, Any]] = []
     for raw in _records(periods_path):
         period_id = str(raw.get("period_id") or raw.get("trip_id"))
-        cluster_id = str(raw.get("device_id") or raw.get("vehicle_id") or period_id)
         try:
+            cluster_id = _identity_cluster_id(raw, period_id=period_id)
             fixes = [ReceiverFix.from_dict(item) for item in raw["fixes"]]
             edges = _edge_rows(fixes, tariff)
             outage = _outage(parameters, dataset, period_id, fixes)
@@ -190,7 +205,7 @@ def _fallback_job(
                     **values,
                 }
             )
-        except (KeyError, TypeError, ValueError, OverflowError) as exc:
+        except (FormalError, KeyError, TypeError, ValueError, OverflowError) as exc:
             rejected.append({"dataset": dataset, "period_id": period_id, "reason": str(exc)})
     if not rows:
         raise FormalError(f"S1 accepted no periods from {periods_path}")
@@ -253,66 +268,76 @@ def _sensitivity_job(
     error = float(parameters["odometer_error"])
     tariff, tariff_path = _load_tariff(periods_path)
     rows: list[dict[str, Any]] = []
+    rejected: list[dict[str, Any]] = []
     for raw in _records(periods_path):
         period_id = str(raw.get("period_id") or raw.get("trip_id"))
-        cluster_id = str(raw.get("device_id") or raw.get("vehicle_id") or period_id)
-        fixes = [ReceiverFix.from_dict(item) for item in raw["fixes"]]
-        edges = _edge_rows(fixes, tariff)
-        if parameters["context"] == "natural":
-            outage = _natural_outage_edges(fixes)
-        else:
-            outage = deterministic_outage_edges(
-                dataset=dataset,
-                period_id=period_id,
-                n_intervals=len(edges),
-                alpha=0.10,
-                seed=int(parameters["seed"]),
-            )
-        true_fee = sum(
-            int(edge["delta_odo_m"]) * int(edge["zone_rate_cents_per_m"]) for edge in edges
-        )
-        observed_fee = 0
-        epsilon_m = 0
-        outage_premium = 0
-        for edge in edges:
-            delta = int(edge["delta_odo_m"])
-            observed = _scale_delta(delta, error)
-            epsilon_m += abs(observed - delta)
-            rate = (
-                tariff.max_zone_rate_cents_per_m
-                if int(edge["edge"]) in outage
-                else int(edge["zone_rate_cents_per_m"])
-            )
-            observed_fee += observed * rate
-            if int(edge["edge"]) in outage:
-                outage_premium += delta * (
-                    tariff.max_zone_rate_cents_per_m - int(edge["zone_rate_cents_per_m"])
+        try:
+            cluster_id = _identity_cluster_id(raw, period_id=period_id)
+            fixes = [ReceiverFix.from_dict(item) for item in raw["fixes"]]
+            edges = _edge_rows(fixes, tariff)
+            if parameters["context"] == "natural":
+                outage = _natural_outage_edges(fixes)
+            else:
+                outage = deterministic_outage_edges(
+                    dataset=dataset,
+                    period_id=period_id,
+                    n_intervals=len(edges),
+                    alpha=0.10,
+                    seed=int(parameters["seed"]),
                 )
-        revenue_lower = true_fee - tariff.max_zone_rate_cents_per_m * epsilon_m
-        fairness_upper = (
-            true_fee + outage_premium + tariff.max_zone_rate_cents_per_m * epsilon_m
-        )
-        rows.append(
-            {
-                "dataset": dataset,
-                "cluster_id": cluster_id,
-                "period_id": period_id,
-                "odometer_error": error,
-                "context": parameters["context"],
-                "true_fee_cents": true_fee,
-                "observed_fee_cents": observed_fee,
-                "epsilon_odometer_m": epsilon_m,
-                "revenue_lower_bound_cents": revenue_lower,
-                "fairness_upper_bound_cents": fairness_upper,
-                "revenue_sound": observed_fee >= revenue_lower,
-                "honest_user_fair": observed_fee <= fairness_upper,
-            }
-        )
+            true_fee = sum(
+                int(edge["delta_odo_m"]) * int(edge["zone_rate_cents_per_m"])
+                for edge in edges
+            )
+            observed_fee = 0
+            epsilon_m = 0
+            outage_premium = 0
+            for edge in edges:
+                delta = int(edge["delta_odo_m"])
+                observed = _scale_delta(delta, error)
+                epsilon_m += abs(observed - delta)
+                rate = (
+                    tariff.max_zone_rate_cents_per_m
+                    if int(edge["edge"]) in outage
+                    else int(edge["zone_rate_cents_per_m"])
+                )
+                observed_fee += observed * rate
+                if int(edge["edge"]) in outage:
+                    outage_premium += delta * (
+                        tariff.max_zone_rate_cents_per_m
+                        - int(edge["zone_rate_cents_per_m"])
+                    )
+            revenue_lower = true_fee - tariff.max_zone_rate_cents_per_m * epsilon_m
+            fairness_upper = (
+                true_fee + outage_premium + tariff.max_zone_rate_cents_per_m * epsilon_m
+            )
+            rows.append(
+                {
+                    "dataset": dataset,
+                    "cluster_id": cluster_id,
+                    "period_id": period_id,
+                    "odometer_error": error,
+                    "context": parameters["context"],
+                    "true_fee_cents": true_fee,
+                    "observed_fee_cents": observed_fee,
+                    "epsilon_odometer_m": epsilon_m,
+                    "revenue_lower_bound_cents": revenue_lower,
+                    "fairness_upper_bound_cents": fairness_upper,
+                    "revenue_sound": observed_fee >= revenue_lower,
+                    "honest_user_fair": observed_fee <= fairness_upper,
+                }
+            )
+        except (FormalError, KeyError, TypeError, ValueError, OverflowError) as exc:
+            rejected.append({"dataset": dataset, "period_id": period_id, "reason": str(exc)})
     if not rows:
         raise FormalError(f"S1 sensitivity accepted no periods from {periods_path}")
     output_path = attempt_dir / "sensitivity-results.jsonl"
     _write_rows(output_path, rows)
-    passed = all(row["revenue_sound"] and row["honest_user_fair"] for row in rows)
+    if rejected:
+        _write_rows(attempt_dir / "rejected-periods.jsonl", rejected)
+    passed = not rejected and all(
+        row["revenue_sound"] and row["honest_user_fair"] for row in rows
+    )
     bootstrap = cluster_bootstrap_summary(
         rows,
         metrics=("observed_fee_cents", "epsilon_odometer_m"),
@@ -324,6 +349,7 @@ def _sensitivity_job(
         "status": "passed" if passed else "failed",
         "dataset": dataset,
         "accepted_periods": len(rows),
+        "rejected_periods": len(rejected),
         "clusters": len({row["cluster_id"] for row in rows}),
         "odometer_error": error,
         "context": parameters["context"],

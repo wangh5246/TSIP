@@ -4,6 +4,12 @@
 > `ruc-demo-v9`, receipt schema V2. V5 artifacts are retained only as historical
 > baselines and are not paper-facing evidence.
 
+> **Formal-run release (2026-08-13):** the immutable
+> `waybill-formal-readiness-v2` bundle remains useful only for reproducing its
+> canonical receipt. M4 execution uses the repaired
+> `waybill-formal-readiness-v3` release and must still pass target RG2/RG6,
+> corpus materialization, and all dependency-class smokes before `init-run`.
+
 ## 1. Default verification
 
 The default command collects the complete repository test suite:
@@ -50,7 +56,7 @@ python -m pytest \
 
 The receiver root commits every fix together with its receiver-owned
 `position_valid` bit (the terminal fix binds a false sentinel). The root
-attestation is emitted only by the independent receiver signer after it seals
+attestation is emitted only by the process-isolated receiver signer after it seals
 an append-only acquisition log. The acquisition API accepts unsigned
 measurement fields; the signer creates fix signatures itself and separately
 seals the monthly odometer boundary. For interval `i`, it derives validity
@@ -166,14 +172,16 @@ protocol hash under `/opt/waybill/release-bindings.json`. Server jobs execute
 those image bytes directly; a host source checkout is not an execution mount.
 The release finalizer reconstructs `/work` from the ordered OCI layers,
 applies whiteout semantics, rejects links and extra files, and compares every
-embedded byte, mode, and path with the tagged V2 code manifest.
+embedded byte, mode, and path with the tagged code manifest.
 
-The checked-in V2 config currently contains a fail-closed release blocker for
-the pending Node.js July 2026 security release. Do not remove it merely to make
-preflight pass. First update the pinned Node 26.x image to the published
-security build, refresh the lockfiles if required, rebuild all four images, and
-rerun dependency, SBOM, and vulnerability checks. Removing the blocker must be
-part of the reviewed tagged source.
+The V3 config closes the reviewed S2/S3/S5 runner defects and pins
+`cryptography==50.0.0` after the 2026-08-13 vulnerability refresh. Its four
+Linux/amd64 image archives, bound SBOMs, and bound vulnerability reports belong
+to the annotated `waybill-formal-readiness-v3` tag. The self-verifying release
+is stored at `artifacts/releases/waybill-formal-readiness-v3`. Run the
+verification command below after transfer and before target-host execution. A
+future dependency or scanner finding must create a new reviewed release rather
+than changing this tagged bundle in place.
 
 Run `preflight` on a clean annotated release tag first. Use the emitted Git
 commit, tree, code-manifest hash, and protocol hash as the four Docker build
@@ -182,44 +190,44 @@ the archive, scan the immutable image ID, and bind both scanner outputs:
 
 ```bash
 python script/finalize_waybill_release.py preflight \
-  --tag waybill-formal-readiness-v2 \
-  --config configs/waybill_formal/release-v2.json \
-  --output-manifest artifacts/release-inputs/preflight.json
+  --tag waybill-formal-readiness-v3 \
+  --config configs/waybill_formal/release-v3.json \
+  --output-manifest artifacts/release-inputs-v3/preflight.json
 
-docker save --output artifacts/release-inputs/formal-runner-image.tar \
-  waybill-formal:readiness-v2
+docker save --output artifacts/release-inputs-v3/formal-runner-image.tar \
+  waybill-formal:readiness-v3
 python script/finalize_waybill_release.py image-metadata \
-  --image artifacts/release-inputs/formal-runner-image.tar \
-  --image-ref waybill-formal:readiness-v2 \
+  --image artifacts/release-inputs-v3/formal-runner-image.tar \
+  --image-ref waybill-formal:readiness-v3 \
   --role formal-runner \
-  --config configs/waybill_formal/release-v2.json \
-  --preflight artifacts/release-inputs/preflight.json \
-  --output artifacts/release-inputs/formal-runner-metadata.json
+  --config configs/waybill_formal/release-v3.json \
+  --preflight artifacts/release-inputs-v3/preflight.json \
+  --output artifacts/release-inputs-v3/formal-runner-metadata.json
 docker run --rm \
-  -v "$PWD/artifacts/release-inputs:/out" \
+  -v "$PWD/artifacts/release-inputs-v3:/out" \
   aquasec/trivy:0.72.0@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f \
   image --format spdx-json \
   --output /out/formal-runner-raw.spdx.json \
   --input /out/formal-runner-image.tar
 python script/finalize_waybill_release.py bind-sbom \
-  --input artifacts/release-inputs/formal-runner-raw.spdx.json \
-  --metadata artifacts/release-inputs/formal-runner-metadata.json \
+  --input artifacts/release-inputs-v3/formal-runner-raw.spdx.json \
+  --metadata artifacts/release-inputs-v3/formal-runner-metadata.json \
   --role formal-runner \
-  --preflight artifacts/release-inputs/preflight.json \
-  --output artifacts/release-inputs/formal-runner-sbom.spdx.json
+  --preflight artifacts/release-inputs-v3/preflight.json \
+  --output artifacts/release-inputs-v3/formal-runner-sbom.spdx.json
 docker run --rm \
-  -v "$PWD/artifacts/release-inputs:/out" \
+  -v "$PWD/artifacts/release-inputs-v3:/out" \
   aquasec/trivy:0.72.0@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f \
   image --scanners vuln --format json \
   --output /out/formal-runner-raw.trivy.json \
   --input /out/formal-runner-image.tar
 python script/finalize_waybill_release.py bind-vulnerability-report \
-  --input artifacts/release-inputs/formal-runner-raw.trivy.json \
-  --metadata artifacts/release-inputs/formal-runner-metadata.json \
+  --input artifacts/release-inputs-v3/formal-runner-raw.trivy.json \
+  --metadata artifacts/release-inputs-v3/formal-runner-metadata.json \
   --role formal-runner \
-  --config configs/waybill_formal/release-v2.json \
-  --preflight artifacts/release-inputs/preflight.json \
-  --output artifacts/release-inputs/formal-runner-vulnerabilities.trivy.json
+  --config configs/waybill_formal/release-v3.json \
+  --preflight artifacts/release-inputs-v3/preflight.json \
+  --output artifacts/release-inputs-v3/formal-runner-vulnerabilities.trivy.json
 ```
 
 Repeat those image/SBOM/vulnerability steps for `charger`, `postgres`, and
@@ -235,7 +243,7 @@ independently reimplement either package scanner.
 
 ```bash
 python script/finalize_waybill_release.py verify \
-  --release artifacts/releases/waybill-formal-readiness-v2
+  --release artifacts/releases/waybill-formal-readiness-v3
 ```
 
 ## 5. Formal experiment receipts

@@ -7,7 +7,7 @@ name = "waybill-formal"
 version = "0.1.0"
 requires-python = "==3.12.*"
 dependencies = [
-  "cryptography==48.0.1",
+  "cryptography==50.0.0",
   "fastapi==0.139.2",
   "matplotlib==3.10.7",
   "pandas==2.3.3",

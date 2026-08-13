@@ -1,7 +1,7 @@
 ---
 type: project-hub
 project: waybill-ruc
-updated: 2026-07-17
+updated: 2026-08-12
 status: active
 tags: [waybill, ruc, hub, v6]
 ---
@@ -9,6 +9,14 @@ tags: [waybill, ruc, hub, v6]
 # WayBill / RUC V6 项目 Hub
 
 ## 项目判断
+
+2026-08-12 全面语义审计推翻了“旧 frozen release 可直接进入目标前置”的部分判断：
+`waybill-formal-readiness-v2` 虽能自校验并复现 canonical receipt，但其 S2/S5 artifact、
+S5 attestation anchor 和 S3 分组语义使其不具备 M4 执行资格。当前修复工作树已经通过
+548 passed、3 skipped 的完整本地 CI，四数据集新 RG2 也通过；但修复尚未成为新的
+不可变发布。**当前唯一准确状态为 `local-prerequisites-verified /
+conditional-no-go-on-successor-release-target-rg6-materialization-smokes`。** 详见
+[[Results/Reports/WayBill全面审阅与大规模实验前置闭环-2026-08-12]]。
 
 WayBill 已完成 M0–M3 的实现与本机方法硬门验证：canonical policy acceptance、
 odometer-backed fallback/month close、city-scale normalized capacity benchmark，
@@ -45,8 +53,9 @@ formal run ID。详见
 - 以 [[Knowledge/WayBill-v6方法优化决策]] 作为唯一方法路线。
 - M0–M3 均已 verified；下一阶段不再扩大方法门禁主张，而是补可信输入、真实账单、
   隐私与部署证据。
-- 当前 P0 是租用 32 vCPU / 128 GiB / 1 TiB 的 Linux x86_64 服务器，在目标机关闭
-  RG6、全量 prepared/canonical manifest 和最终资源计划，然后执行
+- 当前 P0 是先把已验证修复树冻结为 successor clean commit/tag/OCI/SIF/SBOM/scan/
+  release bundle，再在 32 vCPU / 128 GiB / 1 TiB Linux x86_64 目标关闭 RG6、全量
+  prepared/canonical manifest、最终资源计划和八类 smoke，然后执行
   [[Experiments/M4-服务器正式大规模实验]] 的完整 S1–S5 矩阵；S5 只作系统执行性补充。
 - 顶会定位以 [[Results/Reports/顶会与大规模实验预备性复审-2026-07-15]] 为准：
   精确新颖性是 policy-pinned settlement + odometer completeness + quantified leakage，
@@ -91,11 +100,13 @@ formal run ID。详见
 - [[Results/Reports/服务器正式实验就绪性审计-2026-07-15]]
 - [[Results/Reports/顶会与大规模实验预备性复审-2026-07-15]]
 - [[Results/Reports/服务器租用前就绪收口-2026-07-16]]
+- [[Results/Reports/WayBill全面审阅与大规模实验前置闭环-2026-08-12]]
 - [[Experiments/M4-服务器正式大规模实验]]
 - [[Daily/2026-07-13]]
 - [[Daily/2026-07-14]]
 - [[Daily/2026-07-15]]
 - [[Daily/2026-07-16]]
+- [[Daily/2026-08-12]]
 
 ## 最近变化
 
@@ -112,6 +123,9 @@ formal run ID。详见
   453 项通过测试和安全审计已完成，项目进入目标服务器 RG6/全量物化阶段。
 - 2026-07-17：补充稀疏检出不变的 code manifest 与 Git LFS 安全迁移路径；测试增至
   454 passed、2 skipped，冻结 bundle 可在跳过历史 LFS artifact 后干净克隆。
+- 2026-08-12：五角审阅发现旧 V2 三项 M4 致命语义缺陷；当前树完成 runner、统计、
+  失败回执、论文与 runbook 修复并通过 548 passed、3 skipped。旧 V2 标记为
+  superseded/no-go；下一步必须冻结 successor release 并完成目标 RG6/物化/smoke。
 
 ## Important Links
 - [[01-Plan]]
@@ -119,9 +133,11 @@ formal run ID。详见
 - [[_system/registry]]
 - [[Daily/2026-07-16]]
 - [[Daily/2026-07-17]]
+- [[Daily/2026-08-12]]
 
 ## Recent Changes
 - 2026-07-17: release bundle and sparse-checkout-invariant code manifest verified.
+- 2026-08-12: V2 superseded for M4; repaired tree passed local CI, successor release and target gates remain.
 - 2026-07-16: pre-rental readiness passed; target-host RG6 and full materialization remain.
 - 2026-07-15T15:19:35Z: sync refreshed scaffold, registry, index, and daily note (auto).
 - 2026-07-13T20:35:59Z: sync refreshed scaffold, registry, index, and daily note (auto).

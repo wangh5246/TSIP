@@ -47,6 +47,38 @@
     ],
     "failed_timeout_or_oom_units": "retained and included in failure-rate and unresolved summaries"
   },
+  "reporting": {
+    "cross_seed_rule": "report every seed and the median/min/max across the five seeds for identical non-seed parameters",
+    "multiplicity": "descriptive confidence intervals; no familywise confirmatory significance claim",
+    "primary_endpoints": {
+      "S1": [
+        "rejected_periods",
+        "max_v6_undercharge_cents",
+        "max_withholding_advantage_cents",
+        "identity-cluster bootstrap surcharge distribution"
+      ],
+      "S2": [
+        "compile/setup/prove/verify latency and RSS by depth/fixes",
+        "descriptive nearest-rank P50/P95/P99",
+        "concurrency throughput"
+      ],
+      "S3": [
+        "all main representatives at gap <= 0.01",
+        "at least 0.95 of all instances certified at gap <= 0.05",
+        "no soundness failure"
+      ],
+      "S4": [
+        "identity-macro top1/top5 accuracy",
+        "linkability AUC by disclosure view",
+        "unique/low-privacy diagnostic distribution"
+      ],
+      "S5": [
+        "end-to-end snarkjs CLI verification latency",
+        "in-process FastAPI/SQLite handler correctness and latency",
+        "no deployed PostgreSQL/server-throughput inference"
+      ]
+    }
+  },
   "stages": {
     "S1": {
       "methods": [
@@ -138,7 +170,8 @@
         100,
         200
       ],
-      "timeout_sec": 7200,
+      "instance_timeout_sec": 7200,
+      "timeout_sec": 28800,
       "oracle_max_fixes": 5,
       "main_gap_max": 0.01,
       "all_instance_certified_share_min": 0.95,
@@ -146,8 +179,8 @@
       "resource": {
         "cpus": 1,
         "memory_gib": 16,
-        "storage_gib_per_attempt": 0.01,
-        "expected_cpu_hours_per_job": 0.5,
+        "storage_gib_per_attempt": 0.04,
+        "expected_cpu_hours_per_job": 2.0,
         "scheduler_max_parallel": 8
       }
     },

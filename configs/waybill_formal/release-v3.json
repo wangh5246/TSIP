@@ -1,0 +1,254 @@
+{
+  "bindings": {
+    "circuit_artifacts": {
+      "proof_json": "experiments/waybill_m1/v2/circuit_differential/proof.json",
+      "public_json": "experiments/waybill_m1/v2/circuit_differential/public.json",
+      "verification_key": "experiments/waybill_m1/v2/circuit_differential/verification_key.json"
+    },
+    "circuit_code": {
+      "common/policy_profile.py": "common/policy_profile.py",
+      "common/http_security.py": "common/http_security.py",
+      "common/receiver_signer.py": "common/receiver_signer.py",
+      "common/settlement.py": "common/settlement.py",
+      "common/settlement_v6.py": "common/settlement_v6.py",
+      "experiments-heatmap/circuits/settlement_period_v6_base.circom": "experiments-heatmap/circuits/settlement_period_v6_base.circom",
+      "script/prove_settlement_period_v6.py": "script/prove_settlement_period_v6.py",
+      "services/receiver_signer/app.py": "services/receiver_signer/app.py"
+    },
+    "circuit_receipt": "experiments/waybill_m1/v2/circuit_differential/receipt.json",
+    "endpoint_artifacts": {
+      "proof.json": "experiments/waybill_m1/v2/circuit_differential/proof.json",
+      "public.json": "experiments/waybill_m1/v2/circuit_differential/public.json",
+      "submission.json": "experiments/waybill_m1/v2/circuit_differential/submission.json",
+      "verification_key.json": "experiments/waybill_m1/v2/circuit_differential/verification_key.json"
+    },
+    "endpoint_code": {
+      "common/policy_profile.py": "common/policy_profile.py",
+      "common/http_security.py": "common/http_security.py",
+      "common/receiver_signer.py": "common/receiver_signer.py",
+      "common/settlement.py": "common/settlement.py",
+      "common/settlement_v6.py": "common/settlement_v6.py",
+      "script/prove_settlement_period_v6.py": "script/prove_settlement_period_v6.py",
+      "script/run_waybill_m1_endpoint_gate.py": "script/run_waybill_m1_endpoint_gate.py",
+      "services/charger/app.py": "services/charger/app.py",
+      "services/charger/store.py": "services/charger/store.py",
+      "services/receiver_signer/app.py": "services/receiver_signer/app.py"
+    },
+    "endpoint_policy_artifacts": {
+      "ruc-demo-tariff-v9-d8.json": "configs/settlement_policy_profiles/ruc-demo-tariff-v9-d8.json",
+      "ruc-demo-v9.json": "configs/settlement_policy_profiles/ruc-demo-v9.json"
+    },
+    "endpoint_receipt": "experiments/waybill_m1/v2/circuit_differential/charger_endpoint_receipt.json",
+    "profile": "configs/settlement_policy_profiles/ruc-demo-v9.json"
+  },
+  "code_manifest": {
+    "required_paths": [
+      ".dockerignore",
+      "README_ARTIFACT.md",
+      "README_SERVER_DEPLOY.md",
+      "WayBill/main.tex",
+      "WayBill/references.bib",
+      "common/policy_profile.py",
+      "common/http_security.py",
+      "configs/settlement_policy_profiles/ruc-demo-tariff-v9-d8.json",
+      "configs/settlement_policy_profiles/ruc-demo-v9.json",
+      "configs/waybill_formal/protocol-v1.json",
+      "configs/waybill_formal/release-v3.json",
+      "containers/waybill-formal/Dockerfile",
+      "common/receiver_signer.py",
+      "common/settlement.py",
+      "common/settlement_v6.py",
+      "deploy/install-waybill-receiver-signer.sh",
+      "deploy/postgres/Dockerfile",
+      "deploy/waybill-charger-compose.yml",
+      "deploy/waybill-receiver-signer.env.example",
+      "deploy/waybill-receiver-signer.service",
+      "experiments/waybill_m1/v2/circuit_differential/charger_endpoint_receipt.json",
+      "experiments/waybill_m1/v2/circuit_differential/input.json",
+      "experiments/waybill_m1/v2/circuit_differential/proof.json",
+      "experiments/waybill_m1/v2/circuit_differential/public.json",
+      "experiments/waybill_m1/v2/circuit_differential/receipt.json",
+      "experiments/waybill_m1/v2/circuit_differential/submission.json",
+      "experiments/waybill_m1/v2/circuit_differential/verification_key.json",
+      "experiments/waybill_m1/v2/gate_summary.json",
+      "experiments-heatmap/circuits/settlement_period_v6_base.circom",
+      "experiments-heatmap/circuits/settlement_period_v6_k6.circom",
+      "package-lock.json",
+      "package.json",
+      "requirements/waybill-formal.lock",
+      "script/finalize_waybill_release.py",
+      "script/init_receiver_signer.py",
+      "script/load_receiver_fixture_v6.py",
+      "script/prove_settlement_period_v6.py",
+      "script/run_waybill_m1_endpoint_gate.py",
+      "services/charger/Dockerfile",
+      "services/charger/__init__.py",
+      "services/charger/app.py",
+      "services/charger/requirements.lock",
+      "services/charger/requirements.txt",
+      "services/charger/store.py",
+      "services/receiver_signer/Dockerfile",
+      "services/receiver_signer/__init__.py",
+      "services/receiver_signer/app.py",
+      "services/receiver_signer/requirements.lock",
+      "services/receiver_signer/requirements.txt",
+      "services/__init__.py",
+      "TSIP_heatmap_version/runtime/experiments-heatmap/make_v4_fair_heatmap.py"
+    ],
+    "scopes": [
+      "WayBill",
+      "common",
+      "configs/settlement_policy_profiles",
+      "configs/waybill_formal",
+      "containers",
+      "deploy",
+      "experiments/waybill_m1/v2",
+      "experiments/waybill_m2",
+      "experiments-heatmap/circuits",
+      "requirements",
+      "script",
+      "services/charger",
+      "services/receiver_signer",
+      "tests",
+      "waybill_formal"
+    ]
+  },
+  "containers": {
+    "scanner": {
+      "name": "trivy",
+      "report_schema_version": 2,
+      "version": "0.72.0"
+    },
+    "roles": {
+      "charger": {
+        "platform": "linux/amd64",
+        "user": "10002:10002",
+        "vulnerability_policy": {
+          "allowed_unfixed_high_critical_ids": [],
+          "max_fixable": 0,
+          "max_fixable_high_critical": 0,
+          "max_high_critical": 0
+        }
+      },
+      "formal-runner": {
+        "embedded_source_paths": [
+          "common",
+          "configs",
+          "experiments/waybill_m2",
+          "experiments-heatmap/circuits",
+          "script",
+          "services",
+          "TSIP_heatmap_version/runtime/experiments-heatmap/make_v4_fair_heatmap.py",
+          "waybill_formal"
+        ],
+        "platform": "linux/amd64",
+        "user": "10003:10003",
+        "vulnerability_policy": {
+          "allowed_unfixed_high_critical_ids": [
+            "CVE-2025-69720",
+            "CVE-2026-13221",
+            "CVE-2026-41992",
+            "CVE-2026-42496",
+            "CVE-2026-42497",
+            "CVE-2026-48962",
+            "CVE-2026-53615",
+            "CVE-2026-54369",
+            "CVE-2026-57432",
+            "CVE-2026-57433",
+            "CVE-2026-8376",
+            "CVE-2026-9538"
+          ],
+          "max_fixable": 0,
+          "max_fixable_high_critical": 0,
+          "max_high_critical": 23
+        }
+      },
+      "postgres": {
+        "platform": "linux/amd64",
+        "user": "70:70",
+        "vulnerability_policy": {
+          "allowed_unfixed_high_critical_ids": [],
+          "max_fixable": 0,
+          "max_fixable_high_critical": 0,
+          "max_high_critical": 0
+        }
+      },
+      "receiver-signer": {
+        "platform": "linux/amd64",
+        "user": "10001:10001",
+        "vulnerability_policy": {
+          "allowed_unfixed_high_critical_ids": [],
+          "max_fixable": 0,
+          "max_fixable_high_critical": 0,
+          "max_high_critical": 0
+        }
+      }
+    }
+  },
+  "config_path": "configs/waybill_formal/release-v3.json",
+  "protocol_path": "configs/waybill_formal/protocol-v1.json",
+  "prover": {
+    "allowed_extra": [
+      "settlement_period_v6_k6.sym"
+    ],
+    "directory": "zk/settlement_period_v6_k6",
+    "files": {
+      "generate_witness_js": "settlement_period_v6_k6_js/generate_witness.js",
+      "r1cs": "settlement_period_v6_k6.r1cs",
+      "verification_key": "verification_key.json",
+      "wasm": "settlement_period_v6_k6_js/settlement_period_v6_k6.wasm",
+      "witness_calculator_js": "settlement_period_v6_k6_js/witness_calculator.js",
+      "zkey": "settlement_period_v6_k6_final.zkey"
+    },
+    "test_ptau": {
+      "path": "zk/hello/pot18_final_phase2.ptau",
+      "sha256": "d324d7af83d1c1016529856f33b8610bb4d5c7211f84c6fb292303f1b9f90558"
+    }
+  },
+  "release_name": "waybill-formal-v3",
+  "release_blockers": [],
+  "receipt_requirements": {
+    "circuit": {
+      "canonical_profile_bound": true,
+      "circuit_python_differential_match": true,
+      "commitment_semantics": "receiver-fix-validity-v2",
+      "ok": true,
+      "position_validity_rule": "origin-osnma-authenticated-v1",
+      "receiver_attestation_mode": "independent-receiver-process",
+      "receiver_attestation_schema": "waybill.receiver.root-attestation/v5",
+      "receiver_chain_mode": "charger-online-cas-v1"
+    },
+    "circuit_schema": "waybill-settlement-v6-circuit-differential-receipt-v2",
+    "endpoint": {
+      "hard_gate_passed": true,
+      "status": "verified"
+    },
+    "endpoint_gates": [
+      "accepted_public_exactly_matches",
+      "canonical_proof_accepted",
+      "independent_receiver_attestation",
+      "month_attestation_conflict_rejected",
+      "month_attestation_exact_retry_idempotent",
+      "month_attestation_online_anchored",
+      "month_close_completed",
+      "nonzero_profile_commitment",
+      "only_unaccounted_distance_reconciled",
+      "receiver_attestation_anchored",
+      "replay_rejected",
+      "tampered_public_signal_rejected"
+    ],
+    "endpoint_schema": "waybill-m1-v6-charger-endpoint-gate-v3"
+  },
+  "schema": "waybill-release-finalizer-config/v2",
+  "tag_assets": {
+    "evidence/charger-endpoint-receipt.json": "experiments/waybill_m1/v2/circuit_differential/charger_endpoint_receipt.json",
+    "evidence/circuit-receipt.json": "experiments/waybill_m1/v2/circuit_differential/receipt.json",
+    "evidence/gate-summary.json": "experiments/waybill_m1/v2/gate_summary.json",
+    "evidence/input.json": "experiments/waybill_m1/v2/circuit_differential/input.json",
+    "evidence/proof.json": "experiments/waybill_m1/v2/circuit_differential/proof.json",
+    "evidence/public.json": "experiments/waybill_m1/v2/circuit_differential/public.json",
+    "evidence/submission.json": "experiments/waybill_m1/v2/circuit_differential/submission.json",
+    "policy/ruc-demo-tariff-v9-d8.json": "configs/settlement_policy_profiles/ruc-demo-tariff-v9-d8.json",
+    "policy/ruc-demo-v9.json": "configs/settlement_policy_profiles/ruc-demo-v9.json"
+  }
+}

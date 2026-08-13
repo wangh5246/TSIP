@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -103,7 +104,14 @@ def _find_main_attempt(run_root: Path, fixes: int) -> Path:
     raise FormalError(f"S2 concurrency requires a passed depth-14 n={fixes} main attempt")
 
 
-def _link_artifacts(source_output: Path, target_output: Path, fixes: int) -> tuple[Path, dict[str, Any]]:
+def _copy_artifacts(source_output: Path, target_output: Path, fixes: int) -> tuple[Path, dict[str, Any]]:
+    """Copy immutable S2 inputs into the writable attempt tree.
+
+    Formal attempt manifests reject symbolic links so that every hashed byte is
+    physically contained in the attempt.  A regular copy also avoids hard-link
+    aliasing that could let a later job mutate an earlier passed attempt.
+    """
+
     name = m2.wrapper_name(14, fixes)
     source_paths = m2.config_paths(source_output, 14, fixes)
     target_paths = m2.config_paths(target_output, 14, fixes)
@@ -114,14 +122,14 @@ def _link_artifacts(source_output: Path, target_output: Path, fixes: int) -> tup
         if not source.is_file():
             raise FormalError(f"missing main S2 artifact: {source}")
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.symlink_to(source)
+        shutil.copy2(source, target)
     source_input = source_output / "inputs" / f"{name}.json"
     source_proof_receipt = source_output / "receipts/proof" / f"{name}.json"
     if not source_input.is_file() or not source_proof_receipt.is_file():
         raise FormalError("main S2 input or proof receipt missing")
     target_input = target_output / "inputs" / f"{name}.json"
     target_input.parent.mkdir(parents=True, exist_ok=True)
-    target_input.symlink_to(source_input)
+    shutil.copy2(source_input, target_input)
     return target_input, read_json(source_proof_receipt)
 
 
@@ -139,7 +147,8 @@ def _concurrency_job(
     required_bytes = concurrency * 8 * 1024**3
     if memory_bytes and memory_bytes < required_bytes:
         return {
-            "status": "resource-rejected",
+            "status": "failed",
+            "outcome_class": "resource-rejected",
             "reason": f"{memory_bytes} bytes available is below {required_bytes} bytes required",
             "fixes": fixes,
             "concurrency": concurrency,
@@ -150,7 +159,7 @@ def _concurrency_job(
     source_output = main_attempt / "m2"
     output_dir = attempt_dir / "m2-concurrency"
     output_dir.mkdir()
-    input_path, proof_receipt = _link_artifacts(source_output, output_dir, fixes)
+    input_path, proof_receipt = _copy_artifacts(source_output, output_dir, fixes)
     circuit_input = read_json(input_path)
     binding = proof_receipt["city_tariff_binding"]
     expected_public = [circuit_input[name] for name in PUBLIC_SIGNAL_ORDER_V6]
@@ -204,7 +213,7 @@ def main() -> int:
     else:
         raise FormalError(f"unsupported S2 job kind: {job['kind']}")
     finish_stage(job=job, attempt_dir=attempt_dir, payload=payload)
-    return 0 if payload["status"] in {"passed", "resource-rejected"} else 1
+    return 0 if payload["status"] == "passed" else 1
 
 
 if __name__ == "__main__":

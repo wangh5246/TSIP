@@ -7,6 +7,7 @@ import copy
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -22,7 +23,13 @@ if str(ROOT) not in sys.path:
 
 from common.eval_harness import HarnessParams  # noqa: E402
 from common.policy_profile import PolicyProfile  # noqa: E402
-from common.settlement import ReceiverFix, sign_receiver_fix  # noqa: E402
+from common.settlement import (  # noqa: E402
+    SETTLEMENT_ROOT_ATTESTATION_GENESIS_SHA256,
+    ReceiverFix,
+    receiver_attestation_sha256,
+    sign_receiver_fix,
+    sign_receiver_root_attestation,
+)
 from common.settlement_v6 import PUBLIC_SIGNAL_ORDER_V6  # noqa: E402
 from script import prove_settlement_period_v6 as v6_prover  # noqa: E402
 from script import run_waybill_m2_circuit_matrix as m2  # noqa: E402
@@ -123,7 +130,9 @@ def _corpus(
     return record, bundles, root
 
 
-def _link_main_artifacts(source_output: Path, target_output: Path, fixes: int) -> dict[str, Path]:
+def _copy_main_artifacts(source_output: Path, target_output: Path, fixes: int) -> dict[str, Path]:
+    """Copy proof artifacts into the corpus attempt without link aliasing."""
+
     source_paths = m2.config_paths(source_output, 14, fixes)
     target_paths = m2.config_paths(target_output, 14, fixes)
     target_paths["directory"].mkdir(parents=True, exist_ok=True)
@@ -133,7 +142,7 @@ def _link_main_artifacts(source_output: Path, target_output: Path, fixes: int) -
         if not source.is_file():
             raise FormalError(f"S5 corpus requires S2 artifact: {source}")
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.symlink_to(source.resolve())
+        shutil.copy2(source, target)
     return target_paths
 
 
@@ -142,6 +151,8 @@ def _build_corpus_input(
     fixes_count: int,
     corpus_index: int,
     profile: PolicyProfile,
+    log_epoch: int = 1,
+    previous_attestation_sha256: str = SETTLEMENT_ROOT_ATTESTATION_GENESIS_SHA256,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     tariff, _manifest = m2.load_city_tariff(14)
     period_id = f"2026-05-waybill-s5-n{fixes_count}-bundle-{corpus_index:03d}"
@@ -195,6 +206,24 @@ def _build_corpus_input(
         v6_prover.N_FIXES = old_n
         v6_prover.TREE_DEPTH = old_depth
         v6_prover.CAP_POLICY_SQ = old_cap_policy_sq
+    test_attestation = submission["receiver_root_attestation"]
+    chained_attestation = sign_receiver_root_attestation(
+        receiver_id=str(test_attestation["receiver_id"]),
+        charger_domain=str(test_attestation["charger_domain"]),
+        device_id=str(test_attestation["device_id"]),
+        period_id=str(test_attestation["period_id"]),
+        log_epoch=log_epoch,
+        fix_count=int(test_attestation["fix_count"]),
+        receiver_fix_root=str(test_attestation["receiver_fix_root"]),
+        device_attestation_commitment=str(
+            test_attestation["device_attestation_commitment"]
+        ),
+        log_sha256=str(test_attestation["log_sha256"]),
+        private_key_bytes=v6_prover._DEVICE_SEED,
+        previous_attestation_sha256=previous_attestation_sha256,
+    )
+    submission["receiver_root_attestation"] = chained_attestation
+    submission["receiver_attestation_mode"] = "formal-sequential-test-chain"
     return circuit_input, submission
 
 
@@ -223,7 +252,7 @@ def _corpus_job(
     corpus_root = attempt_dir / "proof-corpus"
     output_dir = corpus_root / "m2"
     output_dir.mkdir(parents=True)
-    target_paths = _link_main_artifacts(source_output, output_dir, fixes)
+    target_paths = _copy_main_artifacts(source_output, output_dir, fixes)
     profile = replace(
         profile,
         verification_key_path=str(target_paths["vkey"].resolve()),
@@ -233,11 +262,17 @@ def _corpus_job(
     write_json(profile_dir / source_profile_path.name, profile.to_dict())
 
     inputs: list[tuple[int, Path, dict[str, Any], list[str]]] = []
+    previous_attestation_sha256 = SETTLEMENT_ROOT_ATTESTATION_GENESIS_SHA256
     for index in range(required):
         circuit_input, submission = _build_corpus_input(
             fixes_count=fixes,
             corpus_index=index,
             profile=profile,
+            log_epoch=index + 1,
+            previous_attestation_sha256=previous_attestation_sha256,
+        )
+        previous_attestation_sha256 = receiver_attestation_sha256(
+            submission["receiver_root_attestation"]
         )
         input_path = output_dir / "inputs" / f"bundle-{index:03d}.json"
         write_json(input_path, circuit_input)
@@ -484,6 +519,18 @@ def _charger_job(
         )
         if registration.status_code != 200:
             raise FormalError(f"S5 device registration failed: {registration.text}")
+        for bundle in bundles:
+            anchored = client.post(
+                "/settlement/receiver-chain/anchor",
+                json={
+                    "root_attestation": bundle["endpoint_payload"]["root_attestation"]
+                },
+            )
+            if anchored.status_code != 200:
+                raise FormalError(
+                    "S5 receiver-chain anchoring failed for "
+                    f"{bundle['bundle_id']}: {anchored.text}"
+                )
     plan = _request_plan(workload, bundles, seed=20260716 + repetition)
     latencies: list[float] = []
     outcomes: list[dict[str, Any]] = []
@@ -528,6 +575,8 @@ def _charger_job(
         "fixes": fixes,
         "concurrency": concurrency,
         "workload": workload,
+        "benchmark_scope": "in-process FastAPI handler with SQLite test ledger",
+        "production_server_or_postgresql_claim": False,
         "repetition": repetition,
         "requests": len(outcomes),
         "correct": sum(row["correct"] for row in outcomes),
@@ -549,7 +598,7 @@ def main() -> int:
         payload = _corpus_job(job, attempt_dir, run_root)
     elif job["kind"] == "verifier":
         payload = _verifier_job(job, attempt_dir, run_root)
-    elif job["kind"] == "charger":
+    elif job["kind"] == "handler":
         payload = _charger_job(job, attempt_dir, run_root)
     else:
         raise FormalError(f"unsupported S5 job kind: {job['kind']}")

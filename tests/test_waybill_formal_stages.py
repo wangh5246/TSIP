@@ -4,9 +4,16 @@ import json
 from collections import Counter
 from pathlib import Path
 
+import pytest
+from fastapi.testclient import TestClient
+
 from script import run_waybill_m2_circuit_matrix as m2
-from common.settlement import ReceiverFix, TariffTable
+from script import prove_settlement_period_v6 as v6_prover
+from common.settlement import ReceiverFix, TariffTable, receiver_attestation_sha256
+from services.charger.app import ChargerSettings, create_app
+from script.run_waybill_s2_formal_unit import _copy_artifacts
 from script.run_waybill_s1_formal_unit import (
+    _identity_cluster_id,
     _fallback_job,
     burst_outage_edges,
     cluster_bootstrap_summary,
@@ -19,7 +26,14 @@ from script.run_waybill_s4_formal_unit import (
     _sequence_rows,
     _split_identities,
 )
-from script.run_waybill_s5_formal_unit import _build_corpus_input, _request_plan
+from script.run_waybill_s5_formal_unit import (
+    _build_corpus_input,
+    _copy_main_artifacts,
+    _request_plan,
+)
+from waybill_formal.core import read_json, write_json
+from waybill_formal.core import FormalError
+from waybill_formal.stage import finish_stage
 
 
 def test_burst_mask_is_deterministic_and_has_the_frozen_share() -> None:
@@ -69,6 +83,26 @@ def test_s1_cluster_bootstrap_is_deterministic_and_cluster_scoped() -> None:
     assert first == second
     assert first["clusters"] == 2
     assert first["metrics"]["metric"]["p50"]["estimate"] == 3.0
+
+
+def test_s1_identity_cluster_never_falls_back_to_period_id() -> None:
+    assert _identity_cluster_id({"vehicle_id": "vehicle-1"}, period_id="p1") == "vehicle-1"
+    with pytest.raises(FormalError, match="lacks the required"):
+        _identity_cluster_id({}, period_id="p1")
+
+
+def test_s2_stage_summary_reports_preregistered_p99_as_descriptive_order_statistic() -> None:
+    trials = [
+        {
+            "status": "verified",
+            "prove": {"elapsed_ms": float(index), "max_rss_bytes": index * 1000},
+        }
+        for index in range(1, 11)
+    ]
+    summary = m2.stage_summary(trials, "prove")
+    assert summary["samples"] == 10
+    assert summary["elapsed_ms_p95_nearest_rank"] == 10.0
+    assert summary["elapsed_ms_p99_nearest_rank"] == 10.0
 
 
 def test_s1_month_close_ablation_is_real_and_rejections_fail_closed(tmp_path: Path) -> None:
@@ -272,3 +306,104 @@ def test_s5_corpus_inputs_are_distinct_profile_bound_periods(tmp_path: Path) -> 
     assert first_public["receiver_fix_root"] != second_public["receiver_fix_root"]
     assert first_input["policy_profile_commitment"] == str(profile.commitment)
     assert second_input["policy_profile_commitment"] == str(profile.commitment)
+
+
+def test_s2_and_s5_copied_artifacts_finish_as_regular_hashed_files(tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    s2_target = tmp_path / "s2-attempt" / "m2-concurrency"
+    name = m2.wrapper_name(14, 25)
+    source_paths = m2.config_paths(source, 14, 25)
+    for key in ("wasm", "zkey", "vkey"):
+        source_paths[key].parent.mkdir(parents=True, exist_ok=True)
+        source_paths[key].write_bytes(f"{key}-bytes".encode())
+    write_json(source / "inputs" / f"{name}.json", {"input": 1})
+    write_json(source / "receipts" / "proof" / f"{name}.json", {"status": "verified"})
+
+    input_path, proof_receipt = _copy_artifacts(source, s2_target, 25)
+    assert proof_receipt["status"] == "verified"
+    assert input_path.is_file() and not input_path.is_symlink()
+    copied_s2 = m2.config_paths(s2_target, 14, 25)
+    assert all(
+        copied_s2[key].is_file() and not copied_s2[key].is_symlink()
+        for key in ("wasm", "zkey", "vkey")
+    )
+    s2_job = {
+        "job_id": "s2-copy",
+        "stage": "S2",
+        "kind": "concurrency",
+    }
+    finish_stage(
+        job=s2_job,
+        attempt_dir=tmp_path / "s2-attempt",
+        payload={"status": "passed"},
+    )
+    assert read_json(tmp_path / "s2-attempt" / "stage-result.json")["status"] == "passed"
+
+    s5_attempt = tmp_path / "s5-attempt"
+    copied = _copy_main_artifacts(source, s5_attempt / "proof-corpus" / "m2", 25)
+    assert all(copied[key].is_file() and not copied[key].is_symlink() for key in ("wasm", "zkey", "vkey"))
+    s5_job = {"job_id": "s5-copy", "stage": "S5", "kind": "corpus"}
+    finish_stage(job=s5_job, attempt_dir=s5_attempt, payload={"status": "passed"})
+    assert read_json(s5_attempt / "stage-result.json")["status"] == "passed"
+
+
+def test_s5_formal_corpus_attestations_form_an_anchorable_device_chain(
+    tmp_path: Path,
+) -> None:
+    vkey = m2.config_paths(tmp_path / "profile", 14, 25)["vkey"]
+    vkey.parent.mkdir(parents=True)
+    vkey.write_text("{}\n", encoding="utf-8")
+    profile = m2.create_policy_profile_for_config(
+        output_dir=tmp_path / "profile",
+        depth=14,
+        fixes_count=25,
+        verification_key_path=vkey,
+    )
+    _first_input, first = _build_corpus_input(
+        fixes_count=25,
+        corpus_index=0,
+        profile=profile,
+        log_epoch=1,
+    )
+    first_attestation = first["receiver_root_attestation"]
+    _second_input, second = _build_corpus_input(
+        fixes_count=25,
+        corpus_index=1,
+        profile=profile,
+        log_epoch=2,
+        previous_attestation_sha256=receiver_attestation_sha256(first_attestation),
+    )
+    second_attestation = second["receiver_root_attestation"]
+    assert first_attestation["log_epoch"] == 1
+    assert second_attestation["log_epoch"] == 2
+    assert second_attestation["previous_attestation_sha256"] == receiver_attestation_sha256(
+        first_attestation
+    )
+
+    application = create_app(
+        ChargerSettings(
+            database_url=f"sqlite+pysqlite:///{tmp_path / 'charger.sqlite'}",
+            charger_domain=str(first_attestation["charger_domain"]),
+            admin_token="s5-test-admin-token",
+            token_pepper="s5-test-token-pepper",
+            test_mode=True,
+            enable_reset=True,
+            allow_sqlite_backend_for_tests=True,
+        )
+    )
+    with TestClient(application) as client:
+        registered = client.post(
+            "/settlement/devices/register",
+            json={
+                "device_id": first_attestation["device_id"],
+                "public_key_hex": v6_prover._DEVICE_PUBLIC_KEY_BYTES.hex(),
+                "jurisdiction_id": profile.jurisdiction_id,
+            },
+        )
+        assert registered.status_code == 200, registered.text
+        for attestation in (first_attestation, second_attestation):
+            response = client.post(
+                "/settlement/receiver-chain/anchor",
+                json={"root_attestation": attestation},
+            )
+            assert response.status_code == 200, response.text

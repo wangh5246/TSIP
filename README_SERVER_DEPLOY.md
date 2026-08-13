@@ -5,10 +5,41 @@ The active settlement profile is
 validity-bound V6 circuit and verification key; V5/v7 artifacts are historical
 baselines only.
 
-## Independent receiver signer
+## Current frozen status: V3 local release, target execution pending
+
+The annotated `waybill-formal-readiness-v3` release contains the reviewed
+S2/S3/S5 runner repairs, the strict scientific aggregate, regression tests, and
+the 2026-08-13 `cryptography==50.0.0` security update. Its local release bundle
+is `artifacts/releases/waybill-formal-readiness-v3`; verify it before any
+transfer or target action.
+
+**Do not initialize M4 from V2.** The immutable V2 tag predates fixes for
+attempt-local symbolic links, the S5 receiver-attestation anchor preflight, and
+the registered S3 four-bucket/95% aggregate semantics. V3 supersedes it for
+formal execution. V3 still does not authorize `init-run` by itself: the exact
+release must be installed on the actual Linux x86-64 target, converted to a
+read-only SIF, and pass target RG2/RG6, full materialization, and every
+dependency-class smoke. An empty packaging `release_blockers` list is not a
+semantic correctness proof.
+
+This release readiness does not mean that the formal experiment is complete.
+The remaining work must occur on the actual Linux x86-64 target. It consists of
+validating the four authorized raw datasets, preprocessing without caps,
+materializing the canonical corpus, freezing the data-dependent job plan,
+passing RG6 on the target host, executing S1--S5, and completing strict merge.
+No full-dataset result should be copied into the paper before the merged status
+passes.
+
+The checked-in `artifacts/waybill_formal/static-plan/plan.json` is only a
+non-materialized preview. Its `materialized` field is false and its
+`expected_job_count` is null. Do not use it to initialize a run. Regenerate the
+plan from the final `corpus/prepared_manifest.json` after full materialization.
+
+## Process-isolated receiver signer
 
 The paper-facing prover must obtain fixes, signer-derived `position_valid`
-flags, and a root attestation from a separate process. Production uses one
+(the profile-defined origin-label admissibility bit),
+and a root attestation from a separate process. Production uses one
 Linux service account and one systemd instance per `device_id`; do not use
 `--allow-test-signer` or `WAYBILL_RECEIVER_TEST_MODE=1` in a formal run.
 
@@ -150,7 +181,7 @@ finalizer; placeholders are forbidden in a release image:
 
 ```bash
 docker buildx build --platform linux/amd64 --load \
-  -t waybill-receiver-signer:readiness-v2 \
+  -t "waybill-receiver-signer:${WAYBILL_RELEASE_TAG:?set successor release tag}" \
   -f services/receiver_signer/Dockerfile \
   --build-arg WAYBILL_GIT_COMMIT="$WAYBILL_GIT_COMMIT" \
   --build-arg WAYBILL_GIT_TREE="$WAYBILL_GIT_TREE" \
@@ -174,7 +205,7 @@ sudo install -d -o 10001 -g 10001 -m 0700 /var/lib/waybill-receiver-oci
 sudo docker run --rm --network host --read-only \
   --user 10001:10001 \
   --mount type=bind,src=/var/lib/waybill-receiver-oci,dst=/var/lib/waybill-receiver \
-  --entrypoint python waybill-receiver-signer:readiness-v2 \
+  --entrypoint python "waybill-receiver-signer:${WAYBILL_RELEASE_TAG:?set successor release tag}" \
   /app/script/init_receiver_signer.py \
   --key-file /var/lib/waybill-receiver/receiver-ed25519.key \
   | sudo tee /root/waybill-receiver-public.json >/dev/null
@@ -206,7 +237,7 @@ sudo docker run -d --name waybill-receiver-signer \
   --mount type=bind,src=/etc/waybill/receiver-api-ca.pem,dst=/etc/waybill/receiver-api-ca.pem,readonly \
   --mount type=bind,src=/etc/waybill/receiver-oci-tls,dst=/run/waybill-tls,readonly \
   --mount type=bind,src=/var/lib/waybill-receiver-oci,dst=/var/lib/waybill-receiver \
-  waybill-receiver-signer:readiness-v2
+  "waybill-receiver-signer:${WAYBILL_RELEASE_TAG:?set successor release tag}"
 curl --fail --cacert /etc/waybill/receiver-api-ca.pem \
   https://127.0.0.1:8779/health
 ```
@@ -307,8 +338,10 @@ worker for the first formal run; PostgreSQL serializes its write transactions,
 but multi-worker throughput is not a paper claim until the target-host stress
 receipt is produced.
 
-The remaining runbook is only for the frozen M4 full-scale experiment. It does not
-define a smoke, reduced, or publication-eligible shortcut.
+The remaining runbook applies to the verified V3 release. It does not define a
+smoke, reduced, or publication-eligible shortcut. Use
+`WAYBILL_TOMORROW_RUNBOOK.md` as the launch card and stop if any target-derived
+digest, path, capacity, corpus, or receipt value remains unresolved.
 
 ## 0. Rent the target
 
@@ -325,15 +358,15 @@ docker buildx build --provenance=false --platform linux/amd64 --load \
   --build-arg WAYBILL_GIT_TREE="$WAYBILL_GIT_TREE" \
   --build-arg WAYBILL_CODE_MANIFEST_SHA256="$WAYBILL_CODE_MANIFEST_SHA256" \
   --build-arg WAYBILL_PROTOCOL_SHA256="$WAYBILL_PROTOCOL_SHA256" \
-  -t waybill-formal:local \
+  -t "waybill-formal:$WAYBILL_RELEASE_TAG" \
   -f containers/waybill-formal/Dockerfile .
-docker image inspect waybill-formal:local
+docker image inspect "waybill-formal:$WAYBILL_RELEASE_TAG"
 ```
 
-The verified local digest is recorded in
-`artifacts/waybill_formal/container-manifest.json`. Either push this image to
-a controlled registry or transfer the frozen image archive created during
-release finalization. Copy the complete V2 release directory to the target;
+The verified digest is recorded in the successor release's
+`container-manifest.json`. Either push this image to a controlled registry or
+transfer the frozen image archive created during release finalization. Copy the
+complete successor release directory to the target;
 its inventory is self-verified and contains:
 
 - `source.bundle`
@@ -354,18 +387,17 @@ Verify and restore them on the target:
 
 ```bash
 sha256sum -c SHA256SUMS
-GIT_LFS_SKIP_SMUDGE=1 git clone --branch waybill-formal-readiness-v2 \
+GIT_LFS_SKIP_SMUDGE=1 git clone --branch "$WAYBILL_RELEASE_TAG" \
   source.bundle waybill_formal
 cd waybill_formal
 test "$(git rev-parse HEAD)" = "$(jq -r .identity.commit ../release-manifest.json)"
+test "$(git describe --tags --exact-match)" = "$WAYBILL_RELEASE_TAG"
+test -z "$(git status --porcelain)"
 docker load -i ../containers/formal-runner-image.tar
 docker load -i ../containers/charger-image.tar
 docker load -i ../containers/postgres-image.tar
 docker load -i ../containers/receiver-signer-image.tar
-docker image inspect waybill-formal:local
-docker image inspect waybill-charger:readiness-v2
-docker image inspect waybill-postgres:readiness-v2
-docker image inspect waybill-receiver-signer:readiness-v2
+python script/finalize_waybill_release.py verify --release ..
 ```
 
 Build one immutable Apptainer runtime from the frozen formal-runner archive and
@@ -374,11 +406,11 @@ bindings and both are required:
 
 ```bash
 sudo install -d -m 0755 /opt/waybill-formal/runtime
-sudo apptainer build /opt/waybill-formal/runtime/waybill-formal-v2.sif \
+sudo apptainer build "/opt/waybill-formal/runtime/${WAYBILL_RELEASE_TAG}.sif" \
   docker-archive:../containers/formal-runner-image.tar
-sudo chown root:root /opt/waybill-formal/runtime/waybill-formal-v2.sif
-sudo chmod 0555 /opt/waybill-formal/runtime/waybill-formal-v2.sif
-export WAYBILL_FORMAL_SIF=/opt/waybill-formal/runtime/waybill-formal-v2.sif
+sudo chown root:root "/opt/waybill-formal/runtime/${WAYBILL_RELEASE_TAG}.sif"
+sudo chmod 0555 "/opt/waybill-formal/runtime/${WAYBILL_RELEASE_TAG}.sif"
+export WAYBILL_FORMAL_SIF="/opt/waybill-formal/runtime/${WAYBILL_RELEASE_TAG}.sif"
 export WAYBILL_FORMAL_SIF_SHA256="$(sha256sum "$WAYBILL_FORMAL_SIF" | awk '{print $1}')"
 stat -c '%U:%G %a %n' "$WAYBILL_FORMAL_SIF" /opt/waybill-formal/runtime
 apptainer inspect --json "$WAYBILL_FORMAL_SIF"
@@ -544,8 +576,8 @@ python script/waybill_formal.py render-slurm \
   --run-root "$RUN_ROOT" --stage S5 --kind verifier \
   --output "$RUN_ROOT/slurm/s5-verifier.sbatch" "${SLURM_CONTAINER_ARGS[@]}"
 python script/waybill_formal.py render-slurm \
-  --run-root "$RUN_ROOT" --stage S5 --kind charger \
-  --output "$RUN_ROOT/slurm/s5-charger.sbatch" "${SLURM_CONTAINER_ARGS[@]}"
+  --run-root "$RUN_ROOT" --stage S5 --kind handler \
+  --output "$RUN_ROOT/slurm/s5-handler.sbatch" "${SLURM_CONTAINER_ARGS[@]}"
 ```
 
 The generated arrays refuse host-Python execution. They verify the SIF hash,
@@ -562,10 +594,18 @@ and a byte-identical base-circuit copy inside the attempt directory; it never
 writes into the immutable image source tree.
 
 Submit S1, S2-main, S3, S4, S2-concurrency, S5-corpus, and finally the
-S5-verifier/S5-charger jobs with scheduler dependencies appropriate to the
+S5-verifier/S5-handler jobs with scheduler dependencies appropriate to the
 site. Each S5 corpus job creates 100 distinct real Groth16 bundles for one of
-fixes 25/100/200; verifier and charger jobs fail closed unless that immutable
+fixes 25/100/200; verifier and handler jobs fail closed unless that immutable
 corpus attempt passed. Failed jobs may be resumed once:
+
+The S5 `handler` matrix is deliberately an in-process FastAPI/SQLite functional
+concurrency benchmark. It exercises profile resolution, receiver-chain
+preflight, proof dispatch, replay rejection, and ledger conflict handling, but
+it does not measure TLS, Uvicorn, container networking, PostgreSQL connection
+pools, or deployed-server capacity. Production PostgreSQL/HTTPS load testing is
+a separate target-host exercise and must not be inferred from the strict S5
+aggregate.
 
 ```bash
 python script/waybill_formal.py resume --run-root "$RUN_ROOT"
@@ -581,4 +621,12 @@ python script/waybill_formal.py merge --run-root "$RUN_ROOT"
 
 `status.json` is generated only by the validator. Any missing unit or a unit
 without a successful attempt makes the aggregate fail. Do not copy values
-manually from logs into the paper.
+manually from logs into the paper. A successful merge also writes
+`failure-summary.json` and `scientific-aggregate.json`; both are embedded and
+hash-bound in `aggregate.json`. The scientific aggregate records every selected
+attempt and its stage-result/attempt-receipt identities, then reports every
+seed plus median/min/max across otherwise identical parameters. The failure
+summary preserves stage/kind/dataset denominators, invalid receipts, timeouts,
+out-of-memory events, resource rejections, nonzero exits, and resource usage.
+S3 additionally requires every main representative within 1%, at least 95% of
+all instances certified within 5%, and zero soundness or small-oracle failure.

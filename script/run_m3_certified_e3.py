@@ -332,6 +332,20 @@ def _rectangle_contains_rectangle(outer: Rectangle, inner: Rectangle) -> bool:
 
 
 def _failed_receipt(instance: E3Instance, exc: Exception) -> dict[str, Any]:
+    error_text = str(exc).lower()
+    soundness_markers = (
+        "bound direction",
+        "relaxation direction",
+        "containment proof",
+        "outside the certified interval",
+        "failed strict checking",
+    )
+    failure_class = (
+        "soundness-failure"
+        if isinstance(exc, AssertionError)
+        or any(marker in error_text for marker in soundness_markers)
+        else "execution-failure"
+    )
     receipt: dict[str, Any] = {
         "schema": RECEIPT_SCHEMA,
         "status": "failed",
@@ -350,6 +364,7 @@ def _failed_receipt(instance: E3Instance, exc: Exception) -> dict[str, Any]:
         },
         "error_type": type(exc).__name__,
         "error": str(exc),
+        "failure_class": failure_class,
     }
     receipt["receipt_hash"] = sha256_json(receipt)
     return receipt

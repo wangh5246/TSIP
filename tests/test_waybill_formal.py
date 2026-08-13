@@ -35,6 +35,7 @@ from waybill_formal.core import (
     write_json,
     write_jsonl,
     write_plan,
+    _s3_aggregate_gate,
 )
 from waybill_formal.stage import finish_stage
 
@@ -131,6 +132,8 @@ def test_s3_cardinality_materializes_from_canonical_instance_ledger() -> None:
                 instances.append(
                     {
                         "instance_id": f"{period}-{bucket}-{radius}",
+                        "dataset": "tdrive",
+                        "period_id": period,
                         "path": f"instances/{period}-{bucket}-{radius}.json",
                         "sha256": "1" * 64,
                         "bucket_m": bucket,
@@ -146,9 +149,108 @@ def test_s3_cardinality_materializes_from_canonical_instance_ledger() -> None:
     assert plan["materialized"] is True
     assert plan["canonical_period_count"] == 2
     assert plan["canonical_instance_count"] == 24
-    assert plan["stage_job_counts"]["S3"] == 24
-    assert plan["expected_job_count"] == 1719
-    assert len(jobs) == 1719
+    assert plan["stage_job_counts"]["S3"] == 6
+    assert plan["expected_job_count"] == 1701
+    assert len(jobs) == 1701
+    s3_jobs = [job for job in jobs if job["stage"] == "S3"]
+    assert all(job["kind"] == "certified-bound-group" for job in s3_jobs)
+    assert all(len(job["parameters"]["instances"]) == 4 for job in s3_jobs)
+    assert all(job["parameters"]["instance_timeout_sec"] == 7200 for job in s3_jobs)
+
+
+def _s3_receipt(instance_id: str, *, gap_ppm: int, status: str = "certified") -> dict:
+    if status != "certified":
+        return {
+            "status": status,
+            "instance": {"instance_id": instance_id},
+            "error": "retained unresolved instance",
+        }
+    return {
+        "status": "certified",
+        "instance": {"instance_id": instance_id},
+        "LB_cents": 100,
+        "UB_cents": 101,
+        "relative_gap_ppm": gap_ppm,
+        "timeout": False,
+        "lower_bound": {"checker": {"accepted": True}},
+        "upper_bound": {"independent_cross_check": {"direction_ok": True}},
+    }
+
+
+def _s3_group(index: int) -> tuple[dict, dict]:
+    instances = [
+        {
+            "instance_id": f"period-{index}:bucket-{bucket}m:radius-50m",
+            "bucket_m": bucket,
+        }
+        for bucket in (100, 50, 25, 10)
+    ]
+    job = {
+        "job_id": f"s3-{index}",
+        "stage": "S3",
+        "parameters": {
+            "group_id": f"period-{index}:radius-50m",
+            "radius_m": 50,
+            "instances": instances,
+            "main_gap_max": 0.01,
+            "all_instance_certified_share_min": 0.95,
+            "all_instance_gap_max": 0.05,
+        },
+    }
+    result = {
+        "small_oracle_gate_passed": True,
+        "soundness_failures": [],
+        "bound_receipts": [
+            _s3_receipt(record["instance_id"], gap_ppm=9_000 if record["bucket_m"] == 100 else 40_000)
+            for record in instances
+        ]
+    }
+    return job, result
+
+
+def test_s3_aggregate_enforces_main_gap_and_95_percent_all_instance_gate() -> None:
+    selected = [_s3_group(index) for index in range(5)]
+    jobs = [job for job, _result in selected]
+
+    passed = _s3_aggregate_gate(jobs, selected)
+    assert passed["passed"] is True
+    assert passed["certified_and_bounded_share"] == 1.0
+    assert all(
+        row["gap_threshold_ppm"] == (10_000 if row["main_representative"] else 50_000)
+        for row in passed["rows"]
+    )
+
+    selected[0][1]["bound_receipts"][-1] = _s3_receipt(
+        selected[0][0]["parameters"]["instances"][-1]["instance_id"],
+        gap_ppm=0,
+        status="failed",
+    )
+    exactly_95 = _s3_aggregate_gate(jobs, selected)
+    assert exactly_95["passed"] is True
+    assert exactly_95["certified_and_bounded_share"] == 0.95
+
+    selected[0][1]["bound_receipts"][-1]["failure_class"] = "soundness-failure"
+    fatal_at_95 = _s3_aggregate_gate(jobs, selected)
+    assert fatal_at_95["passed"] is False
+    assert fatal_at_95["fatal_soundness_instances"]
+    selected[0][1]["bound_receipts"][-1].pop("failure_class")
+
+    selected[1][1]["bound_receipts"][-1] = _s3_receipt(
+        selected[1][0]["parameters"]["instances"][-1]["instance_id"],
+        gap_ppm=0,
+        status="failed",
+    )
+    below_95 = _s3_aggregate_gate(jobs, selected)
+    assert below_95["passed"] is False
+    assert below_95["share_gate_passed"] is False
+
+    selected = [_s3_group(index) for index in range(5)]
+    selected[0][1]["bound_receipts"][0]["relative_gap_ppm"] = 10_001
+    main_failed = _s3_aggregate_gate(
+        [job for job, _result in selected], selected
+    )
+    assert main_failed["passed"] is False
+    assert main_failed["main_gate_passed"] is False
 
 
 def test_tariff_registry_separates_capacity_and_economic_semantics() -> None:
@@ -402,6 +504,51 @@ def _write_valid_passed_attempt(
         "error": None,
         "execution_container": read_json(run_root / "execution-container.json"),
         "job_sha256": canonical_sha256(job),
+        "stage_result_sha256": stage["result_sha256"],
+        "artifact_manifest_sha256": stage["artifact_manifest_sha256"],
+    }
+    receipt["receipt_sha256"] = canonical_sha256(receipt)
+    write_json(attempt_dir / "receipt.json", receipt, exclusive=True)
+
+
+def _write_valid_resource_rejected_attempt(
+    *, run_root: Path, job_id: str, attempt: int, attempt_dir: Path
+) -> None:
+    job = {
+        row["job_id"]: row for row in read_jsonl(run_root / "jobs/expected.jsonl")
+    }[job_id]
+    write_json(attempt_dir / "job.json", job, exclusive=True)
+    finish_stage(
+        job=job,
+        attempt_dir=attempt_dir,
+        payload={
+            "status": "failed",
+            "outcome_class": "resource-rejected",
+            "reason": "available memory is below required memory",
+        },
+    )
+    stage = read_json(attempt_dir / "stage-result.json")
+    receipt = {
+        "schema": "waybill.formal.attempt-receipt/v2",
+        "job_id": job_id,
+        "attempt": attempt,
+        "status": "failed",
+        "command": ["true"],
+        "started_at": "2026-08-12T00:00:00+00:00",
+        "elapsed_ms": 1.0,
+        "returncode": 1,
+        "timed_out": False,
+        "max_rss_bytes": 1024,
+        "user_cpu_sec": 0.1,
+        "system_cpu_sec": 0.1,
+        "measurement_backend": "test",
+        "stdout_tail": "",
+        "stderr_tail": "",
+        "error": "command exited with status 1",
+        "execution_container": read_json(run_root / "execution-container.json"),
+        "job_sha256": canonical_sha256(job),
+        "stage_status": "failed",
+        "stage_outcome_class": "resource-rejected",
         "stage_result_sha256": stage["result_sha256"],
         "artifact_manifest_sha256": stage["artifact_manifest_sha256"],
     }
@@ -704,6 +851,8 @@ def test_strict_merge_fails_closed_on_missing_unit(tmp_path: Path) -> None:
 
     assert aggregate["status"] == "failed"
     assert aggregate["missing_jobs"] == ["b"]
+    assert aggregate["failure_summary"]["expected_job_denominator"] == 2
+    assert aggregate["failure_summary"]["failed_or_unresolved_jobs"] == 2
     assert read_json(run_root / "status.json")["status"] == "failed"
 
 
@@ -731,6 +880,38 @@ def test_attempts_reject_self_declared_pass_and_first_valid_success_wins(tmp_pat
     assert aggregate["status"] == "passed"
     assert aggregate["units"][0]["selected_attempt"] == 2
     assert resume_job_ids(run_root) == []
+    assert aggregate["failure_summary"]["failure_attempts_by_class"] == {
+        "invalid-receipt": 1
+    }
+    assert aggregate["failure_summary"]["failure_receipts"][0]["attempt"] is None
+    assert aggregate["scientific_summary"]["selected_job_count"] == 1
+    assert aggregate["scientific_summary"]["by_stage_kind"] == {"S1/test": 1}
+    assert aggregate["scientific_summary"]["rows"][0]["attempt_receipt_sha256"]
+    assert (run_root / "scientific-aggregate.json").is_file()
+    assert (run_root / "failure-summary.json").is_file()
+
+
+def test_failed_stage_result_is_receipt_bound_and_resource_classified(tmp_path: Path) -> None:
+    run_root = _fake_run(tmp_path, ["a"])
+    attempt, attempt_dir = next_attempt(run_root, "a")
+    _write_valid_resource_rejected_attempt(
+        run_root=run_root,
+        job_id="a",
+        attempt=attempt,
+        attempt_dir=attempt_dir,
+    )
+
+    aggregate = merge_run(run_root)
+
+    assert aggregate["status"] == "failed"
+    assert aggregate["failure_summary"]["failure_attempts_by_class"] == {
+        "resource-rejected": 1
+    }
+    failure = aggregate["failure_summary"]["failure_receipts"][0]
+    assert failure["stage_outcome_class"] == "resource-rejected"
+    assert failure["stage_result_sha256"] == read_json(
+        attempt_dir / "stage-result.json"
+    )["result_sha256"]
 
 
 def test_strict_merge_rejects_tampered_stage_artifact(tmp_path: Path) -> None:

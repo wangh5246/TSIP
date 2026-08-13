@@ -99,6 +99,7 @@ WayBill/main.pdf
 
 # Scratch
 y.json
+tmp/
 
 # WayBill restricted/formal runtime state
 artifacts/
