@@ -1,21 +1,21 @@
 # WayBill M4 Tomorrow-Night Launch Card
 
-Status on 2026-08-14: **V6 RELEASE; TARGET NO-GO**. Do not run
-`init-run` until every STOP item below is closed. V6 supersedes V5 after a real
+Status on 2026-08-14: **V7 RELEASE; TARGET NO-GO**. Do not run
+`init-run` until every STOP item below is closed. V7 supersedes V6 after a real
 Apptainer 1.5.3 target exposed that `snarkjs 0.7.6 --version` prints the correct
 version but exits 99. V4 fixed that fail-closed RG6 probe contract and pins the
 probe working directory to `/work`; V5 corrects the corpus-materializer command
 to its module form, avoiding Python's `script/waybill_formal.py` name shadow.
 V2--V4 remain immutable audit inputs.
 
-## 1. Verify the frozen V6 release
+## 1. Verify the frozen V7 release
 
-These values come from the clean annotated V6 tag, never from a working tree or
+These values come from the clean annotated V7 tag, never from a working tree or
 V2--V4:
 
 ```bash
-export WAYBILL_RELEASE_TAG='waybill-formal-readiness-v6'
-export WAYBILL_RELEASE_DIR='/home/wang/waybill-release/waybill-formal-readiness-v6'
+export WAYBILL_RELEASE_TAG='waybill-formal-readiness-v7'
+export WAYBILL_RELEASE_DIR='/home/wang/waybill-release/waybill-formal-readiness-v7'
 export WAYBILL_WORKSPACE='/home/wang/waybill-workspace'
 export WAYBILL_SHARED_DATA_ROOT='/home/wang/waybill-data/waybill-formal-v1'
 export WAYBILL_PREPARED_ROOT="$WAYBILL_SHARED_DATA_ROOT/prepared"
@@ -34,7 +34,7 @@ test "$(git describe --tags --exact-match)" = "$WAYBILL_RELEASE_TAG"
 test -z "$(git status --porcelain)"
 ```
 
-Build the SIF from the V6 formal-runner archive, make it read-only, and
+Build the SIF from the V7 formal-runner archive, make it read-only, and
 record its independent byte identity:
 
 ```bash
@@ -80,7 +80,7 @@ test "$(realpath "$WAYBILL_SHARED_DATA_ROOT")" != "$(realpath "$WAYBILL_WORKSPAC
 
 ## 3. Pass target RG6
 
-Run on the actual Linux x86-64 execution node using the exact V6 image and SIF.
+Run on the actual Linux x86-64 execution node using the exact V7 image and SIF.
 A laptop receipt does not count. Derive the OCI digest from the verified
 container manifest instead of transcribing it:
 
@@ -156,7 +156,7 @@ sensitivity; S5 handler results remain in-process FastAPI/SQLite evidence.
 
 ## STOP — any one item forbids `init-run`
 
-- release tag is not `waybill-formal-readiness-v6`, is dirty/unannotated, or
+- release tag is not `waybill-formal-readiness-v7`, is dirty/unannotated, or
   fails self-verification;
 - OCI label, release manifest, SIF SHA-256, protocol, or code manifest differs;
 - any dataset is incomplete or target RG2 fails;

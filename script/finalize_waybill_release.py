@@ -2227,6 +2227,9 @@ def build_release(args: argparse.Namespace, config: Mapping[str, Any]) -> None:
 
 
 def verify_release(release_dir: Path, *, config: Mapping[str, Any] | None = None) -> None:
+    # Verification changes into an isolated repository while inspecting the source
+    # bundle.  Resolve a caller-relative release path before that transition.
+    release_dir = release_dir.resolve()
     manifest = verify_release_inventory(release_dir)
     identity = manifest.get("identity")
     bindings = manifest.get("bindings")

@@ -343,7 +343,7 @@ worker for the first formal run; PostgreSQL serializes its write transactions,
 but multi-worker throughput is not a paper claim until the target-host stress
 receipt is produced.
 
-The remaining runbook applies to the verified V6 release. It does not define a
+The remaining runbook applies to the verified V7 release. It does not define a
 smoke, reduced, or publication-eligible shortcut. Use
 `WAYBILL_TOMORROW_RUNBOOK.md` as the launch card and stop if any target-derived
 digest, path, capacity, corpus, or receipt value remains unresolved.
