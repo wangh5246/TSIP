@@ -109,6 +109,7 @@ def _attestation(
     previous: str,
     period_id: str,
     receiver_fix_root: str | int,
+    fix_count: int = 25,
 ) -> dict[str, object]:
     wire: dict[str, object] = {
         "schema": SETTLEMENT_ROOT_ATTESTATION_SCHEMA,
@@ -117,7 +118,7 @@ def _attestation(
         "device_id": "device-1",
         "period_id": period_id,
         "log_epoch": epoch,
-        "fix_count": 25,
+        "fix_count": fix_count,
         "receiver_fix_root": str(receiver_fix_root),
         "device_attestation_commitment": DAC,
         "commitment_semantics": SETTLEMENT_FIX_COMMITMENT_SEMANTICS,
@@ -132,6 +133,51 @@ def _attestation(
     )
     wire["signature"] = base64.urlsafe_b64encode(signature).rstrip(b"=").decode()
     return wire
+
+
+def test_anchor_accepts_frozen_matrix_max_but_rejects_larger_attestation(
+    tmp_path: Path,
+) -> None:
+    assert charger_app.PeriodSubmission.model_json_schema()["properties"]["fixes"][
+        "maxItems"
+    ] == 25
+    assert charger_app.RootAttestation.model_json_schema()["properties"]["fix_count"][
+        "maximum"
+    ] == 200
+    application = create_app(_settings(tmp_path))
+    matrix_max = _attestation(
+        epoch=1,
+        previous=SETTLEMENT_ROOT_ATTESTATION_GENESIS_SHA256,
+        period_id="period-200-fixes",
+        receiver_fix_root=200,
+        fix_count=charger_app.ROOT_ATTESTATION_FIX_CAP,
+    )
+    above_matrix = _attestation(
+        epoch=2,
+        previous="1" * 64,
+        period_id="period-201-fixes",
+        receiver_fix_root=201,
+        fix_count=charger_app.ROOT_ATTESTATION_FIX_CAP + 1,
+    )
+
+    with TestClient(application) as client:
+        _register(client)
+        accepted = client.post(
+            "/settlement/receiver-chain/anchor",
+            json={"root_attestation": matrix_max},
+            headers=_headers(DEVICE_TOKEN),
+        )
+        assert accepted.status_code == 200, accepted.text
+
+        rejected = client.post(
+            "/settlement/receiver-chain/anchor",
+            json={"root_attestation": above_matrix},
+            headers=_headers(DEVICE_TOKEN),
+        )
+        assert rejected.status_code == 422
+        assert rejected.json()["detail"][0]["loc"][-1] == "fix_count"
+
+    application.state.charger_store.close()
 
 
 def _public(period_id: str, receiver_fix_root: str | int) -> dict[str, object]:
@@ -287,12 +333,13 @@ def test_proof_only_rejects_unanchored_attestation_and_atomically_settles_anchor
         previous=SETTLEMENT_ROOT_ATTESTATION_GENESIS_SHA256,
         period_id="period-proof",
         receiver_fix_root=303,
+        fix_count=charger_app.ROOT_ATTESTATION_FIX_CAP,
     )
     public = _public("period-proof", 303)
     profile = SimpleNamespace(
         monthly_reconciliation_rate_cents_per_m=5,
         max_zone_rate_cents_per_m=5,
-        max_fixes=25,
+        max_fixes=charger_app.ROOT_ATTESTATION_FIX_CAP,
         fallback_semantics_version="odometer-max-rate-v6",
         circuit_id="settlement-period-v6-chain-test",
     )

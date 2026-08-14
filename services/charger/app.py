@@ -124,6 +124,11 @@ POLICY_PROFILE_DIR = Path(
 policy_registry: PolicyRegistry = load_policy_profiles(POLICY_PROFILE_DIR)
 
 PERIOD_FIX_CAP = int(os.getenv("SETTLEMENT_PERIOD_FIX_CAP", "25"))
+# Proof-only submissions carry a constant-size, signed receiver attestation
+# rather than the raw fix list.  Its fix count must cover every registered
+# circuit shape in the frozen formal matrix; the proof-only endpoint below
+# still requires exact equality with the resolved canonical profile.
+ROOT_ATTESTATION_FIX_CAP = 200
 PERIOD_MAX_HOURS = int(os.getenv("SETTLEMENT_PERIOD_MAX_HOURS", "2"))
 CADENCE_SEC = int(os.getenv("SETTLEMENT_CADENCE_SEC", "300"))
 TIER_VMAX_MPS = int(os.getenv("SETTLEMENT_TIER_VMAX_MPS", "33"))
@@ -539,7 +544,7 @@ class RootAttestation(BaseModel):
     device_id: str = Field(min_length=1, max_length=128)
     period_id: str = Field(min_length=1, max_length=128)
     log_epoch: int = Field(ge=1, le=(1 << 63) - 1)
-    fix_count: int = Field(ge=2, le=PERIOD_FIX_CAP)
+    fix_count: int = Field(ge=2, le=ROOT_ATTESTATION_FIX_CAP)
     receiver_fix_root: str = Field(min_length=1, max_length=80)
     device_attestation_commitment: str = Field(min_length=1, max_length=128)
     commitment_semantics: str = Field(min_length=1, max_length=128)
