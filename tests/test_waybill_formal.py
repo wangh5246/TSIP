@@ -177,6 +177,11 @@ def test_protocol_is_frozen_to_m4_and_static_cardinality_is_exact() -> None:
     assert plan["static_job_count_excluding_S3"] == 1695
     assert len(jobs) == 1695
     assert len({job["job_id"] for job in jobs}) == len(jobs)
+    assert all(
+        job["command"]
+        == ["python", "-m", f"script.run_waybill_{job['stage'].lower()}_formal_unit"]
+        for job in jobs
+    )
 
 
 def test_protocol_rejects_any_development_cap() -> None:

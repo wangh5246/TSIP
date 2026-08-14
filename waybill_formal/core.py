@@ -580,7 +580,14 @@ def _job(stage: str, kind: str, parameters: Mapping[str, Any], stage_spec: Mappi
         else int(stage_spec.get("timeout_sec_per_stage", 7200)),
         "resource": dict(stage_spec.get("resource", {})),
         # A host interpreter path is not portable into the frozen runtime.
-        "command": ["python", f"script/run_waybill_{stage.lower()}_formal_unit.py"],
+        # Run the stage as a module: executing a file below ``script/`` puts
+        # that directory at sys.path[0], where ``script/waybill_formal.py``
+        # shadows the real ``waybill_formal`` package.
+        "command": [
+            "python",
+            "-m",
+            f"script.run_waybill_{stage.lower()}_formal_unit",
+        ],
     }
 
 

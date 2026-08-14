@@ -2,10 +2,10 @@
 
 The active settlement profile is
 `configs/settlement_policy_profiles/ruc-demo-v9.json`. It pins the
-validity-bound V6 circuit and verification key; V5/v7 artifacts are historical
+validity-bound V6 circuit and verification key; V5/V7 artifacts are historical
 baselines only.
 
-## Current frozen status: V5 materializer-invocation successor
+## Current frozen status: V8 stage-entrypoint successor
 
 The immutable `waybill-formal-readiness-v3` release contains the reviewed
 S2/S3/S5 runner repairs, the strict scientific aggregate, regression tests, and
@@ -16,12 +16,13 @@ false RG6 failure. V4 accepts only exit 0/99 for that one probe, still requires
 the exact `snarkjs@0.7.6` output, and runs all probes with `--pwd /work`. V5
 corrects the corpus-materializer invocation to `python -m
 script.materialize_waybill_formal_corpus`, avoiding a Python import shadow in
-the direct script form.
+the direct script form. V8 applies the same module-entry rule to every S1--S5
+formal stage runner after target smoke exposed the identical shadowing defect.
 
 **Do not initialize M4 from V2.** The immutable V2 tag predates fixes for
 attempt-local symbolic links, the S5 receiver-attestation anchor preflight, and
-the registered S3 four-bucket/95% aggregate semantics. V5 supersedes V4 for
-formal execution. V5 still does not authorize `init-run` by itself: the exact
+the registered S3 four-bucket/95% aggregate semantics. V8 supersedes V7 for
+formal execution. V8 still does not authorize `init-run` by itself: the exact
 release must be installed on the actual Linux x86-64 target, converted to a
 read-only SIF, and pass target RG2/RG6, full materialization, and every
 dependency-class smoke. An empty packaging `release_blockers` list is not a
@@ -343,7 +344,7 @@ worker for the first formal run; PostgreSQL serializes its write transactions,
 but multi-worker throughput is not a paper claim until the target-host stress
 receipt is produced.
 
-The remaining runbook applies to the verified V7 release. It does not define a
+The remaining runbook applies to the verified V8 release. It does not define a
 smoke, reduced, or publication-eligible shortcut. Use
 `WAYBILL_TOMORROW_RUNBOOK.md` as the launch card and stop if any target-derived
 digest, path, capacity, corpus, or receipt value remains unresolved.
