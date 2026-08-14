@@ -1,19 +1,21 @@
 # WayBill M4 Tomorrow-Night Launch Card
 
-Status on 2026-08-13: **V4 RELEASE; TARGET NO-GO**. Do not run
-`init-run` until every STOP item below is closed. V4 supersedes V3 after a real
+Status on 2026-08-14: **V5 RELEASE; TARGET NO-GO**. Do not run
+`init-run` until every STOP item below is closed. V5 supersedes V4 after a real
 Apptainer 1.5.3 target exposed that `snarkjs 0.7.6 --version` prints the correct
-version but exits 99. V4 fixes only that fail-closed RG6 probe contract and pins
-the probe working directory to `/work`; V2/V3 remain immutable audit inputs.
+version but exits 99. V4 fixed that fail-closed RG6 probe contract and pins the
+probe working directory to `/work`; V5 corrects the corpus-materializer command
+to its module form, avoiding Python's `script/waybill_formal.py` name shadow.
+V2--V4 remain immutable audit inputs.
 
-## 1. Verify the frozen V4 release
+## 1. Verify the frozen V5 release
 
-These values come from the clean annotated V4 tag, never from a working tree or
-V2/V3:
+These values come from the clean annotated V5 tag, never from a working tree or
+V2--V4:
 
 ```bash
-export WAYBILL_RELEASE_TAG='waybill-formal-readiness-v4'
-export WAYBILL_RELEASE_DIR='/home/wang/waybill-release/waybill-formal-readiness-v4'
+export WAYBILL_RELEASE_TAG='waybill-formal-readiness-v5'
+export WAYBILL_RELEASE_DIR='/home/wang/waybill-release/waybill-formal-readiness-v5'
 export WAYBILL_WORKSPACE='/home/wang/waybill-workspace'
 export WAYBILL_SHARED_DATA_ROOT='/home/wang/waybill-data/waybill-formal-v1'
 export WAYBILL_PREPARED_ROOT="$WAYBILL_SHARED_DATA_ROOT/prepared"
@@ -32,7 +34,7 @@ test "$(git describe --tags --exact-match)" = "$WAYBILL_RELEASE_TAG"
 test -z "$(git status --porcelain)"
 ```
 
-Build the SIF from the V4 formal-runner archive, make it read-only, and
+Build the SIF from the V5 formal-runner archive, make it read-only, and
 record its independent byte identity:
 
 ```bash
@@ -59,7 +61,7 @@ python script/waybill_formal.py validate-data-manifest \
 python script/prepare_tier1_datasets.py \
   --dataset all --data-root "$WAYBILL_DATA_ROOT" \
   --output-dir "$WAYBILL_PREPARED_ROOT" --max-raw-points 0 --formal
-python script/materialize_waybill_formal_corpus.py \
+python -m script.materialize_waybill_formal_corpus \
   --prepared-root "$WAYBILL_PREPARED_ROOT" \
   --output-dir "$WAYBILL_CORPUS_ROOT"
 python script/waybill_formal.py plan \
@@ -78,7 +80,7 @@ test "$(realpath "$WAYBILL_SHARED_DATA_ROOT")" != "$(realpath "$WAYBILL_WORKSPAC
 
 ## 3. Pass target RG6
 
-Run on the actual Linux x86-64 execution node using the exact V4 image and SIF.
+Run on the actual Linux x86-64 execution node using the exact V5 image and SIF.
 A laptop receipt does not count. Derive the OCI digest from the verified
 container manifest instead of transcribing it:
 
@@ -154,7 +156,7 @@ sensitivity; S5 handler results remain in-process FastAPI/SQLite evidence.
 
 ## STOP — any one item forbids `init-run`
 
-- release tag is not `waybill-formal-readiness-v4`, is dirty/unannotated, or
+- release tag is not `waybill-formal-readiness-v5`, is dirty/unannotated, or
   fails self-verification;
 - OCI label, release manifest, SIF SHA-256, protocol, or code manifest differs;
 - any dataset is incomplete or target RG2 fails;
