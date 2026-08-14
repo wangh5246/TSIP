@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from common.resource_probe import parse_time_evidence
+from script import materialize_waybill_formal_corpus as materialize_corpus
 from script import run_waybill_m2_circuit_matrix as m2
 from script.waybill_formal_cli import DEFAULT_CODE_MANIFEST_PATHS
 from waybill_formal import core as formal_core
@@ -51,6 +52,29 @@ def test_tool_version_accepts_only_explicit_nonzero_cli_contract() -> None:
     command = ["sh", "-c", "printf 'snarkjs@0.7.6\\n'; exit 99"]
     assert tool_version(command) is None
     assert tool_version(command, allowed_returncodes=(0, 99)) == "snarkjs@0.7.6"
+
+
+def test_materializer_resume_reuses_only_verified_canonical_payloads(tmp_path: Path) -> None:
+    path = tmp_path / "instances" / "tdrive" / "instance.json"
+    payload = {"instance_id": "a", "fixes": [{"t": 1}]}
+
+    materialize_corpus._write_or_verify_instance(path, payload, resume=False)
+    materialize_corpus._write_or_verify_instance(path, payload, resume=True)
+
+    with pytest.raises(FormalError, match="differs from expected"):
+        materialize_corpus._write_or_verify_instance(
+            path, {"instance_id": "a", "fixes": [{"t": 2}]}, resume=True
+        )
+
+    manifest_path = tmp_path / "prepared_manifest.json"
+    manifest = {"schema": "waybill.formal.prepared-manifest/v1", "value": 1}
+    materialize_corpus._write_or_verify_manifest(manifest_path, manifest, resume=False)
+    materialize_corpus._write_or_verify_manifest(manifest_path, manifest, resume=True)
+
+    with pytest.raises(FormalError, match="prepared manifest differs"):
+        materialize_corpus._write_or_verify_manifest(
+            manifest_path, {"schema": "waybill.formal.prepared-manifest/v1", "value": 2}, resume=True
+        )
 
 
 def test_host_preflight_pins_workdir_and_accepts_snarkjs_cli_contract(

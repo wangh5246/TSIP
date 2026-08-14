@@ -21,6 +21,7 @@ from script.run_m3_certified_e3 import (  # noqa: E402
 from waybill_formal.core import (  # noqa: E402
     FormalError,
     canonical_sha256,
+    read_json,
     sha256_file,
     write_json,
 )
@@ -57,7 +58,39 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--max-dt-sec", type=int, default=600)
     parser.add_argument("--tier-vmax-mps", type=int, default=33)
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="verify and reuse an interrupted canonical corpus without changing any instance",
+    )
     return parser.parse_args()
+
+
+def _write_or_verify_instance(path: Path, payload: dict[str, Any], *, resume: bool) -> None:
+    """Write a new canonical instance or verify an interrupted write before reuse."""
+
+    if not path.exists() and not path.is_symlink():
+        write_json(path, payload, exclusive=True)
+        return
+    if not resume:
+        raise FormalError(f"canonical instance already exists; rerun with --resume: {path}")
+    if path.is_symlink() or not path.is_file():
+        raise FormalError(f"existing canonical instance is not a regular file: {path}")
+    existing = read_json(path)
+    if canonical_sha256(existing) != canonical_sha256(payload):
+        raise FormalError(f"existing canonical instance differs from expected payload: {path}")
+
+
+def _write_or_verify_manifest(path: Path, manifest: dict[str, Any], *, resume: bool) -> None:
+    if not path.exists() and not path.is_symlink():
+        write_json(path, manifest, exclusive=True)
+        return
+    if not resume:
+        raise FormalError(f"prepared manifest already exists; rerun with --resume: {path}")
+    if path.is_symlink() or not path.is_file():
+        raise FormalError(f"existing prepared manifest is not a regular file: {path}")
+    if read_json(path) != manifest:
+        raise FormalError(f"existing prepared manifest differs from expected payload: {path}")
 
 
 def main() -> int:
@@ -65,7 +98,17 @@ def main() -> int:
     prepared_root = args.prepared_root.resolve()
     output_dir = args.output_dir.resolve()
     instances_dir = output_dir / "instances"
-    instances_dir.mkdir(parents=True, exist_ok=False)
+    if output_dir.exists():
+        if not args.resume:
+            raise FormalError(
+                f"output directory already exists; rerun with --resume to verify it: {output_dir}"
+            )
+        if output_dir.is_symlink() or not output_dir.is_dir():
+            raise FormalError(f"output directory is not a regular directory: {output_dir}")
+        if not instances_dir.is_dir() or instances_dir.is_symlink():
+            raise FormalError(f"resumed corpus lacks a regular instances directory: {instances_dir}")
+    else:
+        instances_dir.mkdir(parents=True, exist_ok=False)
     dataset_rows: list[dict[str, Any]] = []
     instance_rows: list[dict[str, Any]] = []
     base_periods: set[tuple[str, str]] = set()
@@ -113,7 +156,7 @@ def main() -> int:
                 payload = instance.to_dict()
                 relative = Path("instances") / dataset / f"{canonical_sha256(payload)}.json"
                 path = output_dir / relative
-                write_json(path, payload, exclusive=True)
+                _write_or_verify_instance(path, payload, resume=args.resume)
                 instance_rows.append(
                     {
                         "instance_id": unique_id,
@@ -168,7 +211,9 @@ def main() -> int:
         },
     }
     manifest["manifest_sha256"] = canonical_sha256(manifest)
-    write_json(output_dir / "prepared_manifest.json", manifest, exclusive=True)
+    _write_or_verify_manifest(
+        output_dir / "prepared_manifest.json", manifest, resume=args.resume
+    )
     print(
         json.dumps(
             {
