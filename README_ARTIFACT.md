@@ -177,12 +177,14 @@ embedded byte, mode, and path with the tagged code manifest.
 The V5 config retains the V3 S2/S3/S5 repairs and pins
 `cryptography==50.0.0` after the 2026-08-13 vulnerability refresh. Its four
 Linux/amd64 image archives, bound SBOMs, and bound vulnerability reports belong
-to the annotated `waybill-formal-readiness-v8` tag. The self-verifying release
-is stored at `artifacts/releases/waybill-formal-readiness-v8`. V8 retains the
-target-discovered `snarkjs --version` exit-99 RG6 probe contract and pins every
-target probe to `/work`. It also executes every S1--S5 runner with `python -m`;
-the previous direct-file command let `script/waybill_formal.py` shadow the
-actual `waybill_formal` package inside the container. Run the
+to the annotated `waybill-formal-readiness-v9` tag. The self-verifying release
+is stored at `artifacts/releases/waybill-formal-readiness-v9`. V9 retains the
+target-discovered `snarkjs --version` exit-99 RG6 probe contract, pins every
+target probe to `/work`, and executes every S1--S5 runner with `python -m`.
+It additionally records M2 artifacts under an external formal workspace as
+absolute paths, while retaining repository-relative paths for in-tree runs.
+This prevents receipt finalization from incorrectly requiring the target
+Btrfs run root to be beneath `/work`. Run the
 verification command below after transfer and before target-host execution. A
 future dependency or scanner finding must create a new reviewed release rather
 than changing this tagged bundle in place.
@@ -194,44 +196,44 @@ the archive, scan the immutable image ID, and bind both scanner outputs:
 
 ```bash
 python script/finalize_waybill_release.py preflight \
-  --tag waybill-formal-readiness-v8 \
-  --config configs/waybill_formal/release-v8.json \
-  --output-manifest artifacts/release-inputs-v8/preflight.json
+  --tag waybill-formal-readiness-v9 \
+  --config configs/waybill_formal/release-v9.json \
+  --output-manifest artifacts/release-inputs-v9/preflight.json
 
-docker save --output artifacts/release-inputs-v8/formal-runner-image.tar \
-  waybill-formal:readiness-v8
+docker save --output artifacts/release-inputs-v9/formal-runner-image.tar \
+  waybill-formal:readiness-v9
 python script/finalize_waybill_release.py image-metadata \
-  --image artifacts/release-inputs-v8/formal-runner-image.tar \
-  --image-ref waybill-formal:readiness-v8 \
+  --image artifacts/release-inputs-v9/formal-runner-image.tar \
+  --image-ref waybill-formal:readiness-v9 \
   --role formal-runner \
-  --config configs/waybill_formal/release-v8.json \
-  --preflight artifacts/release-inputs-v8/preflight.json \
-  --output artifacts/release-inputs-v8/formal-runner-metadata.json
+  --config configs/waybill_formal/release-v9.json \
+  --preflight artifacts/release-inputs-v9/preflight.json \
+  --output artifacts/release-inputs-v9/formal-runner-metadata.json
 docker run --rm \
-  -v "$PWD/artifacts/release-inputs-v8:/out" \
+  -v "$PWD/artifacts/release-inputs-v9:/out" \
   aquasec/trivy:0.72.0@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f \
   image --format spdx-json \
   --output /out/formal-runner-raw.spdx.json \
   --input /out/formal-runner-image.tar
 python script/finalize_waybill_release.py bind-sbom \
-  --input artifacts/release-inputs-v8/formal-runner-raw.spdx.json \
-  --metadata artifacts/release-inputs-v8/formal-runner-metadata.json \
+  --input artifacts/release-inputs-v9/formal-runner-raw.spdx.json \
+  --metadata artifacts/release-inputs-v9/formal-runner-metadata.json \
   --role formal-runner \
-  --preflight artifacts/release-inputs-v8/preflight.json \
-  --output artifacts/release-inputs-v8/formal-runner-sbom.spdx.json
+  --preflight artifacts/release-inputs-v9/preflight.json \
+  --output artifacts/release-inputs-v9/formal-runner-sbom.spdx.json
 docker run --rm \
-  -v "$PWD/artifacts/release-inputs-v8:/out" \
+  -v "$PWD/artifacts/release-inputs-v9:/out" \
   aquasec/trivy:0.72.0@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f \
   image --scanners vuln --format json \
   --output /out/formal-runner-raw.trivy.json \
   --input /out/formal-runner-image.tar
 python script/finalize_waybill_release.py bind-vulnerability-report \
-  --input artifacts/release-inputs-v8/formal-runner-raw.trivy.json \
-  --metadata artifacts/release-inputs-v8/formal-runner-metadata.json \
+  --input artifacts/release-inputs-v9/formal-runner-raw.trivy.json \
+  --metadata artifacts/release-inputs-v9/formal-runner-metadata.json \
   --role formal-runner \
-  --config configs/waybill_formal/release-v8.json \
-  --preflight artifacts/release-inputs-v8/preflight.json \
-  --output artifacts/release-inputs-v8/formal-runner-vulnerabilities.trivy.json
+  --config configs/waybill_formal/release-v9.json \
+  --preflight artifacts/release-inputs-v9/preflight.json \
+  --output artifacts/release-inputs-v9/formal-runner-vulnerabilities.trivy.json
 ```
 
 Repeat those image/SBOM/vulnerability steps for `charger`, `postgres`, and
@@ -247,7 +249,7 @@ independently reimplement either package scanner.
 
 ```bash
 python script/finalize_waybill_release.py verify \
-  --release artifacts/releases/waybill-formal-readiness-v8
+  --release artifacts/releases/waybill-formal-readiness-v9
 ```
 
 ## 5. Formal experiment receipts

@@ -283,15 +283,21 @@ def parse_circom_compile_info(output: str) -> dict[str, int]:
     return parsed
 
 
-def artifact_record(path: Path) -> dict[str, Any]:
+def display_path(path: Path) -> str:
+    """Use repo-relative paths when possible and absolute paths for external run roots."""
+
     try:
-        display_path = str(path.relative_to(ROOT_DIR))
+        return str(path.relative_to(ROOT_DIR))
     except ValueError:
-        display_path = str(path)
+        return str(path.resolve())
+
+
+def artifact_record(path: Path) -> dict[str, Any]:
+    recorded_path = display_path(path)
     if not path.exists():
-        return {"path": display_path, "exists": False}
+        return {"path": recorded_path, "exists": False}
     return {
-        "path": display_path,
+        "path": recorded_path,
         "exists": True,
         "bytes": path.stat().st_size,
         "sha256": sha256_file(path),
@@ -1366,7 +1372,7 @@ def prove_one(
             "proof_json_bytes": [trial.get("proof_json_bytes") for trial in verified],
         },
         "trial_receipts": [
-            str((output_dir / "trials" / name / f"measured-{index + 1}" / "receipt.json").relative_to(ROOT_DIR))
+            display_path(output_dir / "trials" / name / f"measured-{index + 1}" / "receipt.json")
             for index in range(len(trials))
         ],
     }
@@ -1617,7 +1623,7 @@ def validate_depth14_proof_evidence(
     expected_public = [circuit_input.get(signal) for signal in PUBLIC_SIGNAL_ORDER_V6]
     trial_receipt_paths = receipt.get("trial_receipts", [])
     for trial_receipt_raw in trial_receipt_paths:
-        trial_receipt_path = ROOT_DIR / str(trial_receipt_raw)
+        trial_receipt_path = _artifact_path({"path": trial_receipt_raw})
         trial_result: dict[str, Any] = {"receipt_path": str(trial_receipt_raw)}
         if not trial_receipt_path.is_file():
             trial_result["ok"] = False
@@ -2261,7 +2267,7 @@ def aggregate_matrix(output_dir: Path) -> dict[str, Any]:
         "all_16_real_setup_attempts_present": setup_attempted,
         "ptau_gate_passed": ptau_gate_passed,
         "ptau": {
-            "path": str(ptau_path.relative_to(ROOT_DIR)),
+            "path": display_path(ptau_path),
             "bytes": ptau_path.stat().st_size if ptau_path.is_file() else None,
             "actual_blake2b": actual_ptau_blake2b,
             "official_blake2b": PTAU_BLAKE2B,

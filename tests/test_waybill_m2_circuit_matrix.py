@@ -118,6 +118,25 @@ def test_measured_command_records_success_and_failure() -> None:
     assert failure.error is not None
 
 
+def test_display_path_supports_external_formal_run_roots(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source_root = tmp_path / "source"
+    run_root = tmp_path / "workspace" / "run"
+    source_root.mkdir()
+    run_root.mkdir(parents=True)
+    monkeypatch.setattr(matrix, "ROOT_DIR", source_root)
+
+    internal = source_root / "artifact.json"
+    external = run_root / "receipt.json"
+    internal.write_text("{}\n", encoding="utf-8")
+    external.write_text("{}\n", encoding="utf-8")
+
+    assert matrix.display_path(internal) == "artifact.json"
+    assert matrix.display_path(external) == str(external.resolve())
+    assert matrix._artifact_path({"path": matrix.display_path(external)}) == external.resolve()
+
+
 def _compile_receipts() -> list[dict]:
     return [
         {
