@@ -4,6 +4,7 @@ import json
 import hashlib
 import hmac
 import os
+import re
 import subprocess
 import tempfile
 import threading
@@ -715,7 +716,16 @@ def _tariff_from_payload(payload: TariffPayload) -> TariffTable:
 
 
 def _is_v6_settlement_circuit(circuit_id: str) -> bool:
-    return str(circuit_id).startswith("settlement-period-v6-")
+    value = str(circuit_id)
+    if value.startswith("settlement-period-v6-"):
+        return True
+    # Formal M2 profiles are generated only for this pre-registered wrapper
+    # matrix.  Accept those exact deterministic identifiers without treating
+    # arbitrary underscore-prefixed names as canonical V6 circuits.
+    return re.fullmatch(
+        r"settlement_period_v6_d(?:8|12|14|16)_n(?:25|50|100|200)_k6",
+        value,
+    ) is not None
 
 
 @transparent_router.post("/settlement/period")

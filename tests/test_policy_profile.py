@@ -447,6 +447,10 @@ def test_profile_rollover_selects_the_unique_active_version(tmp_path: Path) -> N
     assert registry.resolve(jurisdiction_id=v7.jurisdiction_id, period_start_time=cutover) == v8
 
 
-def test_v6_circuit_identifier_uses_one_canonical_prefix() -> None:
+def test_v6_circuit_identifier_accepts_canonical_and_registered_formal_ids() -> None:
     assert charger_app._is_v6_settlement_circuit("settlement-period-v6-canonical")
+    assert charger_app._is_v6_settlement_circuit("settlement_period_v6_d14_n100_k6")
+    assert charger_app._is_v6_settlement_circuit("settlement_period_v6_d16_n200_k6")
     assert not charger_app._is_v6_settlement_circuit("settlement_period_v6_legacy")
+    assert not charger_app._is_v6_settlement_circuit("settlement_period_v6_d15_n100_k6")
+    assert not charger_app._is_v6_settlement_circuit("settlement_period_v6_d14_n101_k6")

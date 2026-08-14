@@ -20,7 +20,7 @@
     "common/settlement_v6.py": "e5beb773d16fd989aa8b61bcac1d8aa2d8418147f1a5ed63f9da6cb5938eaecf",
     "script/prove_settlement_period_v6.py": "c062f0246a3f8094ab0e7b00f11464e491d6c18717f25c68bc12af9570bdaa89",
     "script/run_waybill_m1_endpoint_gate.py": "a4f61a1d766580b67fe2227df4f2922cc336a32f7b1351d8aeeade574ec33fc1",
-    "services/charger/app.py": "ec2c7aad49ef08c6d56ccb78eeabb707bef268336138d3f1cd36db9017e76a18",
+    "services/charger/app.py": "d9d44538910ac8881c271321c6bd3c396696c5c6f371cd62a3675f4b2a8bc238",
     "services/charger/store.py": "75c19f1c34d371afff39dcffd4cd9614139d224246e4a4de0cca811cfecd661e",
     "services/receiver_signer/app.py": "cdae4e9968df17343c8a1158dd8d3dcb6757b412533e097f4b6978ce51937d32"
   },

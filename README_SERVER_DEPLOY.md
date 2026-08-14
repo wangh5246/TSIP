@@ -5,7 +5,7 @@ The active settlement profile is
 validity-bound V6 circuit and verification key; V5/V7 artifacts are historical
 baselines only.
 
-## Current frozen status: V10 Charger attestation-envelope successor
+## Current frozen status: V11 Charger formal-profile successor
 
 The immutable `waybill-formal-readiness-v3` release contains the reviewed
 S2/S3/S5 runner repairs, the strict scientific aggregate, regression tests, and
@@ -23,12 +23,15 @@ an external mounted workspace rather than a descendant of `/work`. V10 keeps
 the raw-fix submission cap at 25 while allowing the constant-size, signed
 root-attestation envelope to represent every frozen circuit shape through 200
 fixes. Proof-only acceptance still requires the attested count to equal the
-resolved canonical profile.
+resolved canonical profile. V11 additionally recognizes only the exact
+pre-registered M2 wrapper identifiers for depths 8/12/14/16 and fix counts
+25/50/100/200, resolving the S5 profile/Charger naming mismatch without opening
+an unrestricted legacy prefix.
 
 **Do not initialize M4 from V2.** The immutable V2 tag predates fixes for
 attempt-local symbolic links, the S5 receiver-attestation anchor preflight, and
-the registered S3 four-bucket/95% aggregate semantics. V10 supersedes V9 for
-formal execution. V10 still does not authorize `init-run` by itself: the exact
+the registered S3 four-bucket/95% aggregate semantics. V11 supersedes V10 for
+formal execution. V11 still does not authorize `init-run` by itself: the exact
 release must be installed on the actual Linux x86-64 target, converted to a
 read-only SIF, and pass target RG2/RG6, full materialization, and every
 dependency-class smoke. An empty packaging `release_blockers` list is not a
@@ -350,7 +353,7 @@ worker for the first formal run; PostgreSQL serializes its write transactions,
 but multi-worker throughput is not a paper claim until the target-host stress
 receipt is produced.
 
-The remaining runbook applies to the verified V10 release. It does not define a
+The remaining runbook applies to the verified V11 release. It does not define a
 smoke, reduced, or publication-eligible shortcut. Use
 `WAYBILL_TOMORROW_RUNBOOK.md` as the launch card and stop if any target-derived
 digest, path, capacity, corpus, or receipt value remains unresolved.
