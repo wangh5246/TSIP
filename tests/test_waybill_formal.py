@@ -184,6 +184,101 @@ def test_protocol_is_frozen_to_m4_and_static_cardinality_is_exact() -> None:
     )
 
 
+def test_materialized_plan_excludes_only_explicitly_inevaluable_s4_strata() -> None:
+    protocol = read_json(PROTOCOL_PATH)
+    spec = protocol["stages"]["S4"]
+    rows = []
+    for dataset in protocol["datasets"]:
+        for horizon in spec["horizons"]:
+            eligible = not (dataset == "tdrive" and horizon == 4)
+            rows.append(
+                {
+                    "dataset": dataset,
+                    "horizon": horizon,
+                    "periods_sha256": "a" * 64,
+                    "original_identity_count": 4 if eligible else 3,
+                    "sequence_eligible_identity_count": 4 if eligible else 3,
+                    "sequence_count": 8 if eligible else 6,
+                    "minimum_sequence_identities": 4,
+                    "eligible": eligible,
+                    "status": "eligible" if eligible else "not-evaluable",
+                    "reason": (
+                        None
+                        if eligible
+                        else "insufficient-original-identities-with-two-disjoint-windows"
+                    ),
+                }
+            )
+    matrix = {
+        "schema": "waybill.formal.s4-eligibility/v1",
+        "split": spec["split"],
+        "temporal_gap_periods": spec["temporal_gap_periods"],
+        "minimum_sequence_identities": 4,
+        "ineligible_stratum_policy": "exclude-before-run-and-report",
+        "rows": rows,
+    }
+    jobs, _plan = expand_protocol_jobs(
+        protocol,
+        {
+            "canonical_instances": [],
+            "s4_eligibility": {"matrix_sha256": canonical_sha256(matrix), "rows": rows},
+        },
+    )
+    s4_jobs = [job for job in jobs if job["stage"] == "S4"]
+
+    assert len(s4_jobs) == 1_155
+    assert not any(
+        job["parameters"]["dataset"] == "tdrive"
+        and job["parameters"]["horizon"] == 4
+        for job in s4_jobs
+    )
+    assert {
+        job["parameters"]["s4_eligibility_matrix_sha256"] for job in s4_jobs
+    } == {canonical_sha256(matrix)}
+
+
+def test_s4_eligibility_matrix_rejects_non_boolean_status() -> None:
+    protocol = read_json(PROTOCOL_PATH)
+    spec = protocol["stages"]["S4"]
+    rows = [
+        {
+            "dataset": dataset,
+            "horizon": horizon,
+            "periods_sha256": "a" * 64,
+            "original_identity_count": 4,
+            "sequence_eligible_identity_count": 4,
+            "sequence_count": 8,
+            "minimum_sequence_identities": 4,
+            "eligible": True,
+            "status": "eligible",
+            "reason": None,
+        }
+        for dataset in protocol["datasets"]
+        for horizon in spec["horizons"]
+    ]
+    rows[0]["eligible"] = "true"
+    matrix = {
+        "schema": "waybill.formal.s4-eligibility/v1",
+        "split": spec["split"],
+        "temporal_gap_periods": spec["temporal_gap_periods"],
+        "minimum_sequence_identities": 4,
+        "ineligible_stratum_policy": "exclude-before-run-and-report",
+        "rows": rows,
+    }
+
+    with pytest.raises(FormalError, match="eligibility flag is not boolean"):
+        expand_protocol_jobs(
+            protocol,
+            {
+                "canonical_instances": [],
+                "s4_eligibility": {
+                    "matrix_sha256": canonical_sha256(matrix),
+                    "rows": rows,
+                },
+            },
+        )
+
+
 def test_protocol_rejects_any_development_cap() -> None:
     protocol = read_json(PROTOCOL_PATH)
     protocol["formal_caps"]["max_raw_points"] = 1
@@ -844,6 +939,35 @@ def test_initialize_run_binds_release_container_and_runtime_before_jobs(
                         "radius_m": radius,
                     }
                 )
+    s4_rows = [
+        {
+            "dataset": dataset,
+            "horizon": horizon,
+            "periods_sha256": next(
+                row["periods_sha256"] for row in dataset_rows if row["dataset"] == dataset
+            ),
+            "original_identity_count": 4,
+            "sequence_eligible_identity_count": 4,
+            "sequence_count": 8,
+            "minimum_sequence_identities": 4,
+            "eligible": True,
+            "status": "eligible",
+            "reason": None,
+        }
+        for dataset in ("tdrive", "geolife", "porto", "rome")
+        for horizon in (1, 4, 12)
+    ]
+    s4_artifact = {
+        "schema": "waybill.formal.s4-eligibility/v1",
+        "split": "vehicle-or-user-disjoint",
+        "temporal_gap_periods": 1,
+        "minimum_sequence_identities": 4,
+        "ineligible_stratum_policy": "exclude-before-run-and-report",
+        "rows": s4_rows,
+    }
+    s4_artifact["matrix_sha256"] = canonical_sha256(s4_artifact)
+    s4_path = corpus_root / "s4_eligibility.json"
+    write_json(s4_path, s4_artifact)
     prepared_manifest = {
         "schema": "waybill.formal.prepared-manifest/v1",
         "prepared_root_label": "WAYBILL_PREPARED_ROOT",
@@ -852,6 +976,12 @@ def test_initialize_run_binds_release_container_and_runtime_before_jobs(
         "canonical_period_count": 4,
         "canonical_instance_count": len(instance_rows),
         "canonical_instances": instance_rows,
+        "s4_eligibility": {
+            "path": s4_path.name,
+            "sha256": _sha(s4_path),
+            "matrix_sha256": s4_artifact["matrix_sha256"],
+            "rows": s4_rows,
+        },
     }
     prepared_manifest["manifest_sha256"] = canonical_sha256(prepared_manifest)
     write_plan(protocol, plan_dir, prepared_manifest)

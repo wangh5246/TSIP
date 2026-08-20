@@ -25,11 +25,13 @@ from waybill_formal.core import (  # noqa: E402
     sha256_file,
     write_json,
 )
+from waybill_formal.s4_eligibility import eligibility_summary  # noqa: E402
 
 
 DATASETS = ("tdrive", "geolife", "porto", "rome")
 BUCKETS = (100, 50, 25, 10)
 RADII = (50, 100, 200)
+PROTOCOL_PATH = ROOT / "configs" / "waybill_formal" / "protocol-v1.json"
 
 
 def _period_path(prepared_root: Path, dataset: str) -> Path:
@@ -50,6 +52,67 @@ def _period_path(prepared_root: Path, dataset: str) -> Path:
 def _line_count(path: Path) -> int:
     with path.open("r", encoding="utf-8") as handle:
         return sum(1 for line in handle if line.strip())
+
+
+def _records(path: Path) -> list[dict[str, Any]]:
+    with path.open("r", encoding="utf-8") as handle:
+        return [json.loads(line) for line in handle if line.strip()]
+
+
+def _s4_eligibility_artifact(
+    *, dataset_rows: list[dict[str, Any]], prepared_root: Path
+) -> dict[str, Any]:
+    """Materialize S4 evaluability before an immutable plan is generated."""
+
+    protocol = read_json(PROTOCOL_PATH)
+    spec = protocol["stages"]["S4"]
+    minimum = int(spec["eligibility"]["minimum_sequence_identities"])
+    temporal_gap = int(spec["temporal_gap_periods"])
+    rows: list[dict[str, Any]] = []
+    for dataset_row in dataset_rows:
+        dataset = str(dataset_row["dataset"])
+        periods_path = prepared_root / str(dataset_row["periods_path"])
+        records = _records(periods_path)
+        for horizon in spec["horizons"]:
+            try:
+                summary = eligibility_summary(
+                    records,
+                    horizon=int(horizon),
+                    temporal_gap_periods=temporal_gap,
+                    minimum_sequence_identities=minimum,
+                )
+            except (KeyError, TypeError, ValueError) as exc:
+                raise FormalError(
+                    f"S4 eligibility cannot be materialized for {dataset}"
+                ) from exc
+            eligible = bool(summary["eligible"])
+            rows.append(
+                {
+                    "dataset": dataset,
+                    "horizon": int(horizon),
+                    "periods_sha256": str(dataset_row["periods_sha256"]),
+                    **summary,
+                    "status": "eligible" if eligible else "not-evaluable",
+                    "reason": (
+                        None
+                        if eligible
+                        else "insufficient-original-identities-with-two-disjoint-windows"
+                    ),
+                }
+            )
+    rows.sort(key=lambda row: (str(row["dataset"]), int(row["horizon"])))
+    artifact = {
+        "schema": "waybill.formal.s4-eligibility/v1",
+        "split": str(spec["split"]),
+        "temporal_gap_periods": temporal_gap,
+        "minimum_sequence_identities": minimum,
+        "ineligible_stratum_policy": str(
+            spec["eligibility"]["ineligible_stratum_policy"]
+        ),
+        "rows": rows,
+    }
+    artifact["matrix_sha256"] = canonical_sha256(artifact)
+    return artifact
 
 
 def parse_args() -> argparse.Namespace:
@@ -170,6 +233,12 @@ def main() -> int:
                     }
                 )
 
+    s4_eligibility = _s4_eligibility_artifact(
+        dataset_rows=dataset_rows, prepared_root=prepared_root
+    )
+    s4_eligibility_path = output_dir / "s4_eligibility.json"
+    _write_or_verify_manifest(s4_eligibility_path, s4_eligibility, resume=args.resume)
+
     bad_coverage = {
         f"{dataset}:{period_id}": count
         for (dataset, period_id), count in coverage.items()
@@ -204,6 +273,12 @@ def main() -> int:
                 row["radius_m"],
             ),
         ),
+        "s4_eligibility": {
+            "path": s4_eligibility_path.name,
+            "sha256": sha256_file(s4_eligibility_path),
+            "matrix_sha256": s4_eligibility["matrix_sha256"],
+            "rows": s4_eligibility["rows"],
+        },
         "materializer": {
             "path": "script/materialize_waybill_formal_corpus.py",
             "sha256": sha256_file(Path(__file__)),

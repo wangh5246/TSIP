@@ -20,6 +20,10 @@ if str(ROOT) not in sys.path:
 from common.eval_harness import HarnessParams, compute_bill, total_odometer_distance  # noqa: E402
 from common.settlement import ReceiverFix, TariffTable  # noqa: E402
 from waybill_formal.core import FormalError, canonical_json  # noqa: E402
+from waybill_formal.s4_eligibility import (  # noqa: E402
+    group_periods_by_identity,
+    window_start_indices,
+)
 from waybill_formal.stage import (  # noqa: E402
     finish_stage,
     load_job_environment,
@@ -143,12 +147,10 @@ def _sequence_rows(
         raise FormalError("S4 horizon must be positive")
     if temporal_gap_periods < 1:
         raise FormalError("S4 temporal gap must be at least one period")
-    by_identity: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for raw in _records(periods_path):
-        identity = str(raw.get("device_id") or raw.get("vehicle_id") or "")
-        if not identity:
-            raise FormalError("S4 period lacks original vehicle/user identity")
-        by_identity[identity].append(raw)
+    try:
+        by_identity = group_periods_by_identity(_records(periods_path))
+    except ValueError as exc:
+        raise FormalError(str(exc)) from exc
     sequences: list[dict[str, Any]] = []
     for identity, rows in sorted(by_identity.items()):
         rows.sort(
@@ -157,13 +159,8 @@ def _sequence_rows(
                 str(row.get("period_id") or row.get("trip_id")),
             )
         )
-        starts = [0]
-        starts.extend(
-            range(
-                horizon + temporal_gap_periods,
-                len(rows) - horizon + 1,
-                horizon,
-            )
+        starts = window_start_indices(
+            len(rows), horizon=horizon, temporal_gap_periods=temporal_gap_periods
         )
         if len(starts) < 2:
             continue
@@ -195,9 +192,26 @@ def _sequence_rows(
     return sequences
 
 
-def _split_identities(identities: list[str], seed: int) -> tuple[set[str], set[str]]:
+def _split_identities(
+    identities: list[str],
+    seed: int,
+    *,
+    target_train_fraction: float = 0.7,
+    minimum_train_identities: int = 2,
+    minimum_test_identities: int = 2,
+) -> tuple[set[str], set[str]]:
     ranked = sorted(identities, key=lambda identity: _hash_score(seed, "split", identity))
-    cut = max(1, min(len(ranked) - 1, int(round(0.7 * len(ranked)))))
+    if len(ranked) < minimum_train_identities + minimum_test_identities:
+        raise FormalError("S4 requires at least four identities for a disjoint train/test split")
+    # Keep the protocol's deterministic target while guaranteeing the declared
+    # minimum train/test identity counts for the smallest valid split.
+    cut = max(
+        minimum_train_identities,
+        min(
+            len(ranked) - minimum_test_identities,
+            int(round(target_train_fraction * len(ranked))),
+        ),
+    )
     return set(ranked[:cut]), set(ranked[cut:])
 
 
@@ -340,6 +354,24 @@ def main() -> int:
         raise FormalError("S4 runner received an unsupported job")
     parameters = dict(job["parameters"])
     manifest = load_prepared_manifest(run_root)
+    eligibility = manifest.get("s4_eligibility")
+    expected_eligibility_sha256 = parameters.get("s4_eligibility_matrix_sha256")
+    if expected_eligibility_sha256 is not None:
+        if not isinstance(eligibility, dict) or (
+            eligibility.get("matrix_sha256") != expected_eligibility_sha256
+        ):
+            raise FormalError(
+                "S4 job eligibility matrix does not match the sealed prepared manifest"
+            )
+        matching_rows = [
+            row
+            for row in eligibility.get("rows", [])
+            if isinstance(row, dict)
+            and row.get("dataset") == parameters["dataset"]
+            and int(row.get("horizon", 0)) == int(parameters["horizon"])
+        ]
+        if len(matching_rows) != 1 or matching_rows[0].get("status") != "eligible":
+            raise FormalError("S4 plan scheduled a dataset/horizon that is not evaluable")
     dataset = prepared_dataset(manifest, str(parameters["dataset"]))
     periods_path = Path(dataset["periods_path"])
     tariff_path = Path(dataset["tariff_path"])
@@ -354,9 +386,17 @@ def main() -> int:
         temporal_gap_periods=int(parameters.get("temporal_gap_periods", 1)),
     )
     identities = sorted({row["identity"] for row in sequences})
-    if len(identities) < 4:
+    minimum_sequence_identities = int(parameters.get("minimum_sequence_identities", 4))
+    if len(identities) < minimum_sequence_identities:
         raise FormalError("S4 requires at least four identities for a disjoint train/test split")
-    train_ids, test_ids = _split_identities(identities, int(parameters["seed"]))
+    split_policy = parameters.get("split_policy", {})
+    train_ids, test_ids = _split_identities(
+        identities,
+        int(parameters["seed"]),
+        target_train_fraction=float(split_policy.get("target_train_fraction", 0.7)),
+        minimum_train_identities=int(split_policy.get("minimum_train_identities", 2)),
+        minimum_test_identities=int(split_policy.get("minimum_test_identities", 2)),
+    )
     train = [row for row in sequences if row["identity"] in train_ids]
     test_by_identity: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in sequences:

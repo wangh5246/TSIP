@@ -299,7 +299,18 @@ def validate_protocol(protocol: Mapping[str, Any]) -> dict[str, Any]:
         stages["S4"].get("view_schemas") == expected_view_schemas
         and int(stages["S4"].get("temporal_gap_periods", 0)) == 1
         and stages["S4"].get("gallery_query_overlap_policy")
-        == "forbid-any-shared-period",
+        == "forbid-any-shared-period"
+        and stages["S4"].get("split_policy")
+        == {
+            "target_train_fraction": 0.7,
+            "minimum_train_identities": 2,
+            "minimum_test_identities": 2,
+        }
+        and stages["S4"].get("eligibility")
+        == {
+            "minimum_sequence_identities": 4,
+            "ineligible_stratum_policy": "exclude-before-run-and-report",
+        },
         "S4 observation schemas or temporal split differ from the frozen protocol",
     )
     _require(
@@ -697,6 +708,77 @@ def _prepared_instance_rows(prepared_manifest: Mapping[str, Any] | None) -> list
     return normalized
 
 
+def _prepared_s4_eligibility(
+    protocol: Mapping[str, Any], prepared_manifest: Mapping[str, Any] | None
+) -> tuple[dict[tuple[str, int], dict[str, Any]], str | None]:
+    """Return the immutable S4 evaluability matrix for a materialized plan."""
+
+    if prepared_manifest is None:
+        return {}, None
+    block = prepared_manifest.get("s4_eligibility")
+    if block is None and "datasets" not in prepared_manifest:
+        return {}, None
+    _require(isinstance(block, dict), "prepared S4 eligibility artifact is missing")
+    rows = block.get("rows")
+    _require(isinstance(rows, list), "prepared S4 eligibility rows are missing")
+    spec = protocol["stages"]["S4"]
+    matrix = {
+        "schema": "waybill.formal.s4-eligibility/v1",
+        "split": str(spec["split"]),
+        "temporal_gap_periods": int(spec["temporal_gap_periods"]),
+        "minimum_sequence_identities": int(
+            spec["eligibility"]["minimum_sequence_identities"]
+        ),
+        "ineligible_stratum_policy": str(
+            spec["eligibility"]["ineligible_stratum_policy"]
+        ),
+        "rows": rows,
+    }
+    matrix_sha256 = str(block.get("matrix_sha256", ""))
+    _require(
+        matrix_sha256 == canonical_sha256(matrix),
+        "prepared S4 eligibility matrix hash mismatch",
+    )
+    expected_keys = {
+        (str(dataset), int(horizon))
+        for dataset in protocol["datasets"]
+        for horizon in spec["horizons"]
+    }
+    by_key: dict[tuple[str, int], dict[str, Any]] = {}
+    for row in rows:
+        _require(isinstance(row, dict), "prepared S4 eligibility row is not an object")
+        key = (str(row.get("dataset", "")), int(row.get("horizon", 0)))
+        _require(key in expected_keys and key not in by_key, "invalid S4 eligibility key")
+        eligible_count = int(row.get("sequence_eligible_identity_count", -1))
+        minimum = int(row.get("minimum_sequence_identities", -1))
+        eligible_raw = row.get("eligible")
+        _require(isinstance(eligible_raw, bool), "S4 eligibility flag is not boolean")
+        eligible = eligible_raw
+        _require(
+            minimum == matrix["minimum_sequence_identities"],
+            "S4 eligibility minimum identity count differs from protocol",
+        )
+        _require(
+            eligible == (eligible_count >= minimum),
+            "S4 eligibility status does not match its identity count",
+        )
+        _require(
+            row.get("status") == ("eligible" if eligible else "not-evaluable"),
+            "S4 eligibility artifact has an invalid status",
+        )
+        if not eligible:
+            _require(
+                row.get("reason")
+                == "insufficient-original-identities-with-two-disjoint-windows",
+                "S4 ineligible stratum has no truthful reason",
+            )
+        else:
+            _require(row.get("reason") is None, "S4 eligible stratum has a failure reason")
+        by_key[key] = dict(row)
+    _require(set(by_key) == expected_keys, "S4 eligibility matrix is incomplete")
+    return by_key, matrix_sha256
+
+
 def _expand_s3(
     protocol: Mapping[str, Any], prepared_manifest: Mapping[str, Any] | None
 ) -> list[dict[str, Any]]:
@@ -753,9 +835,12 @@ def _expand_s3(
     return jobs
 
 
-def _expand_s4(protocol: Mapping[str, Any]) -> list[dict[str, Any]]:
+def _expand_s4(
+    protocol: Mapping[str, Any], prepared_manifest: Mapping[str, Any] | None
+) -> list[dict[str, Any]]:
     spec = protocol["stages"]["S4"]
-    return [
+    eligibility, matrix_sha256 = _prepared_s4_eligibility(protocol, prepared_manifest)
+    jobs = [
         _job(
             "S4",
             "privacy-attack",
@@ -767,8 +852,19 @@ def _expand_s4(protocol: Mapping[str, Any]) -> list[dict[str, Any]]:
                 "attacker": attacker,
                 "seed": seed,
                 "split": spec["split"],
+                "split_policy": spec["split_policy"],
                 "temporal_gap_periods": spec["temporal_gap_periods"],
                 "bootstrap_replicates": spec["statistics"]["bootstrap_replicates"],
+                **(
+                    {
+                        "minimum_sequence_identities": spec["eligibility"][
+                            "minimum_sequence_identities"
+                        ],
+                        "s4_eligibility_matrix_sha256": matrix_sha256,
+                    }
+                    if matrix_sha256 is not None
+                    else {}
+                ),
             },
             spec,
         )
@@ -779,7 +875,9 @@ def _expand_s4(protocol: Mapping[str, Any]) -> list[dict[str, Any]]:
             spec["attackers"],
             protocol["seeds"],
         )
+        if not eligibility or eligibility[(str(dataset), int(horizon))]["eligible"]
     ]
+    return jobs
 
 
 def _expand_s5(protocol: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -845,7 +943,7 @@ def expand_protocol_jobs(
         "S1": _expand_s1(protocol),
         "S2": _expand_s2(protocol),
         "S3": _expand_s3(protocol, prepared_manifest),
-        "S4": _expand_s4(protocol),
+        "S4": _expand_s4(protocol, prepared_manifest),
         "S5": _expand_s5(protocol),
     }
     jobs = [job for stage in ("S1", "S2", "S3", "S4", "S5") for job in stage_jobs[stage]]
@@ -1294,6 +1392,43 @@ def _validate_prepared_artifacts(
                 label=f"prepared dataset {path_key}",
             )
             _require(sha256_file(path) == row.get(hash_key), f"prepared {path_key} hash mismatch")
+    dataset_period_hashes = {
+        str(row["dataset"]): str(row["periods_sha256"])
+        for row in datasets
+        if isinstance(row, dict)
+    }
+    s4_eligibility = manifest.get("s4_eligibility")
+    _require(isinstance(s4_eligibility, dict), "prepared S4 eligibility artifact is missing")
+    eligibility_path = _bound_regular_file(
+        corpus_root,
+        s4_eligibility.get("path"),
+        label="prepared S4 eligibility artifact",
+    )
+    _require(
+        sha256_file(eligibility_path) == s4_eligibility.get("sha256"),
+        "prepared S4 eligibility artifact hash mismatch",
+    )
+    eligibility_artifact = read_json(eligibility_path)
+    _require(
+        eligibility_artifact.get("schema") == "waybill.formal.s4-eligibility/v1",
+        "prepared S4 eligibility artifact schema is invalid",
+    )
+    eligibility_unsigned = dict(eligibility_artifact)
+    declared_matrix_sha256 = str(eligibility_unsigned.pop("matrix_sha256", ""))
+    _require(
+        declared_matrix_sha256 == canonical_sha256(eligibility_unsigned),
+        "prepared S4 eligibility artifact canonical hash mismatch",
+    )
+    _require(
+        s4_eligibility.get("matrix_sha256") == declared_matrix_sha256
+        and s4_eligibility.get("rows") == eligibility_artifact.get("rows"),
+        "prepared S4 eligibility manifest binding mismatch",
+    )
+    for row in eligibility_artifact.get("rows", []):
+        _require(
+            str(row.get("periods_sha256")) == dataset_period_hashes.get(str(row.get("dataset"))),
+            "prepared S4 eligibility period hash is not bound to the dataset ledger",
+        )
     coverage: dict[tuple[str, str], set[tuple[int, int]]] = {}
     for row in instances:
         _require(isinstance(row, dict), "canonical instance record is not an object")

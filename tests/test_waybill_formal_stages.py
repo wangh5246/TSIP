@@ -33,6 +33,7 @@ from script.run_waybill_s5_formal_unit import (
 )
 from waybill_formal.core import read_json, write_json
 from waybill_formal.core import FormalError
+from waybill_formal.s4_eligibility import eligibility_summary
 from waybill_formal.stage import finish_stage
 
 
@@ -172,6 +173,40 @@ def test_s4_split_is_identity_disjoint_and_auc_direction_is_correct() -> None:
     assert train | test == {f"vehicle-{index}" for index in range(20)}
     assert _auc([0.9, 0.8], [0.1, 0.2]) == 1.0
     assert _auc([0.1], [0.9]) == 0.0
+
+    train_small, test_small = _split_identities([f"vehicle-{index}" for index in range(4)], 31)
+    assert len(train_small) == len(test_small) == 2
+    assert train_small.isdisjoint(test_small)
+
+
+def test_s4_eligibility_requires_original_identities_with_two_exact_windows() -> None:
+    records = [
+        {
+            "vehicle_id": f"vehicle-{vehicle}",
+            "period_id": f"{vehicle}-{period}",
+            "fixes": [{"auth_gnss_time": 1_000 + vehicle * 100 + period}],
+        }
+        for vehicle in range(4)
+        for period in range(5)
+    ]
+    horizon_one = eligibility_summary(
+        records,
+        horizon=1,
+        temporal_gap_periods=1,
+        minimum_sequence_identities=4,
+    )
+    horizon_four = eligibility_summary(
+        records,
+        horizon=4,
+        temporal_gap_periods=1,
+        minimum_sequence_identities=4,
+    )
+
+    assert horizon_one["original_identity_count"] == 4
+    assert horizon_one["sequence_eligible_identity_count"] == 4
+    assert horizon_one["eligible"] is True
+    assert horizon_four["sequence_eligible_identity_count"] == 0
+    assert horizon_four["eligible"] is False
 
 
 def test_s4_identity_cluster_bootstrap_is_deterministic() -> None:

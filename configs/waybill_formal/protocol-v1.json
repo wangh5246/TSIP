@@ -226,8 +226,17 @@
         "supervised-linker"
       ],
       "split": "vehicle-or-user-disjoint",
+      "split_policy": {
+        "target_train_fraction": 0.7,
+        "minimum_train_identities": 2,
+        "minimum_test_identities": 2
+      },
       "temporal_gap_periods": 1,
       "gallery_query_overlap_policy": "forbid-any-shared-period",
+      "eligibility": {
+        "minimum_sequence_identities": 4,
+        "ineligible_stratum_policy": "exclude-before-run-and-report"
+      },
       "statistics": {
         "cluster_unit": "original-vehicle-or-user",
         "bootstrap_replicates": 5000,
