@@ -11,7 +11,7 @@
       "odometer_reading_m": 10000,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "AcsjKm2EMJeshNu1hOZGSGsuLMg6B-NCFYRFps58Qfl4NoEn671vN0hmvn_GcqWdAb_4yn_AT-_gDH-qCd9RDA"
+      "receiver_sig": "eJQT8FKnj9i-DtFo1LSMpxeyG8GTTexQ-FXqEfn3j1Hssz61stSOE5srNZIHY7aiViAV6vAJOXYZ2ZNitIVKCA"
     },
     {
       "auth_gnss_time": 1777593900,
@@ -24,7 +24,7 @@
       "odometer_reading_m": 10100,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "GobHL6xQ6XUNpBIKJvgmLRVZFSqR9XxwM8XYo2FZAaC9TnGCmJRTB0lQZyYbeSqhPLYqrKt7x71NYLNkHP14Bw"
+      "receiver_sig": "Is2CNT1Veo2zJgPDRHSDQTuU64UElyXomF47XeY98ySBbGuRhBn_9ZWbiP7-rnCN4q0tRbsunzbeG_WulPppAw"
     },
     {
       "auth_gnss_time": 1777594200,
@@ -37,7 +37,7 @@
       "odometer_reading_m": 10200,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "K90aOlkmjGL73J3vHkkZMici4WdW3i3P9wHgavQ1K2_umKjBO3nfWNawgPkkm21H8KvB8qeySMzbXnIz4j3tAA"
+      "receiver_sig": "WoZ87iQE9t0mph2Rs0_Y1lqw-TispoSK7-0VGW6FvY-hOxGhc7RK-6A4wPcjvvDvU_nDmVpclMwT3f8Gg9HpBQ"
     },
     {
       "auth_gnss_time": 1777594500,
@@ -50,7 +50,7 @@
       "odometer_reading_m": 10300,
       "osnma_status": "unavailable",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "2xqK_jM45pCCFC5-hDkEieCpyPxnuN-rQmICPCPw5PdRgEvMZkbo3Ik_Q5A3bdN7dHYk4ECvowoLpYk1zEqNDg"
+      "receiver_sig": "YWnsLX2AdlpiKCbRz5yfrMKrRgOpkEKBg9qzyXdHwv-c6NsZC3zPxXkHBk59uRqSg1OEGEJJxCU4KeKjnP3AAg"
     },
     {
       "auth_gnss_time": 1777594800,
@@ -63,7 +63,7 @@
       "odometer_reading_m": 10400,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "TCA1xlVNeCftYgpFbtPzdCwFOwOkCuxCbN-M3-10y89OHCkC-ULU5lbSzDjfz7rqP3PMnvXKOIpEDF_rpSUUCg"
+      "receiver_sig": "jPmmF9H9RPtIPKVAeFSPmoBqBAuxiCU0TcKFaZMSVldGmyuqfgTBagjxCnpce6yorXbQoCRPrXKlUYrnbPLuAQ"
     },
     {
       "auth_gnss_time": 1777595100,
@@ -76,7 +76,7 @@
       "odometer_reading_m": 10500,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "t62fq1v8PmaZQ-GQEPUZwnjd0y4cuTjsPLP7EH1-rO4ALyDu8hZVluBC2DJ91h26I4z9a3_iCSeCwvEQLvX-Bw"
+      "receiver_sig": "QbKlxMRpz9cTNm5Tpa6QSBt07quZ_L8HFZ8peJy4lcYorpNilec9zyqjRiuM-_NjjSE1xXRAMJlZh8wUVv2aBQ"
     },
     {
       "auth_gnss_time": 1777595400,
@@ -89,7 +89,7 @@
       "odometer_reading_m": 10600,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "2dif2OCHJOB_FrlCfwicX7ou99yZeCAmeTkNVIgiSgleGsWhoZ-74jZ6fSGyaHPcTX4Os3meTDg3i60FKW77DA"
+      "receiver_sig": "fJSo4PEyjztiWto1ZsZJyHEPsu6jWHgrGrEtLfmrj7nIf0UVyuAqhTRf-nUn8ubw4M9FOXpuLXtyrO95PCIdDQ"
     },
     {
       "auth_gnss_time": 1777595700,
@@ -102,7 +102,7 @@
       "odometer_reading_m": 10700,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "nmhlfTvvMWPjEwttTBfHbEuiVnn1rBETIDzUh_qbuY6NEVNq4CMnO-Brxk7O-vSv-lOIG2I_7W3t5KLkeoDQBg"
+      "receiver_sig": "qMu5CoOg3pnwQilBTYUb4uu5wEMk-_gIXRQO8yzZYunGUQY6Y9TrHkGw6HPL52Y3P_x6jzAOpfC-_zpLG_K8Aw"
     },
     {
       "auth_gnss_time": 1777596000,
@@ -115,7 +115,7 @@
       "odometer_reading_m": 10800,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "Q8KETjLRILN8m0wsu8cNRUqJmfX4PU4DauG0JUN3zoCdfbvY8GkOB2otIvKmUUTNMrr4SkEBMhatKY5NBbQhCw"
+      "receiver_sig": "k6qqWe7Agitl9W8dKUKiLg-lw9Y884QumU9JCySZ5H5UX8yVU1YvHmQMQxZJlcKw-f5IGfGWMBapgULvp5CeBg"
     },
     {
       "auth_gnss_time": 1777596300,
@@ -128,7 +128,7 @@
       "odometer_reading_m": 10900,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "Ok-xde6s01MvoQH2CtRtDhsX1n0_koh7bBwp52J-0r5ukLAdVcHfHDSGfLvDomEdSLUviQ8uQEW409_-F0NGBA"
+      "receiver_sig": "9UVryBLdAyXnOZc-lhQLcxOahkxQVelMYNzNeCHN8ZSxDyjJCXxCRMX0VfFKnORdngTO6sTbIG2yomQLg6vbBg"
     },
     {
       "auth_gnss_time": 1777596600,
@@ -141,7 +141,7 @@
       "odometer_reading_m": 11000,
       "osnma_status": "unavailable",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "9xjtzjervMBpTx9IqGroCzVeEayKliRkKAHcbpYfsyUG-GbamrESSCYf07LkBtMTJvvDBxmWYSEgoNHS65FQBQ"
+      "receiver_sig": "Kf1aj_WK2f7N7iAjcQGJC4XgpUxZ0Pb6ok2K9Q_uVaS4tXO_6OomazY9mLD9YcgP9Pn3fWdDubJ3uipdDBA-Bw"
     },
     {
       "auth_gnss_time": 1777596900,
@@ -154,7 +154,7 @@
       "odometer_reading_m": 11100,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "OMB7oQrw3LTJY2dy8WKQDlW_wDbuK5paNmjtlXUrAoCnqLLT3pox97oJ6Xrga4M5nzFz_8-qgNTOXa0xBjV2Aw"
+      "receiver_sig": "MHW5q9smtuoek0jQTF56vXzFMT0TYoa8rC5hfQMcvE941NzBB5ipdWXBVqO-an8gVGDtckfOQqKQ5SpFI7T0Ag"
     },
     {
       "auth_gnss_time": 1777597200,
@@ -167,7 +167,7 @@
       "odometer_reading_m": 11200,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "sJ6CqcrPYdVeBCSYLHHjkWKM7mxWrFSQTg72e27juccAlk4euVaUQhAfL9xSi3azkC6x0-DQQ1a_GA-kN6u0BQ"
+      "receiver_sig": "GRh4Ab9T7zr3_2BFu3Midy6_GYO__aqZU_3rTNrTBaY98yVFxPT6ZFueTrkTbN1VM5ialJ6-bjqmT3HIMoN6Aw"
     },
     {
       "auth_gnss_time": 1777597500,
@@ -180,7 +180,7 @@
       "odometer_reading_m": 11300,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "Wrdor2G_rpZ2OPypunEV7NCuObvNr1WyqgaP6A8E8C5VI_sk5E6TKgrSWJBx4_kHmaoQnVG9_c8Tuy16O6K0BQ"
+      "receiver_sig": "fv-mbHvu0bBIsS3rC5r7C2XZr4LXc7Ndi0AqWt1DMiGvA40DyDymGNE6mNmxhz9u3iME7QroMYHNpt3gN84BBA"
     },
     {
       "auth_gnss_time": 1777597800,
@@ -193,7 +193,7 @@
       "odometer_reading_m": 11400,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "buDgUzh8UbzWlsJTLDy4JF9n9bbuFUSvqWRmtK-ocPiROpoRnoNUUThc17YmDbqIN3XrW5AfWEasV1ncozcOAg"
+      "receiver_sig": "4Ma9XUpbV9qR1yGb4XjEpP-mTHDf2xXW9MuwJG2f7xvsq9Hlqk9fHJZpdACC-hkZrBuKGdXNgLA6B2t9baWcCg"
     },
     {
       "auth_gnss_time": 1777598100,
@@ -206,7 +206,7 @@
       "odometer_reading_m": 11500,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "tjb_nI68d0QHXKzipfFwElwdUcANXv9G9xbz5VmBgxq2ChOUzSN30llcq016tzM_6T7I7leXl-WSk5Ih566SBQ"
+      "receiver_sig": "hsmKSFdtEOGRrXRqYiJvZM5KczLIqlo5MlvS55ttnEVAsmIk3BKXAqmJ0nqBUW9nHubNrjujbtTOXEJY0_c0Bg"
     },
     {
       "auth_gnss_time": 1777598400,
@@ -219,7 +219,7 @@
       "odometer_reading_m": 11600,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "hc7Dq8Xl6BWlWjqWl8F_vNv5YWmDsy9vKWh5eEdVW5M2O3nxZyeGlNZfjQyJqMYSJjZAmKQX5WZComhJ3BX9Dg"
+      "receiver_sig": "1RhN6WttgXZRKy_KDZ_9bCOa_-pMNJE5omHil30eYgVDOK2S0bAms6mrO9UNbu985DphGoCx-BdpocS1MIDkCQ"
     },
     {
       "auth_gnss_time": 1777598700,
@@ -232,7 +232,7 @@
       "odometer_reading_m": 11700,
       "osnma_status": "unavailable",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "ccyNonVKl8w58vSgMazWAAj-xlI5RSrXbkyjEoccHjMOL2GCpEjWZu82hd_e3vPjMi6SFscpOCOQh_rubmSHBg"
+      "receiver_sig": "4vFf5XXyEJiwI4HWCWVFmKCCCTIdeXkVzVrXDAR3YrWDkUWaksw0FNplvhdlpSyL9UiuaLruF74bFQvJfmerDA"
     },
     {
       "auth_gnss_time": 1777599000,
@@ -245,7 +245,7 @@
       "odometer_reading_m": 11800,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "L2gcWsCW4_B41C_uXagiTIKwnG2vc0DkuLtDAi8kzfe96VFpxSWiF1-96XcPLsmoF0Yjew5Bw1SH-pE7MRoEBA"
+      "receiver_sig": "ROfOczAzEqBk2b8qr2x86OEB-Q-yc1pr1Idl2k1I2LgndoMKqF3dneeEL9KauxXrX9NIPEfU2NmzPk7mbFIUBQ"
     },
     {
       "auth_gnss_time": 1777599300,
@@ -258,7 +258,7 @@
       "odometer_reading_m": 11900,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "LbSSaaO3SYriyIqPkRoKmrsIbsG6QVLW_s1hwZ9q8LW9OuMoSLrkVmnFXK7tW-32pBl60m-rI3nolgFekyiODQ"
+      "receiver_sig": "DULHI9VEzJduUXeBhLdh0ArQUJhHK1Mttspf-cLXYbUblPLFWzrjqI7FIT9hPMZ0oAMo04PD6qvGUpf5WajWAg"
     },
     {
       "auth_gnss_time": 1777599600,
@@ -271,7 +271,7 @@
       "odometer_reading_m": 12000,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "OJuMC4Yh9KpxFsQaaYSIyNCaktd973jmxPuMvzVxR1M6qOjtPsQW17ct0LpRrjKbhC4nuu7inquHOSAuT0PxAA"
+      "receiver_sig": "BrRSIsLGLiCMTiIjN1aikVW__ITDv9J3IYJVwjmIlSrrfUbZpPliyTwZcld_nNKxGJbDIquRyYw9bTvtn7oaCg"
     },
     {
       "auth_gnss_time": 1777599900,
@@ -284,7 +284,7 @@
       "odometer_reading_m": 12100,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "Nhe8gtmylNi-0PpaSIqLSvJcMuwGKX6BQC37z80iN-UlDjLYkG7folaQuzVgocu9UeU0_mO1sp9JOC5lL-qVCw"
+      "receiver_sig": "WZlLltYnd_kHakeq0GrHj0Gqwo_DMhPtPshhrc9nNoPVoH5cdn2sClq32YF1tUvYPGfNE9OArbzfAHoo6Ye1Dg"
     },
     {
       "auth_gnss_time": 1777600200,
@@ -297,7 +297,7 @@
       "odometer_reading_m": 12200,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "VTjWZb5poPzbXli3UmCEI36vhDCjjNEa9A5FnEnPq0IS9n6y33Lk5ibldrVkbhtOLysJfNJtLJrgtvK556ZaDA"
+      "receiver_sig": "8NtWLPfeTwlpExM_73clxhTyxO8PkH_QrReLP5b6QyR_r-FUcDQ87udOWSQEul9S5CWYNsVm8x_Ju_vFsNRQCg"
     },
     {
       "auth_gnss_time": 1777600500,
@@ -310,7 +310,7 @@
       "odometer_reading_m": 12300,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "tZVlzkD_fcJ9Z8ZuY6607v93a3VmMcyxKL9hU8J43iwSYVVqQDzpMsYfL1LNm0yMHxRMDqbAI8UhpXGz4EaDBg"
+      "receiver_sig": "0mgfze6qgyF_ekZeMc_Q3D-HEDo-jBQvinU8DC1Z0GsPtOyNHBJ7SQ8WQls1qgvcuM6GJSEaAjKOCYoUTFUfAw"
     },
     {
       "auth_gnss_time": 1777600800,
@@ -323,7 +323,7 @@
       "odometer_reading_m": 12400,
       "osnma_status": "authenticated",
       "period_id": "2026-05-v6-k6",
-      "receiver_sig": "u6f2fDcQ4XUaCU71Z34pWBnjEDCNFrnnfR-PsNj2GDWbuOpmrglLr8HLYeBS8QYnKrbFPAKq0FN1Uf33v_IrCQ"
+      "receiver_sig": "n9Nl4IonSgwFmpAeDny7m_mC0qOUIiOMDOCovc8Nz09AXpVMbP2_OryQSMqWzkSnlwx1kkwSJ8i1BilOEF5-Ag"
     }
   ],
   "policy_profile": {
@@ -396,12 +396,12 @@
     "cap_policy_sq": 3000000000,
     "circuit_id": "settlement-period-v6-validity-bound-k25-d8",
     "currency": "EUR",
-    "device_attestation_commitment": "_5iLYOhQYCS4eXkMIbnmY4IMsoPxi0DYHQe4A6Hums8",
+    "device_attestation_commitment": "NsJicBA6mLtuAoluc78APH423MQqpk2uIZXmvRrJOww",
     "domain_sep": "tsip_settlement_public_v6",
     "fallback_intervals": 3,
     "fallback_semantics_version": "odometer-max-rate-v6",
     "fixed_point_scale": 1,
-    "interval_commitment_root": "9296653626917106261459471477489461718572332342668942089548182221435584749250",
+    "interval_commitment_root": "13537525826661055677668177981502637497382279022516503091275100979519086453071",
     "jurisdiction_id": "ruc-demo",
     "max_dt_sec": 600,
     "max_fixes": 25,
@@ -422,9 +422,9 @@
     "position_validity_rule": "origin-osnma-authenticated-v1",
     "profile_version": 9,
     "receiver_attestation_schema": "waybill.receiver.root-attestation/v5",
-    "receiver_fix_root": "18697415195652445283419134384774015171578406215279134463845137956563414641514",
+    "receiver_fix_root": "5530629566637649181126160274459502298694161537463339077788023339529508228294",
     "rounding_mode": "exact-integer",
-    "statement_commitment": "8568839051586993452399334692243348010448089569652796127267990689774241650197",
+    "statement_commitment": "3442657244802449080110189994938346000272337235166986083115363526737176497767",
     "tariff_root": "16029992397017151081834793174573413724970945817949566785628275521024864749618",
     "tariff_tree_depth": 8,
     "tariff_version": 9,
@@ -442,24 +442,24 @@
     "odometer_end_m": 13000,
     "odometer_start_m": 10000,
     "schema": "waybill.receiver.monthly-odometer-attestation/v2",
-    "signature": "HB_wxefyGavstsR8ADrAR75JrT4knOHd82e66b7VMC3KmL3A4_UZwH2Rovy6KUFXyc5A3ADO3GNB6v9Z7dXABQ"
+    "signature": "O8QlP4qI5qmB8O2X8zeJVDQr8dP49aSRbFtRJZN7A6nEXsWjUx59C2uw4MEt9tzjaoXHaUYsYMrkECkS14nlCg"
   },
-  "receiver_public_key_hex": "ff988b60e8506024b879790c21b9e663820cb283f18b40d81d07b803a1ee9acf",
+  "receiver_public_key_hex": "36c26270103a98bb6e02896e73bf003c7e36dcc42aa64dae2195e6bd1ac93b0c",
   "receiver_root_attestation": {
     "charger_domain": "ruc-demo.charger-test",
     "commitment_semantics": "receiver-fix-validity-v2",
-    "device_attestation_commitment": "_5iLYOhQYCS4eXkMIbnmY4IMsoPxi0DYHQe4A6Hums8",
+    "device_attestation_commitment": "NsJicBA6mLtuAoluc78APH423MQqpk2uIZXmvRrJOww",
     "device_id": "dev-v6",
     "fix_count": 25,
     "log_epoch": 1,
-    "log_sha256": "6eec2aba9d14e4cdef4750ec3fa25dc85f1658a7223f549ee272487f64ba9e1e",
+    "log_sha256": "b498901500d042ac6eb75ed7fe0ba2968f12e2a71fbd91557ecac8727029592b",
     "period_id": "2026-05-v6-k6",
     "position_validity_rule": "origin-osnma-authenticated-v1",
     "previous_attestation_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-    "receiver_fix_root": "18697415195652445283419134384774015171578406215279134463845137956563414641514",
-    "receiver_id": "receiver-v6-evidence",
+    "receiver_fix_root": "5530629566637649181126160274459502298694161537463339077788023339529508228294",
+    "receiver_id": "receiver-v6-demo",
     "schema": "waybill.receiver.root-attestation/v5",
-    "signature": "JHi_UCofIXtnpSbRSisDADw_H29saV5MwFWVmw7klLBQJv2r1oMGVEM-7Zo4tpO_RILBYuUiAa79fy3keMPMBA"
+    "signature": "hfpIkf0BLr7ZzEmsulIM7kAud3F_GlpPWMmmvjB8iF0lasZZCXUICZ4hMHKAYkImXH8OEL_Espz5z2-fuLSVDw"
   },
   "tariff": {
     "cell_zones": {

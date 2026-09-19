@@ -7,20 +7,20 @@
     "total_fee_cents": 3600
   },
   "artifact_sha256": {
-    "proof.json": "5099f0a54aef05b9c1e0e31ecdd652f7db4dd1f646bafa5fd384002669e4af16",
-    "public.json": "fa27ada2eb81290a7ec9e8f41f0f7bd65ddd96f914514580e1d2c74280af5fd9",
-    "submission.json": "c27fe9d4a52f6878c9d98c5763eeaa0bb611eb8f6599bc83bf32f3fff83d1808",
+    "proof.json": "814cfbc7f8b88be4a6938b07892dc94b31ffb9b2a15855ea884c8c075d4e2a25",
+    "public.json": "a9c770cde0efa06f8fee7c7f198eb81168eda0351e16f92b9fdbcaf934f5f05a",
+    "submission.json": "6c7c703d953a74f9b7070c45ce831fcf903f12c1be501a7857a0ffa6493ba395",
     "verification_key.json": "9715ac43bc809c94844b0cb8af120fb3b5342f6bcfa8adf27f9dcbce30add471"
   },
   "code_sha256": {
     "common/http_security.py": "2beff414b353e98dcbf79218c3aa31881b6491e0a6bcf3c72a1e51d2b150e74f",
-    "common/policy_profile.py": "42319b79fb14d9a45f81c7860e493ed2a372fdac82d549295c4781b885578788",
+    "common/policy_profile.py": "363d8f258cd303c79b3ee2cd628f762f3fdc998c4aae5b312e3615252b9b21c3",
     "common/receiver_signer.py": "0672f9c93866139fc9b9858d45e78bd29c0f9c1a921b687d1021eb220d6d06af",
-    "common/settlement.py": "9df2877e74803eda2b66fcd67dcef8783ce0cfd92845ef7a4ea44ba842152d0a",
+    "common/settlement.py": "a64eda0fcc5af658860324247ec41b7a256a35e3b516678277029ef35fb35cc6",
     "common/settlement_v6.py": "e5beb773d16fd989aa8b61bcac1d8aa2d8418147f1a5ed63f9da6cb5938eaecf",
     "script/prove_settlement_period_v6.py": "c062f0246a3f8094ab0e7b00f11464e491d6c18717f25c68bc12af9570bdaa89",
     "script/run_waybill_m1_endpoint_gate.py": "a4f61a1d766580b67fe2227df4f2922cc336a32f7b1351d8aeeade574ec33fc1",
-    "services/charger/app.py": "d9d44538910ac8881c271321c6bd3c396696c5c6f371cd62a3675f4b2a8bc238",
+    "services/charger/app.py": "43c90720507e3630c0998ca947c43ab19b4a12cd9e897474f5d5521e8ba8e49f",
     "services/charger/store.py": "75c19f1c34d371afff39dcffd4cd9614139d224246e4a4de0cca811cfecd661e",
     "services/receiver_signer/app.py": "cdae4e9968df17343c8a1158dd8d3dcb6757b412533e097f4b6978ce51937d32"
   },
@@ -52,7 +52,7 @@
     "tampered_signal": 400
   },
   "month_attestation_anchor": {
-    "attestation_sha256": "32c31945be63e53aa874cabd7a84d896fd4b1d009d9da51ff806a7dbe5001f80",
+    "attestation_sha256": "2007f4f5e87c1a78d95e4405fc717539246d686b6b7b0c7c7b060bb6499a10cd",
     "conflict_probe_device_id": "dev-v6-month-conflict-probe",
     "conflict_status": 409,
     "created": true,
@@ -84,7 +84,7 @@
     "ruc-demo-v9.json": "159fe53a594ef2944311aaf08a17ef4cfdac812603b0f333cc36709694e894ec"
   },
   "receiver_chain_head": {
-    "attestation_sha256": "c559ec4671bb96c04d685b038a95bd98acf209cd8014e4f76b928b721a94c992",
+    "attestation_sha256": "bbe274577356b03348dd0a738c4874db2de87ecd95dc877750a47b93565b17a2",
     "log_epoch": 1,
     "previous_attestation_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
   },
