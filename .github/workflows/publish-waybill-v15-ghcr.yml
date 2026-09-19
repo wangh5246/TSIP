@@ -67,14 +67,14 @@ jobs:
           sbom: false
           tags: |
             ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:readiness-v15
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:065630ba
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:388ee46e
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.version=waybill-formal-readiness-v15
           build-args: |
-            WAYBILL_GIT_COMMIT=065630bab0363ade9b8208874086ed2cf9de398d
-            WAYBILL_GIT_TREE=cb0e4c987c1fffb2ec532b9d6138d70f6b685a1d
-            WAYBILL_CODE_MANIFEST_SHA256=241bfa86383d7abc705efc4fe1be789dc2b393c1432d1dcd71c4bccec267678e
+            WAYBILL_GIT_COMMIT=388ee46e0dde9943ffe342a6a9bfdcbc1cd44909
+            WAYBILL_GIT_TREE=c8c88bce8e5d018785a31644ccfc28d2846d3ef5
+            WAYBILL_CODE_MANIFEST_SHA256=244a0993130b7254ccbe8c112302dbe566755540f82a5ed50d2541da8cd0f3d1
             WAYBILL_PROTOCOL_SHA256=7198534429da4b1d3073c57774d5c5eb4cddc3bdac2de1db7f33726d0120d40a
           cache-from: type=gha,scope=waybill-v15-${{ matrix.role }}
           cache-to: type=gha,mode=max,scope=waybill-v15-${{ matrix.role }}
