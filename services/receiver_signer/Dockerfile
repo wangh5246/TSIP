@@ -18,6 +18,7 @@ LABEL org.opencontainers.image.title="WayBill Independent Receiver Signer" \
       io.waybill.protocol.sha256="${WAYBILL_PROTOCOL_SHA256}"
 
 WORKDIR /app
+RUN apk upgrade --no-cache
 COPY services/receiver_signer/requirements.lock /tmp/receiver-signer.lock
 RUN python -m pip install --no-cache-dir --require-hashes \
       -r /tmp/receiver-signer.lock \

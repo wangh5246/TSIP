@@ -23,7 +23,7 @@ COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /opt/waybill-node /opt/waybill-node
 WORKDIR /app
 
-RUN apk add --no-cache libgcc libstdc++
+RUN apk upgrade --no-cache && apk add --no-cache libgcc libstdc++
 
 COPY services/charger/requirements.lock .
 RUN pip install --no-cache-dir --require-hashes -r requirements.lock \

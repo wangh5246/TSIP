@@ -18,6 +18,6 @@ LABEL org.opencontainers.image.title="WayBill PostgreSQL" \
       io.waybill.protocol.sha256="${WAYBILL_PROTOCOL_SHA256}" \
       io.waybill.postgresql.version="17.10"
 
-RUN rm -f /usr/local/bin/gosu
+RUN apk upgrade --no-cache && rm -f /usr/local/bin/gosu
 
 USER 70:70

@@ -52,6 +52,7 @@ LABEL org.opencontainers.image.revision="${WAYBILL_GIT_COMMIT}" \
       io.waybill.runtime.git.version="2.52.0-r0"
 RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g; s|http://deb.debian.org/debian-security|https://deb.debian.org/debian-security|g' /etc/apt/sources.list.d/debian.sources \
     && apt-get -o Acquire::Retries=5 update \
+    && apt-get -o Acquire::Retries=5 upgrade -y \
     && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
        ca-certificates \
        libatomic1 \
