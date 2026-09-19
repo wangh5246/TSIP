@@ -155,6 +155,11 @@ def parse_args() -> argparse.Namespace:
     local.add_argument("--run-root", type=Path, required=True)
     local.add_argument("--stage", choices=["S1", "S2", "S3", "S4", "S5"])
     local.add_argument("--kind")
+    local.add_argument(
+        "--results",
+        type=Path,
+        help="append one JSON line per job outcome here (must live outside the run root)",
+    )
 
     job_at = sub.add_parser("job-id-at")
     job_at.add_argument("--run-root", type=Path, required=True)
@@ -276,23 +281,67 @@ def main() -> int:
             print(job_id)
         return 0
     if args.command == "run-local":
+        # Successor driver semantics (A4): per-unit failure isolation.  The
+        # V14 recovery driver let one exception escape run_group and abort
+        # every remaining unit, and refused to resume an existing ops root.
+        # Here a failing unit is recorded and the driver moves on; resume
+        # semantics come from resume_job_ids, which re-selects only units
+        # without a strictly validated passed receipt.
+        run_root = args.run_root.resolve()
         jobs = {
             row["job_id"]: row
-            for row in read_jsonl(args.run_root.resolve() / "jobs/expected.jsonl")
+            for row in read_jsonl(run_root / "jobs/expected.jsonl")
         }
         selected = []
-        for job_id in resume_job_ids(args.run_root.resolve()):
+        for job_id in resume_job_ids(run_root):
             job = jobs[job_id]
             if args.stage and job.get("stage") != args.stage:
                 continue
             if args.kind and job.get("kind") != args.kind:
                 continue
             selected.append(job_id)
+        results_path = args.results.resolve() if args.results else None
+        if results_path is not None:
+            if results_path == run_root or run_root in results_path.parents:
+                raise FormalError(
+                    "driver results must live outside the immutable run root"
+                )
+            results_path.parent.mkdir(parents=True, exist_ok=True)
+        passed = 0
         failed = 0
-        for job_id in selected:
-            receipt = execute_job(args.run_root.resolve(), job_id, root=ROOT)
-            print(json.dumps(receipt, sort_keys=True))
-            failed += int(receipt["status"] != "passed")
+        driver_errors = 0
+        for index, job_id in enumerate(selected, start=1):
+            try:
+                record = execute_job(run_root, job_id, root=ROOT)
+                passed += int(record["status"] == "passed")
+                failed += int(record["status"] != "passed")
+            except Exception as exc:  # noqa: BLE001 - isolation is the point
+                driver_errors += 1
+                failed += 1
+                record = {
+                    "job_id": job_id,
+                    "status": "driver-error",
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+            record["driver_sequence"] = index
+            print(json.dumps(record, sort_keys=True), flush=True)
+            if results_path is not None:
+                with open(results_path, "a", encoding="utf-8") as handle:
+                    handle.write(json.dumps(record, sort_keys=True) + "\n")
+        summary = {
+            "schema": "waybill.formal.driver-run-summary/v1",
+            "run_root": str(run_root),
+            "selected": len(selected),
+            "passed": passed,
+            "failed": failed,
+            "driver_errors": driver_errors,
+            "stage": args.stage,
+            "kind": args.kind,
+        }
+        print(json.dumps({"summary": summary}, sort_keys=True), flush=True)
+        if results_path is not None:
+            with open(results_path, "a", encoding="utf-8") as handle:
+                handle.write(json.dumps({"summary": summary}, sort_keys=True) + "\n")
         return 1 if failed else 0
     if args.command == "job-id-at":
         job_rows = read_jsonl(args.run_root.resolve() / "jobs/expected.jsonl")

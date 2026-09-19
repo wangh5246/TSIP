@@ -2794,9 +2794,10 @@ def resume_job_ids(run_root: Path, *, max_attempts: int = 2) -> list[str]:
     result: list[str] = []
     for job in expected:
         job_id = str(job["job_id"])
+        attempt_paths = _attempt_paths(run_root, job_id)
         receipts = [
             (path, read_json(path / "receipt.json"))
-            for path in _attempt_paths(run_root, job_id)
+            for path in attempt_paths
             if (path / "receipt.json").is_file()
         ]
         valid_success = False
@@ -2809,7 +2810,12 @@ def resume_job_ids(run_root: Path, *, max_attempts: int = 2) -> list[str]:
                 continue
         if valid_success:
             continue
-        if len(receipts) < max_attempts:
+        # The exhaustion check must count attempt *directories*, matching
+        # next_attempt(), not receipts.  A driver-level error (a missing stage
+        # entrypoint, for example) consumes an attempt directory without
+        # producing a receipt; counting receipts here would re-select such a
+        # unit forever while next_attempt refuses it every time.
+        if len(attempt_paths) < max_attempts:
             result.append(job_id)
     return result
 

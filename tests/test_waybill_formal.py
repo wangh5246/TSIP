@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import signal
 import subprocess
@@ -1439,3 +1440,200 @@ def test_s2_formal_input_binds_each_depth_to_its_own_profile(
 
 def test_canonical_hash_is_independent_of_mapping_order() -> None:
     assert canonical_sha256({"a": 1, "b": 2}) == canonical_sha256({"b": 2, "a": 1})
+
+
+def _install_driver_jobs(run_root: Path, tmp_path: Path) -> None:
+    """Four units: pass, fail, pass, and one execute_job cannot even start."""
+
+    worker = tmp_path / "driver_passing_stage.py"
+    worker.write_text(
+        "import json, os\n"
+        "from pathlib import Path\n"
+        "from waybill_formal.stage import finish_stage\n"
+        'job = json.loads(Path(os.environ["WAYBILL_JOB_JSON"]).read_text(encoding="utf-8"))\n'
+        'attempt = Path(os.environ["WAYBILL_ATTEMPT_DIR"])\n'
+        'attempt.joinpath("output.txt").write_text("ok\\n", encoding="utf-8")\n'
+        'finish_stage(job=job, attempt_dir=attempt, payload={"status": "passed", "output": "output.txt"})\n',
+        encoding="utf-8",
+    )
+    passing = [sys.executable, str(worker)]
+    rows = [
+        {
+            "job_id": "a",
+            "stage": "S1",
+            "kind": "test",
+            "parameters": {},
+            "timeout_sec": 60,
+            "resource": {},
+            "command": passing,
+        },
+        {
+            "job_id": "b",
+            "stage": "S1",
+            "kind": "test",
+            "parameters": {},
+            "timeout_sec": 60,
+            "resource": {},
+            "command": [sys.executable, "-c", "import sys; sys.exit(3)"],
+        },
+        {
+            "job_id": "c",
+            "stage": "S1",
+            "kind": "test",
+            "parameters": {},
+            "timeout_sec": 60,
+            "resource": {},
+            "command": passing,
+        },
+        {
+            # Its stage entrypoint does not exist, so execute_job raises before
+            # any attempt directory exists -- the exact shape that killed the
+            # V14 recovery driver.
+            "job_id": "d",
+            "stage": "S1",
+            "kind": "test",
+            "parameters": {},
+            "timeout_sec": 60,
+            "resource": {},
+            "command": [sys.executable, "script/definitely_missing_stage.py"],
+        },
+    ]
+    write_jsonl(run_root / "jobs/expected.jsonl", rows)
+    # Re-seal, mirroring initialize_run: the plan (expected.jsonl) is finalized
+    # before the run seal over its bytes is computed.
+    sealed_inputs = {
+        relative: _sha(run_root / relative)
+        for relative in (
+            "protocol.json",
+            "plan.json",
+            "jobs/expected.jsonl",
+            "code_manifest.json",
+            "data_manifest.json",
+            "environment.json",
+            "container_manifest.json",
+            "prepared_manifest.json",
+            "gate_receipts.json",
+            "execution-container.json",
+        )
+    }
+    run = read_json(run_root / "run.json")
+    run["sealed_inputs"] = sealed_inputs
+    run["sealed_inputs_sha256"] = canonical_sha256(sealed_inputs)
+    write_json(run_root / "run.json", run)
+
+
+def _run_local_cli(run_root: Path, results: Path, monkeypatch) -> int:
+    from script import waybill_formal_cli as cli
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "waybill_formal_cli.py",
+            "run-local",
+            "--run-root",
+            str(run_root),
+            "--results",
+            str(results),
+        ],
+    )
+    return cli.main()
+
+
+def _read_results(results: Path) -> list[dict]:
+    return [
+        json.loads(line)
+        for line in results.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+
+def test_run_local_driver_isolates_failures_and_resumes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One broken unit must not take the remaining units down (A4)."""
+
+    run_root = _fake_run(tmp_path, ["a", "b", "c", "d"])
+    _install_driver_jobs(run_root, tmp_path)
+    _patch_execution_guards(run_root, monkeypatch)
+    results = tmp_path / "ops" / "results.jsonl"
+
+    exit_code = _run_local_cli(run_root, results, monkeypatch)
+
+    assert exit_code == 1
+    records = _read_results(results)
+    bodies = [r for r in records if "summary" not in r]
+    # d raises inside execute_job; the driver records a driver-error row and
+    # still reaches every unit after it.
+    assert [r["job_id"] for r in bodies] == ["a", "b", "c", "d"]
+    assert [r["status"] for r in bodies] == ["passed", "failed", "passed", "driver-error"]
+    assert "entrypoint missing" in bodies[3]["error"]
+    assert bodies[0]["attempt"] == 1 and bodies[2]["attempt"] == 1
+    summary = records[-1]["summary"]
+    assert summary["selected"] == 4
+    assert summary["passed"] == 2 and summary["failed"] == 2
+    assert summary["driver_errors"] == 1
+
+    # Repair the environment (the missing entrypoint appears), then resume:
+    # the failed unit is re-selected as attempt-02, and the unit that never
+    # started continues on its second attempt directory.
+    missing_entrypoint = ROOT / "script" / "definitely_missing_stage.py"
+    # Real stage entrypoints re-anchor sys.path to the repo root because the
+    # interpreter puts the script's own directory first (script/ contains a
+    # waybill_formal.py shim that would shadow the package otherwise).
+    missing_entrypoint.write_text(
+        "import json, os, sys\n"
+        "from pathlib import Path\n"
+        "sys.path.insert(0, str(Path(__file__).resolve().parents[1]))\n"
+        "from waybill_formal.stage import finish_stage\n"
+        'job = json.loads(Path(os.environ["WAYBILL_JOB_JSON"]).read_text(encoding="utf-8"))\n'
+        'attempt = Path(os.environ["WAYBILL_ATTEMPT_DIR"])\n'
+        'attempt.joinpath("output.txt").write_text("ok\\n", encoding="utf-8")\n'
+        'finish_stage(job=job, attempt_dir=attempt, payload={"status": "passed", "output": "output.txt"})\n',
+        encoding="utf-8",
+    )
+    try:
+        exit_code = _run_local_cli(run_root, results, monkeypatch)
+        assert exit_code == 1
+        bodies = [r for r in _read_results(results) if "summary" not in r][4:]
+        assert [r["job_id"] for r in bodies] == ["b", "d"]
+        assert bodies[0]["attempt"] == 2 and bodies[0]["status"] == "failed"
+        assert bodies[1]["attempt"] == 2 and bodies[1]["status"] == "passed"
+    finally:
+        missing_entrypoint.unlink(missing_ok=True)
+
+    # Final resume: every unit has a strictly validated passed receipt or has
+    # exhausted its attempts; nothing is re-run.
+    exit_code = _run_local_cli(run_root, results, monkeypatch)
+    assert exit_code == 0
+    tail = _read_results(results)
+    bodies = [r for r in tail if "summary" not in r][6:]
+    assert bodies == []
+    assert tail[-1]["summary"]["selected"] == 0
+
+
+def test_run_local_driver_refuses_results_inside_the_run_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Driver logs must stay outside the immutable run root."""
+
+    from script import waybill_formal_cli as cli
+
+    run_root = _fake_run(tmp_path, ["a"])
+    _install_driver_jobs(run_root, tmp_path)
+    _patch_execution_guards(run_root, monkeypatch)
+    results = run_root / "driver-results.jsonl"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "waybill_formal_cli.py",
+            "run-local",
+            "--run-root",
+            str(run_root),
+            "--results",
+            str(results),
+        ],
+    )
+    with pytest.raises(FormalError, match="outside the immutable run root"):
+        cli.main()
