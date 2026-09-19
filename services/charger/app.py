@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from fastapi import APIRouter, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
@@ -42,6 +43,7 @@ from common.policy_profile import (
     PolicyRegistry,
     load_policy_profiles,
     validate_profile_local_artifacts,
+    verify_policy_profile_signature,
 )
 from common.settlement_v6 import (
     PUBLIC_SIGNAL_ORDER_V6,
@@ -73,6 +75,12 @@ class ChargerSettings:
     allow_transparent_endpoints: bool = False
     enable_reset: bool = False
     allow_sqlite_backend_for_tests: bool = False
+    # When set, every canonical policy profile must carry a valid Ed25519
+    # signature from this authority key; the app fails closed at startup
+    # otherwise.  Without it the trust root remains local file hashes, which
+    # must be stated as a deployment limitation rather than an authority
+    # guarantee.
+    policy_authority_public_key: bytes | None = None
 
     def __post_init__(self) -> None:
         if self.allow_transparent_endpoints and not self.test_mode:
@@ -108,6 +116,15 @@ class ChargerSettings:
             )
         if not test_mode and (len(admin_token) < 32 or len(token_pepper) < 32):
             raise RuntimeError("production Charger credentials must contain at least 32 characters")
+        authority_hex = os.getenv("WAYBILL_POLICY_AUTHORITY_PUBLIC_KEY", "")
+        authority_key: bytes | None = None
+        if authority_hex:
+            try:
+                authority_key = bytes.fromhex(authority_hex)
+            except ValueError as exc:
+                raise RuntimeError("WAYBILL_POLICY_AUTHORITY_PUBLIC_KEY must be hexadecimal") from exc
+            if len(authority_key) != 32:
+                raise RuntimeError("WAYBILL_POLICY_AUTHORITY_PUBLIC_KEY must be a 32-byte Ed25519 public key")
         return cls(
             database_url=database_url,
             charger_domain=charger_domain,
@@ -117,6 +134,7 @@ class ChargerSettings:
             allow_transparent_endpoints=test_mode,
             enable_reset=test_mode,
             allow_sqlite_backend_for_tests=allow_sqlite_backend,
+            policy_authority_public_key=authority_key,
         )
 
 
@@ -1350,6 +1368,23 @@ def create_app(settings: ChargerSettings | None = None) -> FastAPI:
         )
 
     application.state.charger_settings = resolved
+    if resolved.policy_authority_public_key is not None:
+        # Fail closed: with an authority anchor configured, every loaded
+        # canonical profile must carry a valid signature over its canonical
+        # serialization.  An unsigned or tampered profile must never reach the
+        # resolution path.
+        authority_key = resolved.policy_authority_public_key
+        public_key = Ed25519PublicKey.from_public_bytes(authority_key)
+        rejected = [
+            profile.jurisdiction_id
+            for profile in policy_registry.profiles
+            if not verify_policy_profile_signature(profile, public_key=public_key)
+        ]
+        if rejected:
+            raise RuntimeError(
+                "canonical policy profiles failed authority signature verification: "
+                + ", ".join(sorted(rejected))
+            )
     application.state.charger_store = ChargerStore(
         database_url=resolved.database_url,
         charger_domain=resolved.charger_domain,

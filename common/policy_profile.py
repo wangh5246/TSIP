@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any, Iterable
+
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
 from common.settlement import (
     SETTLEMENT_POSITION_VALIDITY_RULE,
@@ -18,6 +21,11 @@ from common.settlement import (
 
 POLICY_PROFILE_DOMAIN = "waybill_policy_profile_v1"
 POLICY_PROFILE_COMMITMENT_VERSION = 1
+# Domain separation for the authority signature.  The signature covers the
+# canonical profile serialization (the same bytes profile_sha256 digests), so
+# every authority-facing value -- tariff root, verification-key hash, validity
+# window, anti-rollback floor -- is bound by the authority's key.
+POLICY_PROFILE_SIGNATURE_DOMAIN = b"waybill-policy-profile-signature-v1"
 
 
 @dataclass(frozen=True)
@@ -60,6 +68,12 @@ class PolicyProfile:
     tariff_artifact_path: str = ""
     receiver_attestation_schema: str = ""
     position_validity_rule: str = ""
+    # Authority signature over the canonical serialization.  Deliberately
+    # excluded from the semantic payload (and therefore from the commitment
+    # and profile_sha256), so signing a profile never changes the values being
+    # signed and pre-existing profile files keep their recorded commitments.
+    authority_key_id: str = ""
+    authority_signature: str = ""
 
     def __post_init__(self) -> None:
         if not self.authority_id:
@@ -123,6 +137,15 @@ class PolicyProfile:
             raise ValueError(
                 "receiver attestation schema and position-validity rule must be set together"
             )
+        if bool(self.authority_key_id) != bool(self.authority_signature):
+            raise ValueError("authority key id and signature must be set together")
+        if self.authority_signature:
+            if len(self.authority_signature) != 128:
+                raise ValueError("authority_signature must be a 64-byte Ed25519 hex signature")
+            try:
+                bytes.fromhex(self.authority_signature)
+            except ValueError as exc:
+                raise ValueError("authority_signature must be hexadecimal") from exc
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> "PolicyProfile":
@@ -142,6 +165,11 @@ class PolicyProfile:
         data = asdict(self)
         data.pop("verification_key_path", None)
         data.pop("tariff_artifact_path", None)
+        # The signature and its key id must never enter the payload they are
+        # signing, and excluding them keeps the commitment byte-compatible
+        # with profiles issued before signature support existed.
+        data.pop("authority_key_id", None)
+        data.pop("authority_signature", None)
         if not data.get("receiver_attestation_schema"):
             data.pop("receiver_attestation_schema", None)
             data.pop("position_validity_rule", None)
@@ -209,6 +237,9 @@ class PolicyProfile:
             data["tariff_artifact_path"] = self.tariff_artifact_path
         data["policy_profile_commitment"] = str(self.commitment)
         data["profile_sha256"] = self.profile_sha256
+        if self.authority_signature:
+            data["authority_key_id"] = self.authority_key_id
+            data["authority_signature"] = self.authority_signature
         return data
 
     def public_statement_fields(self) -> dict[str, Any]:
@@ -277,6 +308,61 @@ class PolicyProfile:
             raise ValueError("canonical policy mismatch: tariff_root")
         if int(tariff.max_zone_rate_cents_per_m) != int(self.max_zone_rate_cents_per_m):
             raise ValueError("canonical policy mismatch: max_zone_rate_cents_per_m")
+
+
+def _policy_signature_payload(profile: PolicyProfile) -> bytes:
+    """The exact bytes an authority signs: domain, then the canonical digest."""
+
+    return POLICY_PROFILE_SIGNATURE_DOMAIN + b"\x00" + bytes.fromhex(profile.profile_sha256)
+
+
+def sign_policy_profile(
+    profile: PolicyProfile,
+    *,
+    private_key: Ed25519PrivateKey,
+    key_id: str,
+) -> PolicyProfile:
+    """Return a copy of ``profile`` carrying the authority's Ed25519 signature.
+
+    The signature covers the canonical serialization digest, so it binds every
+    semantic field including the tariff root, the verification-key hash, the
+    validity window, and the anti-rollback floor.  Signing does not change the
+    commitment or the digest, and it cannot be re-derived by a verifier
+    without the authority's key.
+    """
+
+    if not key_id:
+        raise ValueError("authority key id must not be empty")
+    signature = private_key.sign(_policy_signature_payload(profile))
+    return replace(
+        profile,
+        authority_key_id=str(key_id),
+        authority_signature=signature.hex(),
+    )
+
+
+def verify_policy_profile_signature(
+    profile: PolicyProfile,
+    *,
+    public_key: Ed25519PublicKey,
+) -> bool:
+    """Verify the profile's authority signature against ``public_key``.
+
+    Returns False for unsigned profiles; callers that require signatures must
+    treat that as a rejection, not as a reason to fall back to the hash-only
+    trust root.
+    """
+
+    if not profile.authority_signature:
+        return False
+    try:
+        public_key.verify(
+            bytes.fromhex(profile.authority_signature),
+            _policy_signature_payload(profile),
+        )
+    except (InvalidSignature, ValueError):
+        return False
+    return True
 
 
 class PolicyRegistry:
