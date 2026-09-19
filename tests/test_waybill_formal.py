@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+import os
+import signal
 import subprocess
+import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -769,6 +773,132 @@ def test_execute_job_fails_closed_outside_frozen_container(
     with pytest.raises(FormalError, match="not running in its container"):
         execute_job(run_root, "a", root=ROOT)
     assert not (run_root / "jobs/attempts/a").exists()
+
+
+def _stubborn_job_script(pid_file: Path, grandchild_sleep: int) -> str:
+    """A job that ignores SIGTERM and leaves a grandchild holding the pipes.
+
+    This reproduces the V14 S5 timeout shape: the measured wrapper's descendant
+    outlives a pid-only signal, so an unbounded drain inside ``execute_job``
+    would keep waiting for that descendant instead of honouring the timeout.
+    """
+
+    return (
+        "import signal, subprocess, sys, time\n"
+        "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+        "child = subprocess.Popen([sys.executable, '-c', "
+        f"'import time; time.sleep({grandchild_sleep})'])\n"
+        f"open({str(pid_file)!r}, 'w').write(str(child.pid))\n"
+        "sys.stdout.write('grandchild=' + str(child.pid) + chr(10))\n"
+        "sys.stdout.flush()\n"
+        f"time.sleep({grandchild_sleep})\n"
+    )
+
+
+def _install_timeout_job(
+    run_root: Path, *, timeout_sec: int, command: list[str]
+) -> None:
+    row = {
+        "job_id": "a",
+        "stage": "S1",
+        "kind": "test",
+        "parameters": {},
+        "timeout_sec": timeout_sec,
+        "resource": {},
+        "command": command,
+    }
+    write_jsonl(run_root / "jobs/expected.jsonl", [row])
+
+
+def _patch_execution_guards(
+    run_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Bypass the container/run-seal guards so the process path can be tested."""
+
+    monkeypatch.setattr(
+        formal_core,
+        "validate_execution_container_environment",
+        lambda run_root, *, root: read_json(run_root / "execution-container.json"),
+    )
+    monkeypatch.setattr(
+        formal_core,
+        "_validate_run_semantics",
+        lambda run_root: read_jsonl(run_root / "jobs/expected.jsonl"),
+    )
+    monkeypatch.setattr(
+        formal_core, "measured_command", lambda command: ([str(c) for c in command], "test")
+    )
+
+
+def test_execute_job_timeout_kills_the_whole_process_group(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A timed-out job must not report an elapsed time above its own timeout."""
+
+    run_root = _fake_run(tmp_path, ["a"])
+    pid_file = tmp_path / "grandchild.pid"
+    _install_timeout_job(
+        run_root,
+        timeout_sec=2,
+        command=[
+            sys.executable,
+            "-c",
+            _stubborn_job_script(pid_file, grandchild_sleep=300),
+        ],
+    )
+    _patch_execution_guards(run_root, monkeypatch)
+
+    started = time.perf_counter()
+    receipt = execute_job(run_root, "a", root=ROOT)
+    wall = time.perf_counter() - started
+
+    assert receipt["timed_out"] is True
+    assert receipt["status"] == "failed"
+    assert receipt["error"] == "timeout after 2s"
+
+    # The regression: with a pid-only signal plus an unbounded drain, this call
+    # returned only after the 300 s grandchild exited, so elapsed_ms contradicted
+    # the recorded timeout. Bounding every wait keeps it near the timeout.
+    assert wall < 90.0, f"execute_job blocked for {wall:.1f}s after a 2s timeout"
+    assert receipt["elapsed_ms"] < 90_000, receipt["elapsed_ms"]
+
+    # The grandchild must have been signalled with the group, not orphaned.
+    assert pid_file.is_file(), "the job never reported its grandchild pid"
+    grandchild = int(pid_file.read_text(encoding="utf-8").strip())
+    for _ in range(100):
+        try:
+            os.kill(grandchild, 0)
+        except ProcessLookupError:
+            break
+        time.sleep(0.1)
+    else:
+        try:
+            os.kill(grandchild, signal.SIGKILL)
+        finally:
+            pytest.fail("the timed-out job's grandchild outlived the timeout")
+
+
+def test_execute_job_completed_within_timeout_is_not_marked_timed_out(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The bounded termination path must not disturb a job that finishes in time."""
+
+    run_root = _fake_run(tmp_path, ["a"])
+    _install_timeout_job(
+        run_root,
+        timeout_sec=60,
+        command=[sys.executable, "-c", "print('done')"],
+    )
+    _patch_execution_guards(run_root, monkeypatch)
+
+    receipt = execute_job(run_root, "a", root=ROOT)
+
+    assert receipt["timed_out"] is False
+    assert receipt["returncode"] == 0
+    assert "done" in receipt["stdout_tail"]
+    # No stage-result is written, so a zero exit still fails closed.
+    assert receipt["status"] == "failed"
+    assert receipt["error"] == "stage-result.json is missing"
 
 
 def test_rendered_slurm_array_binds_and_isolates_apptainer_runtime(

@@ -9,6 +9,7 @@ import os
 import platform
 import re
 import shutil
+import signal
 import statistics
 import subprocess
 import time
@@ -1966,6 +1967,35 @@ class ExecutionReceipt:
     artifact_manifest_sha256: str | None
 
 
+#: Longest we ever wait for a timed-out job's processes to leave on their own.
+#: Every wait that follows a timeout is bounded by this value, so a timed-out
+#: attempt can never report an ``elapsed_ms`` far above its ``timeout_sec``.
+_TERMINATION_GRACE_SEC = 30.0
+
+
+def _signal_process_group(process: subprocess.Popen[str], signal_number: int) -> bool:
+    """Signal a job's whole process group; report whether the group existed.
+
+    ``execute_job`` launches every job with ``start_new_session=True``, so the
+    direct child leads its own session and process group while the launcher
+    wrapper's descendants stay inside that same group.  Signalling only
+    ``process.pid`` would leave those descendants running, and the drain that
+    follows would then block until they exit by themselves -- which is how a
+    timed-out attempt could report ``elapsed_ms`` far above its ``timeout_sec``
+    and still be recorded as ``error="timeout after <n>s"``.
+    """
+
+    try:
+        group = os.getpgid(process.pid)
+    except ProcessLookupError:
+        return False
+    try:
+        os.killpg(group, signal_number)
+    except ProcessLookupError:
+        return False
+    return True
+
+
 def execute_job(run_root: Path, job_id: str, *, root: Path) -> dict[str, Any]:
     execution_container = validate_execution_container_environment(run_root, root=root)
     expected_jobs = _validate_run_semantics(run_root)
@@ -2014,12 +2044,26 @@ def execute_job(run_root: Path, job_id: str, *, root: Path) -> dict[str, Any]:
     except subprocess.TimeoutExpired:
         timed_out = True
         error = f"timeout after {job['timeout_sec']}s"
-        process.terminate()
+        # Signal the whole group, then escalate once, and bound every wait. A
+        # bare ``process.terminate()`` reaches only the measured wrapper, so the
+        # stage interpreter inside the container survives and the unbounded
+        # ``communicate()`` that used to follow blocked until it finished.
+        _signal_process_group(process, signal.SIGTERM)
         try:
-            stdout, stderr = process.communicate(timeout=30)
+            stdout, stderr = process.communicate(timeout=_TERMINATION_GRACE_SEC)
         except subprocess.TimeoutExpired:
-            process.kill()
-            stdout, stderr = process.communicate()
+            _signal_process_group(process, signal.SIGKILL)
+            try:
+                stdout, stderr = process.communicate(timeout=_TERMINATION_GRACE_SEC)
+            except subprocess.TimeoutExpired:
+                for stream in (process.stdout, process.stderr):
+                    if stream is not None:
+                        stream.close()
+                error = (
+                    f"timeout after {job['timeout_sec']}s; "
+                    "job process group survived SIGTERM and SIGKILL"
+                )
+                stdout, stderr = "", ""
         returncode = process.returncode
     time_evidence = parse_time_evidence(stderr, backend)
     if returncode and error is None:
