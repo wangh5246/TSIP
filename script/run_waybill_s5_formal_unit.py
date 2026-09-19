@@ -590,6 +590,19 @@ def _charger_job(
             outcomes.append(outcome)
             latencies.append(float(outcome["elapsed_ms"]))
     elapsed_sec = time.perf_counter() - started
+    # Seal hygiene: the stage artifact manifest computed by finish_stage pins
+    # the byte size of charger.sqlite and its WAL sidecar.  SQLite checkpoints
+    # the WAL into the main database when the last pooled connection closes,
+    # which otherwise happens during interpreter shutdown -- after the
+    # manifest is computed -- and fails the seal size check (B0 probe
+    # s5-0a463bf416daf202d5e6: manifest 434,176 B main + 4,124,152 B WAL,
+    # post-shutdown main grew to 708,608 B).  Checkpoint explicitly and drain
+    # the pool before returning, so the on-disk ledger is stable at seal time.
+    store = getattr(app.state, "charger_store", None)
+    if store is not None and store.engine.dialect.name == "sqlite":
+        with store.engine.connect() as connection:
+            connection.exec_driver_sql("PRAGMA wal_checkpoint(TRUNCATE)")
+        store.engine.dispose()
     result = {
         "status": "passed" if all(row["correct"] for row in outcomes) else "failed",
         "fixes": fixes,
