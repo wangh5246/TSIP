@@ -1,0 +1,101 @@
+name: Publish WayBill v15 images to GHCR
+
+on:
+  push:
+    branches:
+      - codex/v15-ghcr-publish
+    paths:
+      - .github/workflows/publish-waybill-v15-ghcr.yml
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: waybill-v15-ghcr-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish ${{ matrix.role }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - role: formal-runner
+            image: waybill-formal
+            dockerfile: containers/waybill-formal/Dockerfile
+          - role: charger
+            image: waybill-charger
+            dockerfile: services/charger/Dockerfile
+          - role: receiver-signer
+            image: waybill-receiver-signer
+            dockerfile: services/receiver_signer/Dockerfile
+          - role: postgres
+            image: waybill-postgres
+            dockerfile: deploy/postgres/Dockerfile
+
+    steps:
+      - name: Check out immutable v15 source
+        uses: actions/checkout@v4
+        with:
+          ref: waybill-formal-readiness-v15
+          fetch-depth: 1
+          lfs: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          sbom: false
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:readiness-v15
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:065630ba
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=waybill-formal-readiness-v15
+          build-args: |
+            WAYBILL_GIT_COMMIT=065630bab0363ade9b8208874086ed2cf9de398d
+            WAYBILL_GIT_TREE=cb0e4c987c1fffb2ec532b9d6138d70f6b685a1d
+            WAYBILL_CODE_MANIFEST_SHA256=241bfa86383d7abc705efc4fe1be789dc2b393c1432d1dcd71c4bccec267678e
+            WAYBILL_PROTOCOL_SHA256=7198534429da4b1d3073c57774d5c5eb4cddc3bdac2de1db7f33726d0120d40a
+          cache-from: type=gha,scope=waybill-v15-${{ matrix.role }}
+          cache-to: type=gha,mode=max,scope=waybill-v15-${{ matrix.role }}
+
+      - name: Record registry digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE_REF: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          ROLE: ${{ matrix.role }}
+        run: |
+          mkdir -p digest-report
+          printf '%s@%s\n' "$IMAGE_REF" "$DIGEST" | tee "digest-report/$ROLE.txt"
+          {
+            printf '### %s\n\n' "$ROLE"
+            printf '`%s@%s`\n' "$IMAGE_REF" "$DIGEST"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload digest record
+        uses: actions/upload-artifact@v4
+        with:
+          name: waybill-v15-digest-${{ matrix.role }}
+          path: digest-report/${{ matrix.role }}.txt
+          if-no-files-found: error
+          retention-days: 90
