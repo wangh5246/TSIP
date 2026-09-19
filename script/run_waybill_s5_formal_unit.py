@@ -7,6 +7,7 @@ import copy
 import hashlib
 import json
 import os
+import secrets
 import shutil
 import subprocess
 import sys
@@ -494,28 +495,44 @@ def _charger_job(
         raise FormalError("S5 policy profile directory missing")
     os.environ["SETTLEMENT_POLICY_PROFILE_DIR"] = str(profile_dir)
     os.environ["SETTLEMENT_REQUIRE_ZK_PROOF"] = "1"
-    os.environ["WAYBILL_CHARGER_TEST_MODE"] = "1"
+    # A6: the formal handler runs with charger test mode OFF.  Device bearer
+    # authentication and root-attestation anchoring are therefore enforced on
+    # every request.  The SQLite ledger remains an explicitly acknowledged
+    # benchmark-backend limitation (production_server_or_postgresql_claim
+    # stays False); the flag below acknowledges it without relaxing auth.
+    os.environ["WAYBILL_CHARGER_TEST_MODE"] = "0"
+    os.environ["WAYBILL_CHARGER_ALLOW_SQLITE_BACKEND"] = "1"
     os.environ["WAYBILL_CHARGER_DATABASE_URL"] = (
         f"sqlite+pysqlite:///{attempt_dir / 'charger.sqlite'}"
     )
     os.environ["WAYBILL_CHARGER_DOMAIN"] = "ruc-demo.charger-test"
-    os.environ["WAYBILL_CHARGER_ADMIN_TOKEN"] = "waybill-test-admin-token"
-    os.environ["WAYBILL_CHARGER_TOKEN_PEPPER"] = "waybill-test-token-pepper"
+    # Non-test-mode credentials must be >=32 chars and independent of each
+    # other.  They are generated per attempt and never written to the receipt
+    # or the stage result.
+    admin_token = secrets.token_urlsafe(32)
+    token_pepper = secrets.token_urlsafe(32)
+    os.environ["WAYBILL_CHARGER_ADMIN_TOKEN"] = admin_token
+    os.environ["WAYBILL_CHARGER_TOKEN_PEPPER"] = token_pepper
     from fastapi.testclient import TestClient
     from services.charger.app import app
 
     endpoint = str(record.get("charger_endpoint", "/settlement/v6/period/proof-only"))
+    device_token = secrets.token_urlsafe(32)
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    device_headers = {"Authorization": f"Bearer {device_token}"}
     with TestClient(app) as client:
-        reset = client.post("/settlement/reset")
-        if reset.status_code != 200:
-            raise FormalError(f"S5 charger reset failed: {reset.text}")
+        # The destructive /settlement/reset endpoint is test-mode-only and the
+        # ledger database is created fresh for this attempt directory, so no
+        # reset is needed or possible here.
         registration = client.post(
             "/settlement/devices/register",
             json={
                 "device_id": record["device_id"],
                 "public_key_hex": record["device_public_key_hex"],
                 "jurisdiction_id": record["jurisdiction_id"],
+                "device_token": device_token,
             },
+            headers=admin_headers,
         )
         if registration.status_code != 200:
             raise FormalError(f"S5 device registration failed: {registration.text}")
@@ -525,6 +542,7 @@ def _charger_job(
                 json={
                     "root_attestation": bundle["endpoint_payload"]["root_attestation"]
                 },
+                headers=device_headers,
             )
             if anchored.status_code != 200:
                 raise FormalError(
@@ -539,7 +557,7 @@ def _charger_job(
         kind, payload = item
         started = time.perf_counter()
         with TestClient(app) as client:
-            response = client.post(endpoint, json=payload)
+            response = client.post(endpoint, json=payload, headers=device_headers)
         elapsed_ms = (time.perf_counter() - started) * 1000
         expected_accept = kind == "valid"
         accepted = 200 <= response.status_code < 300
@@ -555,7 +573,9 @@ def _charger_job(
     if workload == "valid-90-tampered-5-replay-5":
         for bundle in bundles[95:100]:
             with TestClient(app) as client:
-                response = client.post(endpoint, json=bundle["endpoint_payload"])
+                response = client.post(
+                    endpoint, json=bundle["endpoint_payload"], headers=device_headers
+                )
             if not 200 <= response.status_code < 300:
                 raise FormalError(
                     "S5 replay pre-seeding failed; corpus payload was not accepted "
@@ -575,8 +595,16 @@ def _charger_job(
         "fixes": fixes,
         "concurrency": concurrency,
         "workload": workload,
-        "benchmark_scope": "in-process FastAPI handler with SQLite test ledger",
+        "benchmark_scope": (
+            "in-process FastAPI handler with SQLite ledger; device bearer-token "
+            "authentication and root-attestation anchoring enforced (no charger test mode)"
+        ),
         "production_server_or_postgresql_claim": False,
+        "charger_test_mode": False,
+        "device_authentication": (
+            "bearer device token (generated per attempt, value not recorded)"
+        ),
+        "root_attestation_anchoring": "enforced (allow_unanchored disabled)",
         "repetition": repetition,
         "requests": len(outcomes),
         "correct": sum(row["correct"] for row in outcomes),

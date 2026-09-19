@@ -17,8 +17,8 @@ from services.charger.app import (
 
 
 ADMIN_TOKEN = "admin-credential-with-more-than-32-characters"
-TOKEN_A = "device-a-credential-with-more-than-32-characters"
-TOKEN_B = "device-b-credential-with-more-than-32-characters"
+TOKEN_A = "enrollment-credential-a-longer-than-32-characters"
+TOKEN_B = "enrollment-credential-b-longer-than-32-characters"
 DOMAIN = "ruc-demo.charger-auth-test"
 
 

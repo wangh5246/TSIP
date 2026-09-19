@@ -97,6 +97,10 @@ class ChargerSettings:
         charger_domain = os.getenv("WAYBILL_CHARGER_DOMAIN", "")
         admin_token = os.getenv("WAYBILL_CHARGER_ADMIN_TOKEN", "")
         token_pepper = os.getenv("WAYBILL_CHARGER_TOKEN_PEPPER", "")
+        # Benchmarks that must run with authentication enforced but without a
+        # production database set this flag to acknowledge the SQLite ledger
+        # explicitly; it never relaxes authentication or anchoring.
+        allow_sqlite_backend = os.getenv("WAYBILL_CHARGER_ALLOW_SQLITE_BACKEND", "") == "1"
         if not database_url or not charger_domain or not admin_token or not token_pepper:
             raise RuntimeError(
                 "WAYBILL_CHARGER_DATABASE_URL, WAYBILL_CHARGER_DOMAIN, "
@@ -112,6 +116,7 @@ class ChargerSettings:
             test_mode=test_mode,
             allow_transparent_endpoints=test_mode,
             enable_reset=test_mode,
+            allow_sqlite_backend_for_tests=allow_sqlite_backend,
         )
 
 
@@ -684,6 +689,14 @@ def register_device(
         raise HTTPException(
             status_code=400,
             detail="device_token must be independent from Charger administrator secrets",
+        )
+    if not settings.test_mode and req.device_id and req.device_id in device_token:
+        # The test-mode fallback below is exactly this shape; outside test mode
+        # a credential derivable from public registration data is not a
+        # credential, however long it is.
+        raise HTTPException(
+            status_code=400,
+            detail="device_token must not be derivable from the device id",
         )
     try:
         created = _store(request).register_device(
