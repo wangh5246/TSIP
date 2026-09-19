@@ -2071,7 +2071,14 @@ def execute_job(run_root: Path, job_id: str, *, root: Path) -> dict[str, Any]:
     stage_evidence: dict[str, Any] | None = None
     stage_result: dict[str, Any] | None = None
     stage_path = attempt_dir / "stage-result.json"
-    if not timed_out and stage_path.is_file():
+    # A timeout says the wall-clock allowance was exceeded, not that the stage
+    # produced nothing. Skipping this validation whenever ``timed_out`` was set
+    # discarded a stage result that had in fact completed and validated -- the
+    # V14 S5 unit s5-a0e46c6ac75554e9a48f is exactly that case, and its receipt
+    # ends up with ``stage_result_sha256 == null`` even though the stage result
+    # on disk is a passing one. Always validate what is there; the attempt is
+    # still recorded as failed below, because ``timed_out`` alone decides that.
+    if stage_path.is_file():
         try:
             raw_stage_result = read_json(stage_path)
             if not isinstance(raw_stage_result, dict):
@@ -2082,7 +2089,7 @@ def execute_job(run_root: Path, job_id: str, *, root: Path) -> dict[str, Any]:
                 job=job,
                 attempt_dir=attempt_dir,
             )
-            if returncode == 0:
+            if returncode == 0 and not timed_out:
                 _require(
                     stage_evidence["status"] == "passed",
                     "stage semantic status is not passed",
@@ -2093,6 +2100,15 @@ def execute_job(run_root: Path, job_id: str, *, root: Path) -> dict[str, Any]:
             stage_result = None
     elif returncode == 0 and not timed_out:
         error = "stage-result.json is missing"
+    if timed_out and stage_evidence is not None and stage_evidence["status"] == "passed":
+        # Keep the failure verdict, but make the receipt say what actually
+        # happened so the evidence is not read as "the stage never produced a
+        # result".
+        error = (
+            f"timeout after {job['timeout_sec']}s; the stage result is present and "
+            f"validates as '{stage_evidence['status']}', but the attempt is recorded "
+            "as failed because the timeout fired"
+        )
     raw_rss = time_evidence["max_rss_bytes"]
     raw_user = time_evidence["user_cpu_sec"]
     raw_system = time_evidence["system_cpu_sec"]

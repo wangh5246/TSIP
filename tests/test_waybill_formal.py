@@ -901,6 +901,50 @@ def test_execute_job_completed_within_timeout_is_not_marked_timed_out(
     assert receipt["error"] == "stage-result.json is missing"
 
 
+def test_execute_job_keeps_stage_evidence_when_the_timeout_fires(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A timeout must not erase a stage result that completed and validates.
+
+    The V14 S5 unit s5-a0e46c6ac75554e9a48f wrote a passing stage result and was
+    still recorded with ``stage_result_sha256 == null``, because the stage
+    validation was skipped whenever ``timed_out`` was set. The failure verdict
+    stays; only the evidence is preserved.
+    """
+
+    run_root = _fake_run(tmp_path, ["a"])
+    worker = tmp_path / "stubborn_stage.py"
+    worker.write_text(
+        "import json, os, time\n"
+        "from pathlib import Path\n"
+        "from waybill_formal.stage import finish_stage\n"
+        'job = json.loads(Path(os.environ["WAYBILL_JOB_JSON"]).read_text(encoding="utf-8"))\n'
+        'attempt = Path(os.environ["WAYBILL_ATTEMPT_DIR"])\n'
+        'attempt.joinpath("output.txt").write_text("verified\\n", encoding="utf-8")\n'
+        "finish_stage(\n"
+        "    job=job,\n"
+        "    attempt_dir=attempt,\n"
+        '    payload={"status": "passed", "output": "output.txt"},\n'
+        ")\n"
+        "time.sleep(300)\n",
+        encoding="utf-8",
+    )
+    _install_timeout_job(
+        run_root, timeout_sec=3, command=[sys.executable, str(worker)]
+    )
+    _patch_execution_guards(run_root, monkeypatch)
+
+    receipt = execute_job(run_root, "a", root=ROOT)
+
+    assert receipt["timed_out"] is True
+    assert receipt["status"] == "failed"
+    assert receipt["stage_status"] == "passed"
+    assert receipt["stage_result_sha256"] is not None
+    assert receipt["artifact_manifest_sha256"] is not None
+    assert "timeout after 3s" in receipt["error"]
+    assert "validates as 'passed'" in receipt["error"]
+
+
 def test_rendered_slurm_array_binds_and_isolates_apptainer_runtime(
     tmp_path: Path,
 ) -> None:
