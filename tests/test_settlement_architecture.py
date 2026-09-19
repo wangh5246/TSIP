@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
 import sys
 from pathlib import Path
 
@@ -12,6 +13,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+import common.settlement as settlement_module
 from common.settlement import (
     ReceiverFix,
     TariffTable,
@@ -23,6 +25,7 @@ from common.settlement import (
     make_device_attestation_commitment,
     merkle_path,
     merkleize,
+    merkleize_fixed_depth,
     sign_receiver_fix,
     verify_fix_sequence,
     verify_merkle_path,
@@ -286,3 +289,106 @@ def test_period_submission_rejects_changed_tariff_root_or_total_fee():
             cadence_sec=60,
             tier_vmax_mps=33,
         )
+
+
+# --- tariff Merkle tree memoization -------------------------------------------
+#
+# Expanding a tariff grid into Poseidon leaves is a pure function of the table
+# content, but it is expensive: the pinned ROME profile has 10,000 cells, so one
+# depth-14 root costs 10,000 leaf hashes plus ~16,383 internal nodes, i.e. tens
+# of seconds of pure-Python field arithmetic.  The charging path used to pay
+# that twice per request -- _resolve_expected_profile() and the proof-only
+# handler both call _profile_vkey_path(), which re-validates the profile and
+# re-checks the tariff root -- and the cost grew with nothing but repetition.
+#
+# These tests pin three properties: the tree is expanded once per content, the
+# cache is keyed on content rather than object identity, and the root is
+# unchanged against the value the repository's own artifacts declare.
+
+_M2_TARIFF_ARTIFACT = ROOT_DIR / "experiments/waybill_m2/tariff_rome_medium_10000_cells.json"
+_M2_TARIFF_ROOT_DEPTH_14 = (
+    13699623093631692182889334311784675380256108557104408704717957921466979708714
+)
+
+
+def _clear_tariff_tree_cache() -> None:
+    settlement_module._cached_tariff_leaves.cache_clear()
+    settlement_module._cached_tariff_root.cache_clear()
+
+
+def test_tariff_tree_is_expanded_once_per_content(monkeypatch):
+    _clear_tariff_tree_cache()
+    calls = {"n": 0}
+    original = settlement_module._poseidon2
+
+    def counting(x: int, y: int) -> int:
+        calls["n"] += 1
+        return original(x, y)
+
+    monkeypatch.setattr(settlement_module, "_poseidon2", counting)
+
+    tariff = _tariff()
+    first = tariff.root(2)
+    after_cold = calls["n"]
+    assert after_cold > 0
+
+    assert tariff.root(2) == first
+    assert calls["n"] == after_cold, "root() re-expanded the tree on a cache hit"
+
+
+def test_tariff_tree_cache_is_content_addressed_not_identity():
+    _clear_tariff_tree_cache()
+    reference = _tariff()
+    expected = reference.root(2)
+
+    # A distinct but identical table must reuse the same tree.
+    hits_before = settlement_module._cached_tariff_root.cache_info().hits
+    identical = _tariff()
+    assert identical is not reference
+    assert identical.root(2) == expected
+    assert settlement_module._cached_tariff_root.cache_info().hits > hits_before
+
+    # Mutating the table must move the key, never serve a stale root.
+    mutated = _tariff()
+    before = mutated.root(2)
+    mutated.cell_zones[0] = 20
+    changed = mutated.root(2)
+    assert changed != before
+
+    mutated.cell_zones[0] = 10
+    assert mutated.root(2) == before
+
+
+def test_memoized_tariff_root_equals_direct_merkleize():
+    _clear_tariff_tree_cache()
+    tariff = _tariff()
+    assert tariff.root() == merkleize(tariff.leaves())
+    assert tariff.root(2) == merkleize_fixed_depth(tariff.leaves(), 2)
+    assert tariff.root(3) == merkleize_fixed_depth(tariff.leaves(), 3)
+    # Four leaves fit a depth-2 tree exactly, so padding changes nothing there;
+    # depth 3 pads to eight slots and must produce a different root.
+    assert tariff.root(2) == tariff.root()
+    assert tariff.root(3) != tariff.root()
+
+
+def test_pinned_10000_cell_tariff_root_is_unchanged():
+    if not _M2_TARIFF_ARTIFACT.is_file():
+        pytest.skip(f"pinned tariff artifact not present: {_M2_TARIFF_ARTIFACT}")
+    raw = json.loads(_M2_TARIFF_ARTIFACT.read_text(encoding="utf-8"))
+    tariff = TariffTable(
+        tariff_version=int(raw["tariff_version"]),
+        grid_w=int(raw["grid_w"]),
+        cell_zones={int(k): int(v) for k, v in raw["cell_zones"].items()},
+        zone_rates_cents_per_m={
+            int(k): int(v) for k, v in raw["zone_rates_cents_per_m"].items()
+        },
+    )
+    _clear_tariff_tree_cache()
+    assert len(tariff.cell_zones) == 10_000
+    assert tariff.root(14) == _M2_TARIFF_ROOT_DEPTH_14
+
+    ordered = sorted(tariff.cell_zones)
+    leaves = tariff.leaves()
+    path = tariff.path_for_cell(ordered[0], 14)
+    assert len(path) == 14
+    assert verify_merkle_path(leaves[0], path, _M2_TARIFF_ROOT_DEPTH_14)

@@ -6,6 +6,7 @@ import json
 import math
 from datetime import datetime, timezone
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 from cryptography.exceptions import InvalidSignature
@@ -532,6 +533,63 @@ def verify_merkle_path(leaf: int, path: list[dict[str, int]], root: int) -> bool
     return int(acc) == int(root) % SNARK_FIELD
 
 
+# Expanding a tariff grid into Poseidon leaves is a pure function of the
+# table content, but it is not cheap: a 10,000-cell profile costs 10,000
+# Poseidon(2) evaluations for the leaves plus ~16,383 more for a depth-14
+# tree, i.e. tens of seconds of pure-Python field arithmetic.  Callers on the
+# charging path re-derive the same root several times per request from the
+# same profile, so memoize on the table content.
+#
+# The key is the content, never object identity and never a mutable object.
+# Rebuilding or mutating a table therefore moves the key and forces a fresh
+# expansion; it can never read a stale tree.  Values enter the key already
+# coerced with int(), matching exactly what leaf_for_cell() consumes.
+_TARIFF_TREE_CACHE_SIZE = 8
+
+
+@lru_cache(maxsize=_TARIFF_TREE_CACHE_SIZE)
+def _cached_tariff_leaves(
+    tariff_version: int,
+    cell_zones: tuple[tuple[Any, int], ...],
+    zone_rates_cents_per_m: tuple[tuple[Any, int], ...],
+) -> tuple[int, ...]:
+    """Expand a tariff grid into its Poseidon leaves, memoized on content."""
+
+    zones = dict(cell_zones)
+    rates = dict(zone_rates_cents_per_m)
+    leaves: list[int] = []
+    for cell_idx in sorted(zones):
+        zone_id = int(zones[cell_idx])
+        try:
+            rate = int(rates[zone_id])
+        except KeyError as exc:
+            raise ValueError(f"missing tariff rate for zone {zone_id}") from exc
+        leaves.append(
+            poseidon_chain([int(tariff_version), int(cell_idx), int(zone_id), rate])
+        )
+    return tuple(leaves)
+
+
+@lru_cache(maxsize=_TARIFF_TREE_CACHE_SIZE * 4)
+def _cached_tariff_root(
+    tariff_version: int,
+    cell_zones: tuple[tuple[Any, int], ...],
+    zone_rates_cents_per_m: tuple[tuple[Any, int], ...],
+    depth: int,
+) -> int:
+    """Merkle root of a tariff grid, memoized on content and depth.
+
+    ``depth < 0`` means the unpadded ``merkleize`` variant.
+    """
+
+    leaves = list(
+        _cached_tariff_leaves(tariff_version, cell_zones, zone_rates_cents_per_m)
+    )
+    if depth < 0:
+        return merkleize(leaves)
+    return merkleize_fixed_depth(leaves, depth)
+
+
 @dataclass(frozen=True)
 class TariffTable:
     tariff_version: int
@@ -571,12 +629,26 @@ class TariffTable:
             ]
         )
 
+    def tree_key(self) -> tuple[Any, ...]:
+        """Return the content key the Merkle tree is a pure function of.
+
+        Keys keep their original ordering semantics (the tree is built over
+        ``sorted(cell_zones)``); values are coerced with ``int()`` because
+        that is what ``leaf_for_cell`` consumes.  ``grid_w`` is deliberately
+        absent: it affects ``cell_index``, not the leaf/tree arithmetic.
+        """
+
+        return (
+            int(self.tariff_version),
+            tuple(sorted((k, int(v)) for k, v in self.cell_zones.items())),
+            tuple(sorted((k, int(v)) for k, v in self.zone_rates_cents_per_m.items())),
+        )
+
     def leaves(self) -> list[int]:
-        return [self.leaf_for_cell(cell_idx) for cell_idx in sorted(self.cell_zones)]
+        return list(_cached_tariff_leaves(*self.tree_key()))
 
     def root(self, depth: int | None = None) -> int:
-        leaves = self.leaves()
-        return merkleize(leaves) if depth is None else merkleize_fixed_depth(leaves, depth)
+        return _cached_tariff_root(*self.tree_key(), -1 if depth is None else int(depth))
 
     def path_for_cell(self, cell_idx: int, depth: int | None = None) -> list[dict[str, int]]:
         ordered = sorted(self.cell_zones)
