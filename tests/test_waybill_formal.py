@@ -901,6 +901,41 @@ def test_execute_job_completed_within_timeout_is_not_marked_timed_out(
     assert receipt["error"] == "stage-result.json is missing"
 
 
+def test_execute_job_freezes_the_attempt_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A finished attempt must resist post-seal mutation.
+
+    The V14 invalid receipt (s5-a9aa26ae270269f8b48e) was produced ~14.6 h
+    after its artifact manifest was sealed, when an external process re-opened
+    the SQLite ledger and journal_mode=WAL (a persistent database-header
+    property) recreated the -shm/-wal sidecars, so the live directory no longer
+    matched the sealed manifest.  Revoking every write bit -- the attempt
+    directory's included -- turns that failure class into EACCES.
+    """
+
+    run_root = _fake_run(tmp_path, ["a"])
+    _install_timeout_job(
+        run_root,
+        timeout_sec=60,
+        command=[sys.executable, "-c", "print('done')"],
+    )
+    _patch_execution_guards(run_root, monkeypatch)
+
+    receipt = execute_job(run_root, "a", root=ROOT)
+    assert receipt["status"] == "failed"  # no stage-result, but still frozen
+
+    attempt = run_root / "jobs/attempts/a/attempt-01"
+    entries = [attempt, *attempt.rglob("*")]
+    assert entries, "the attempt directory should not be empty"
+    writable = [str(p) for p in entries if p.lstat().st_mode & 0o222]
+    assert writable == [], "write bits survived on finished attempt entries"
+
+    # Recreating the V14 sidecar shape must now fail outright.
+    with pytest.raises(PermissionError):
+        (attempt / "charger.sqlite-shm").write_text("not allowed", encoding="utf-8")
+
+
 def test_execute_job_keeps_stage_evidence_when_the_timeout_fires(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -10,6 +10,7 @@ import platform
 import re
 import shutil
 import signal
+import stat
 import statistics
 import subprocess
 import time
@@ -1996,6 +1997,60 @@ def _signal_process_group(process: subprocess.Popen[str], signal_number: int) ->
     return True
 
 
+_WRITE_BITS = stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH
+
+
+def _revoke_write_bits(path: Path) -> None:
+    """Revoke every write bit on ``path``; symlinks are left untouched."""
+
+    try:
+        info = path.lstat()
+    except OSError as exc:
+        raise FormalError(f"cannot stat sealed attempt entry {path}: {exc}") from exc
+    if stat.S_ISLNK(info.st_mode):
+        return
+    mode = stat.S_IMODE(info.st_mode)
+    frozen = mode & ~_WRITE_BITS
+    if frozen == mode:
+        return
+    try:
+        os.chmod(path, frozen)
+    except OSError as exc:
+        raise FormalError(f"cannot freeze sealed attempt entry {path}: {exc}") from exc
+
+
+def _freeze_attempt_entries(attempt_dir: Path, *, include_root: bool) -> None:
+    """Revoke write permission across a finished attempt directory.
+
+    The stage artifact manifest is sealed inside the stage process, before
+    ``execute_job`` writes the receipt.  Anything that appears in the attempt
+    directory afterwards makes the live file set disagree with the sealed
+    manifest and fails the attempt closed -- the V14 invalid receipt
+    (``s5-a9aa26ae270269f8b48e``) is exactly that: a SQLite ``-shm``/``-wal``
+    sidecar appeared ~14.6 h after the manifest was sealed because an external
+    process re-opened the ledger, and ``journal_mode=WAL`` is a persistent
+    database-header property, so *any* later open recreates the sidecars.
+
+    Removing the write bits -- the directory's included, so new files cannot
+    be created -- turns that whole failure class into ``EACCES`` instead of a
+    silently invalidated receipt.  Freezing everything that already exists
+    before the receipt is written keeps the failure mode consistent: a freeze
+    failure raises before any receipt exists, so no receipt can claim success
+    over mutable evidence.  The freeze stays reversible by the owner
+    (``chmod u+w``), so recovery remains possible; it is a lock, not a
+    shredder.
+    """
+
+    assert attempt_dir.is_dir()
+    for current, dirnames, filenames in os.walk(attempt_dir, topdown=True, followlinks=False):
+        for name in sorted(dirnames):
+            _revoke_write_bits(Path(current) / name)
+        for name in sorted(filenames):
+            _revoke_write_bits(Path(current) / name)
+    if include_root:
+        _revoke_write_bits(attempt_dir)
+
+
 def execute_job(run_root: Path, job_id: str, *, root: Path) -> dict[str, Any]:
     execution_container = validate_execution_container_environment(run_root, root=root)
     expected_jobs = _validate_run_semantics(run_root)
@@ -2152,7 +2207,13 @@ def execute_job(run_root: Path, job_id: str, *, root: Path) -> dict[str, Any]:
     )
     payload = asdict(receipt)
     payload["receipt_sha256"] = canonical_sha256(payload)
+    # Freeze everything that already exists first, so a freeze failure cannot
+    # leave a receipt claiming success over mutable evidence; the directory
+    # keeps its write bit until the receipt itself is frozen below.
+    _freeze_attempt_entries(attempt_dir, include_root=False)
     write_json(attempt_dir / "receipt.json", payload, exclusive=True)
+    _revoke_write_bits(attempt_dir / "receipt.json")
+    _freeze_attempt_entries(attempt_dir, include_root=True)
     return payload
 
 
